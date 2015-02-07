@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import pandas as pd
 
@@ -13,7 +15,6 @@ def cdnow_customers():
 
 
 class TestBGNBDFitter():
-
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         bgf = estimation.BGNBDFitter

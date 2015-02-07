@@ -48,6 +48,7 @@ class BGNBDFitter(BaseFitter):
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
+        self.plot = self._plot
         return self
 
     @staticmethod
@@ -109,7 +110,7 @@ class BGNBDFitter(BaseFitter):
 
         return numerator / denominator
 
-    def plot(self, **kwargs):
+    def _plot(self, **kwargs):
         from matplotlib import pyplot as plt
 
         max_T = self.data['T'].max()
