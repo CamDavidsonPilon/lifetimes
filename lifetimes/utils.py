@@ -7,10 +7,9 @@ def summary_data_from_transaction_data():
     customer_id, time, purchase
     ...
 
-    to 
+    to
 
     customer_id, x, t_x, T
 
     """
     pass
-
