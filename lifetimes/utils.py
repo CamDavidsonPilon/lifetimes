@@ -10,7 +10,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
         to
 
-        customer_id, x, t_x, T
+        customer_id, frequency, recency, cohort
 
     Parameters:
         transactions: a Pandas DataFrame of atleast two cols.
@@ -29,9 +29,9 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     customers = transactions.groupby(customer_id_col)[datetime_col].agg(['max', 'min', 'count'])
     
     #subtract 1 from count, as we ignore their first order. 
-    customers['x'] = customers['count'] - 1
+    customers['frequency'] = customers['count'] - 1
 
-    customers['T'] = (observation_period_end - customers['min']).map(to_floating_freq)
-    customers['t_x'] = (observation_period_end - customers['max']).map(to_floating_freq)
-    return customers[['x', 't_x', 'T']].astype(float)
+    customers['cohort'] = (observation_period_end - customers['min']).map(to_floating_freq)
+    customers['recency'] = (observation_period_end - customers['max']).map(to_floating_freq)
+    return customers[['frequency', 'cohort', 'recency']].astype(float)
 
