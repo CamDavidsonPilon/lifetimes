@@ -4,7 +4,7 @@ Measuring customer lifetime value is hard. Lifetimes makes it easy.
 
 ## Quickstart
 
-    from lifetimes.estimation import BGNBDFitter
+    from lifetimes.estimation import BetaGeoFitter
     from lifetimes.utils import summary_data_from_transaction_data
 
     transactions_A = pd.DataFrame([
@@ -30,7 +30,7 @@ Measuring customer lifetime value is hard. Lifetimes makes it easy.
     data_B = summary_data_from_transaction_data(transactions_B, 'id', 'date')
 
 
-    bgf = BGNBDFitter()
+    bgf = BetaGeoFitter()
     bgf.fit(data_A['frequency'], data_A['recency'], data_A['cohort'])
     ax = bgf.plot(label='group A')
 

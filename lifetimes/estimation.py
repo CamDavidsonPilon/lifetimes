@@ -19,7 +19,7 @@ class BaseFitter():
         return s
 
 
-class BGNBDFitter(BaseFitter):
+class BetaGeoFitter(BaseFitter):
 
     """
 
@@ -42,9 +42,10 @@ class BGNBDFitter(BaseFitter):
         recency = np.asarray(recency)
         cohort = np.asarray(cohort)
 
-        params_init = np.ones(4)
-        params = minimize(self._negative_log_likelihood, method='Nelder-Mead',
-                          x0=params_init, args=(frequency, recency, cohort), options={'disp': False}).x
+        params_init = 0.1 * np.random.randn(4) + 1
+        output = minimize(self._negative_log_likelihood, method='Powell', tol=1e-8,
+                          x0=params_init, args=(frequency, recency, cohort), options={'disp': False})
+        params = output.x
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
@@ -83,7 +84,7 @@ class BGNBDFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params()
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
-        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
+        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r) + 1
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, x, t_x, T):
         """
