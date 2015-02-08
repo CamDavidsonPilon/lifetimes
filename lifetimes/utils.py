@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 
 
-def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col,
+def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, format=None,
                                        observation_period_end=datetime.today(), freq='D'):
     """
     This transform transaction data of the form:
@@ -24,8 +24,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     def to_floating_freq(x):
         return x.astype(freq_string).astype(float)
 
-    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col])
-    observation_period_end = pd.to_datetime(observation_period_end)
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=format)
+    observation_period_end = pd.to_datetime(observation_period_end, format=format)
 
     customers = transactions.groupby(customer_id_col)[datetime_col].agg(['max', 'min', 'count'])
 

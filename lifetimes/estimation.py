@@ -119,3 +119,16 @@ class BetaGeoFitter(BaseFitter):
 
         ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), **kwargs)
         return ax
+
+    def conditional_probability_alive(self, x, t_x, T):
+        """
+        Compute the probability that a customer with history (x, t_x, T) is currently 
+        alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
+
+        """
+        r, alpha, a, b = self._unload_params()
+
+        return 1./(1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
+
+
+

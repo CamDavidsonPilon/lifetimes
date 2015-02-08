@@ -50,3 +50,10 @@ class TestBetaGammaFitter():
         expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576]) + 1
         actual = bfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_array_almost_equal(actual, expected, decimal=3) 
+
+    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self, cdnow_customers):
+        bfg = estimation.BetaGeoFitter()
+        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+
+        assert bfg.conditional_probability_alive(0, 1, 1) == 1.0
+
