@@ -39,16 +39,17 @@ class BetaGeoFitter(BaseFitter):
 
     """
 
-    def fit(self, frequency, recency, cohort):
+    def fit(self, frequency, recency, cohort, fit_method='Powell'):
 
         frequency = np.asarray(frequency)
         recency = np.asarray(recency)
         cohort = np.asarray(cohort)
 
         params_init = 0.1 * np.random.randn(4) + 1
-        output = minimize(self._negative_log_likelihood, method='Powell', tol=1e-8,
+        output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-8,
                           x0=params_init, args=(frequency, recency, cohort), options={'disp': False})
         params = output.x
+        neg_log_likelihood = output.fun
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
@@ -67,9 +68,10 @@ class BetaGeoFitter(BaseFitter):
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
         A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
         A_3 = -(r + freq) * log(alpha + T)
-        A_4 = np.nan_to_num(log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha))
+
         d = (freq > 0)
-        A_4 = A_4 * d
+        A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
+        A_4[np.isnan(A_4)] = 0
         return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4)))
 
     def _unload_params(self):

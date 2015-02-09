@@ -23,9 +23,6 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     transactions = transactions.copy()
     freq_string = 'timedelta64[%s]' % freq
 
-    def to_floating_freq(x):
-        return x.astype(freq_string).astype(float)
-
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=format)
     observation_period_end = pd.to_datetime(observation_period_end, format=format)
 
@@ -33,6 +30,9 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
+
+    def to_floating_freq(x):
+        return x.astype(freq_string).astype(float)
 
     customers['cohort'] = (observation_period_end - customers['min']).map(to_floating_freq)
     customers['recency'] = (observation_period_end - customers['max']).map(to_floating_freq)

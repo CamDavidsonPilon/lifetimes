@@ -9,6 +9,7 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
     from lifetimes.estimation import BetaGeoFitter
     from lifetimes.utils import summary_data_from_transaction_data
 
+    # transactions representing customers' shopping history.
     transactions_A = pd.DataFrame([
         {'id': 1, 'date': '2015-01-01'},
         {'id': 1, 'date': '2015-01-05'},
