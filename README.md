@@ -1,6 +1,7 @@
-# Lifetimes
+lifetimes
+======================
 
-Measuring customer lifetime value is hard. Lifetimes makes it easy. 
+Measuring customer lifetime value is hard. *lifetimes* makes it easy. 
 
 ## Quickstart
     
