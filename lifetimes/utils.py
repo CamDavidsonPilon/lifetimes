@@ -2,6 +2,8 @@
 from datetime import datetime
 import pandas as pd
 
+def coalesce(*args):
+    return next(s for s in args if s is not None)
 
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, format=None,
                                        observation_period_end=datetime.today(), freq='D'):

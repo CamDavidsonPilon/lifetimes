@@ -57,3 +57,22 @@ class TestBetaGammaFitter():
 
         assert bfg.conditional_probability_alive(0, 1, 1) == 1.0
 
+
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
+        bfg = estimation.BetaGeoFitter()
+        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+
+        for i in xrange(0, 100, 10):
+            for j in xrange(0, 100, 10):
+                for k in xrange(j, 100, 10):
+                    assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
+
+    def test_plot(self, cdnow_customers):
+        from matplotlib import pyplot as plt 
+
+        bfg = estimation.BetaGeoFitter()
+        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        bfg.plot()
+        plt.title('test_plot')
+        plt.show()
+

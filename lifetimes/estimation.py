@@ -2,10 +2,13 @@ from __future__ import print_function
 
 
 import numpy as np
+from numpy import log, exp
 import pandas as pd
 
 from scipy.special import gammaln, hyp2f1
 from scipy.optimize import minimize
+
+from lifetimes.utils import coalesce
 
 
 class BaseFitter():
@@ -61,13 +64,13 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = params
 
-        A_1 = gammaln(r + freq) - gammaln(r) + r * np.log(alpha)
+        A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
         A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
-        A_3 = -(r + freq) * np.log(alpha + T)
-        A_4 = np.nan_to_num(np.log(a) - np.log(b + freq - 1) - (r + freq) * np.log(rec + alpha))
+        A_3 = -(r + freq) * log(alpha + T)
+        A_4 = np.nan_to_num(log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha))
         d = (freq > 0)
         A_4 = A_4 * d
-        return -np.sum(A_1 + A_2 + np.log(np.exp(A_3) + d * np.exp(A_4)))
+        return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4)))
 
     def _unload_params(self):
         return self.params_['r'], self.params_['alpha'], self.params_['a'], self.params_['b']
@@ -95,7 +98,7 @@ class BetaGeoFitter(BaseFitter):
             t: a scalar or array of times.
             x: a scalar: historical frequency of customer.
             t_x: a scalar: historical recency of customer.
-            T: ta scalar: cohort of the customer.
+            T: a scalar: cohort of the customer.
 
         Returns: a scalar or array
         """
@@ -114,16 +117,31 @@ class BetaGeoFitter(BaseFitter):
     def _plot(self, **kwargs):
         from matplotlib import pyplot as plt
 
-        max_T = self.data['cohort'].max()
-        times = np.linspace(0, max_T, 100)
+        ax = plt.subplot(111)
+        color_cycle = ax._get_lines.color_cycle
 
-        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), **kwargs)
+        color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
+        max_T = self.data['cohort'].max()
+
+        times = np.linspace(0, max_T, 100)
+        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, **kwargs)
+
+        times = np.linspace(max_T, 1.5*max_T, 100)
+        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, ls='--', label='Projected', **kwargs)
+
         return ax
 
     def conditional_probability_alive(self, x, t_x, T):
         """
         Compute the probability that a customer with history (x, t_x, T) is currently
         alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
+
+        Parameters:
+            x: a scalar: historical frequency of customer.
+            t_x: a scalar: historical recency of customer.
+            T: a scalar: cohort of the customer.
+
+        Returns: a scalar
 
         """
         r, alpha, a, b = self._unload_params()
