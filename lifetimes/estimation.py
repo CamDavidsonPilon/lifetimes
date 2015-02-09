@@ -120,14 +120,15 @@ class BetaGeoFitter(BaseFitter):
         ax = plt.subplot(111)
         color_cycle = ax._get_lines.color_cycle
 
+        label = kwargs.pop('label', None)
         color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
         max_T = self.data['cohort'].max()
 
         times = np.linspace(0, max_T, 100)
-        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, **kwargs)
+        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
 
         times = np.linspace(max_T, 1.5*max_T, 100)
-        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, ls='--', label='Projected', **kwargs)
+        ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
 
         return ax
 
