@@ -22,8 +22,9 @@ class TestBetaGammaFitter():
         t_x = np.array([2,2])
         t = np.array([5,6])
         params = [1,1,1,1]
-        assert bgf._negative_log_likelihood(params, x[0], t_x[0], t[0]) + bgf._negative_log_likelihood(params, x[1], t_x[1], t[1]) \
-                == bgf._negative_log_likelihood(params, x, t_x, t)
+        assert bgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]])) \
+             + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]])) \
+            == bgf._negative_log_likelihood(params, x, t_x, t)
  
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
@@ -75,4 +76,15 @@ class TestBetaGammaFitter():
         bfg.plot()
         plt.title('test_plot')
         plt.show()
+
+    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
+        bfg1 = estimation.BetaGeoFitter()
+        bfg2 = estimation.BetaGeoFitter()
+
+        np.random.seed(0)
+        bfg1.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+
+        np.random.seed(0)
+        bfg2.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'], iterative_fitting=5)
+        assert bfg1._negative_log_likelihood_ > bfg2._negative_log_likelihood_
 

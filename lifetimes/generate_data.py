@@ -27,6 +27,8 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     lambda_ = stats.gamma.rvs(r, scale=1. / alpha, size=size)
     if type(T) in [float, int]:
         T = T * np.ones(size)
+    else:
+        T = np.asarray(T)
 
     columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
