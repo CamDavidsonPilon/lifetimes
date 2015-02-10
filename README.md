@@ -5,7 +5,7 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
 
 ## Quickstart
     
-Example using transactional data:
+### Example using transactional data:
 
     from matplotlib import pyplot as plt
     from lifetimes.estimation import BetaGeoFitter
@@ -49,7 +49,7 @@ Example using transactional data:
 ![comp](http://i.imgur.com/ME70Qxgl.png)
 
 
-Example to assess model fit:
+### Example to assess model fit
 
     %matplotlib
     import pandas as pd
@@ -61,7 +61,7 @@ Example to assess model fit:
 
     bg.plot_period_transactions()
 
-![model_fit](imgur.com/YDAdDrJl.png)
+![model_fit](http://imgur.com/YDAdDrJl.png)
 
 
 
