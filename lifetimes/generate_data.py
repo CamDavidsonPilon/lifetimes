@@ -22,13 +22,13 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     (http://brucehardie.com/papers/bgnbd_2004-04-20.pdf)
 
     """
-
-    probability_of_post_purchase_death = stats.beta.rvs(a, b, size=size)
-    lambda_ = stats.gamma.rvs(r, scale=1. / alpha, size=size)
     if type(T) in [float, int]:
         T = T * np.ones(size)
     else:
         T = np.asarray(T)
+
+    probability_of_post_purchase_death = stats.beta.rvs(a, b, size=size)
+    lambda_ = stats.gamma.rvs(r, scale=1. / alpha, size=size)
 
     columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
@@ -37,8 +37,8 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         p = probability_of_post_purchase_death[i]
         l = lambda_[i]
         churn = stats.geom.rvs(p)
-        times = np.cumsum(np.r_[[0], stats.expon.rvs(scale=1. / l, size=churn)])
+        times = np.cumsum(stats.expon.rvs(scale=1. / l, size=churn))
         t_cal = times[times < T[i]]
-        df.ix[i] = len(t_cal) - 1,  max(t_cal), T[i], l, p, churn > len(t_cal) - 1, i
+        df.ix[i] = len(t_cal),  np.max(t_cal if t_cal.shape[0] > 0 else 0), T[i], l, p, churn > len(t_cal), i
 
     return df.set_index('customer_id')
