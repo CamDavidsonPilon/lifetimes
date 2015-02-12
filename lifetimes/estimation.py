@@ -41,15 +41,15 @@ class BetaGeoFitter(BaseFitter):
 
     def fit(self, frequency, recency, cohort, iterative_fitting=1):
         """
-        This methods fits the data to the BG/NBD model. 
+        This methods fits the data to the BG/NBD model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             cohort: the cohort vector of customers' purchases (denoted T in literature).
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best 
-                parameters for the model. Setting to 0 will improve peformance but possibly 
-                hurt estimates. 
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve peformance but possibly
+                hurt estimates.
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -58,7 +58,7 @@ class BetaGeoFitter(BaseFitter):
         frequency = np.asarray(frequency)
         recency = np.asarray(recency)
         cohort = np.asarray(cohort)
-        
+
         params, self._negative_log_likelihood_ = self._fit(frequency, recency, cohort, iterative_fitting)
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
@@ -67,14 +67,13 @@ class BetaGeoFitter(BaseFitter):
         self.plot_period_transactions = self._plot_period_transactions
         return self
 
-
     def _fit(self, frequency, recency, cohort, iterative_fitting):
         ll = []
         sols = []
         methods = ['Powell', 'Nelder-Mead']
 
         for i in range(iterative_fitting + 1):
-            fit_method = methods[i%len(methods)]
+            fit_method = methods[i % len(methods)]
             params_init = np.random.exponential(1, size=4)
             output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-8,
                               x0=params_init, args=(frequency, recency, cohort), options={'disp': False})
@@ -157,7 +156,7 @@ class BetaGeoFitter(BaseFitter):
         times = np.linspace(0, max_T, 100)
         ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
 
-        times = np.linspace(max_T, 1.5*max_T, 100)
+        times = np.linspace(max_T, 1.5 * max_T, 100)
         ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
 
         return ax
@@ -179,7 +178,6 @@ class BetaGeoFitter(BaseFitter):
 
         return 1. / (1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
 
-
     def _plot_period_transactions(self, **kwargs):
         from lifetimes.generate_data import beta_geometric_nbd_model
         from matplotlib import pyplot as plt
@@ -191,10 +189,10 @@ class BetaGeoFitter(BaseFitter):
         n = self.data.shape[0]
         simulated_data = beta_geometric_nbd_model(self.data['cohort'], r, alpha, a, b, size=n)
 
-        ax = plt.hist(np.c_[self.data['frequency'].values, simulated_data['frequency'].values], 
+        ax = plt.hist(np.c_[self.data['frequency'].values, simulated_data['frequency'].values],
                       bins=bins, label=labels)
         plt.legend()
-        plt.xticks(np.arange(len(bins))[:-1]+0.5, bins[:-1])
+        plt.xticks(np.arange(len(bins))[:-1] + 0.5, bins[:-1])
         plt.title('Frequency of Repeat Transactions')
         plt.ylabel('Customers')
         plt.xlabel('Calibration Period Transactions')
