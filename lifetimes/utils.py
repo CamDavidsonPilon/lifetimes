@@ -36,4 +36,9 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     customers['cohort'] = (observation_period_end - customers['min']).map(to_floating_freq)
     customers['recency'] = (observation_period_end - customers['max']).map(to_floating_freq)
+    
+    # according to Hardie and Fader this is by definition. 
+    # http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
+    customers['recency'].ix[customers['frequency'] == 0] = 0 
+
     return customers[['frequency', 'recency', 'cohort']].astype(float)
