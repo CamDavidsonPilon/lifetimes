@@ -17,6 +17,24 @@ def transaction_level_data():
     ]
     return pd.DataFrame(d, columns=['id', 'date'])
 
+@pytest.fixture()
+def large_transaction_level_data():
+    d = [
+            [1, '2015-01-01'],
+            [1, '2015-02-06'],
+            [2, '2015-01-01'],
+            [3, '2015-01-01'],
+            [3, '2015-01-02'],
+            [3, '2015-01-05'],
+            [4, '2015-01-16'],
+            [4, '2015-02-02'],
+            [4, '2015-02-05'],
+            [5, '2015-01-16'],
+            [5, '2015-01-17'],
+            [5, '2015-01-18'],
+            [6, '2015-02-02'],
+    ]
+    return pd.DataFrame(d, columns=['id', 'date'])
 
 def test_summary_data_from_transaction_data_returns_correct_results(transaction_level_data):
     today = '2015-02-07'
@@ -43,3 +61,15 @@ def test_summary_data_from_transaction_data_converts_no_repeat_purchases_to_have
     assert actual.ix[2]['frequency'] == 0
     assert actual.ix[2]['recency'] == 0
 
+
+def test_calibration_and_holdout_data(large_transaction_level_data):
+    today = '2015-02-07'
+    calibration_end = '2015-02-01'
+    actual = utils.calibration_and_holdout_data(large_transaction_level_data, 'id', 'date', calibration_end, observation_period_end=today)
+    assert actual.ix[1]['frequency_holdout'] == 1
+    assert actual.ix[2]['frequency_holdout'] == 0
+
+    with pytest.raises(KeyError):
+        actual.ix[6] 
+
+    
