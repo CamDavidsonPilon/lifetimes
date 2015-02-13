@@ -10,6 +10,7 @@ from scipy.optimize import minimize
 
 from lifetimes.utils import coalesce
 
+__all__ = ['BetaGeoFitter']
 
 class BaseFitter():
 
@@ -39,6 +40,9 @@ class BetaGeoFitter(BaseFitter):
 
     """
 
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
     def fit(self, frequency, recency, cohort, iterative_fitting=1):
         """
         This methods fits the data to the BG/NBD model.
@@ -59,7 +63,7 @@ class BetaGeoFitter(BaseFitter):
         recency = np.asarray(recency)
         cohort = np.asarray(cohort)
 
-        params, self._negative_log_likelihood_ = self._fit(frequency, recency, cohort, iterative_fitting)
+        params, self._negative_log_likelihood_ = self._fit(frequency, recency, cohort, iterative_fitting, self.penalizer_coef)
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
@@ -67,16 +71,16 @@ class BetaGeoFitter(BaseFitter):
         self.plot_period_transactions = self._plot_period_transactions
         return self
 
-    def _fit(self, frequency, recency, cohort, iterative_fitting):
+    def _fit(self, frequency, recency, cohort, iterative_fitting, penalizer_coef):
         ll = []
         sols = []
         methods = ['Powell', 'Nelder-Mead']
 
         for i in range(iterative_fitting + 1):
             fit_method = methods[i % len(methods)]
-            params_init = np.random.exponential(1, size=4)
+            params_init = np.random.exponential(0.5, size=4)
             output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-8,
-                              x0=params_init, args=(frequency, recency, cohort), options={'disp': False})
+                              x0=params_init, args=(frequency, recency, cohort, penalizer_coef), options={'disp': False})
             ll.append(output.fun)
             sols.append(output.x)
 
@@ -84,7 +88,7 @@ class BetaGeoFitter(BaseFitter):
         return params, np.min(ll)
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T):
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
         np.seterr(divide='ignore')
 
         if np.any(params <= 0):
@@ -99,7 +103,8 @@ class BetaGeoFitter(BaseFitter):
         d = (freq > 0)
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
         A_4[np.isnan(A_4)] = 0
-        return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4)))
+        penalizer_term =  penalizer_coef*np.log(params).sum()
+        return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
 
     def _unload_params(self):
         return self.params_['r'], self.params_['alpha'], self.params_['a'], self.params_['b']

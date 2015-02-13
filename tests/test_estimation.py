@@ -22,9 +22,9 @@ class TestBetaGammaFitter():
         t_x = np.array([2,2])
         t = np.array([5,6])
         params = [1,1,1,1]
-        assert bgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]])) \
-             + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]])) \
-            == bgf._negative_log_likelihood(params, x, t_x, t)
+        assert bgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
+             + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
+            == bgf._negative_log_likelihood(params, x, t_x, t, 0)
  
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
@@ -86,5 +86,24 @@ class TestBetaGammaFitter():
 
         np.random.seed(0)
         bfg2.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'], iterative_fitting=5)
-        assert bfg1._negative_log_likelihood_ > bfg2._negative_log_likelihood_
+        assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
+
+
+    def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
+        bfg_no_penalizer = estimation.BetaGeoFitter()
+        bfg_no_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        params_1 = np.array(bfg_no_penalizer.params_.values())
+
+        bfg_with_penalizer = estimation.BetaGeoFitter(penalizer_coef=0.1)
+        bfg_with_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        params_2 = np.array(bfg_with_penalizer.params_.values())
+        assert np.all(params_2 < params_1)
+
+        bfg_with_more_penalizer = estimation.BetaGeoFitter(penalizer_coef=10)
+        bfg_with_more_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        params_3 = np.array(bfg_with_more_penalizer.params_.values())
+        assert np.all(params_3 < params_2)
+
+
+
 
