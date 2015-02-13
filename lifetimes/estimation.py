@@ -12,6 +12,7 @@ from lifetimes.utils import coalesce
 
 __all__ = ['BetaGeoFitter']
 
+
 class BaseFitter():
 
     def __repr__(self):
@@ -103,7 +104,7 @@ class BetaGeoFitter(BaseFitter):
         d = (freq > 0)
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
         A_4[np.isnan(A_4)] = 0
-        penalizer_term =  penalizer_coef*np.log(params).sum()
+        penalizer_term = penalizer_coef * np.log(params).sum()
         return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
 
     def _unload_params(self):

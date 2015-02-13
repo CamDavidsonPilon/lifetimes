@@ -1,5 +1,5 @@
-# utils.py
 from datetime import datetime
+
 import numpy as np
 import pandas as pd
 
@@ -39,7 +39,6 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
     calibration_period_end = pd.to_datetime(calibration_period_end, format=datetime_format)
-    delta_time = to_floating_freq(np.timedelta64(observation_period_end - calibration_period_end), freq_string)
 
     calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
     holdout_transactions = transactions.ix[transactions[datetime_col] > calibration_period_end]
@@ -50,6 +49,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     holdout_summary_data = summary_data_from_transaction_data(holdout_transactions, customer_id_col, datetime_col,
                                                               datetime_format, observation_period_end=observation_period_end, freq=freq)
 
+    delta_time = to_floating_freq(np.timedelta64(observation_period_end - calibration_period_end), freq_string)
     holdout_summary_data['cohort'] = delta_time
     holdout_summary_data['frequency'] += 1
 
@@ -90,7 +90,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     customers['cohort'] = (observation_period_end - customers['min']).map(lambda r: to_floating_freq(r, freq_string))
     customers['recency'] = (observation_period_end - customers['max']).map(lambda r: to_floating_freq(r, freq_string))
-    
+
     # according to Hardie and Fader this is by definition.
     # http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
     customers['recency'].ix[customers['frequency'] == 0] = 0
