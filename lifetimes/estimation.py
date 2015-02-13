@@ -39,6 +39,13 @@ class BetaGeoFitter(BaseFitter):
         "Counting Your Customers the Easy Way: An Alternative to the
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
+    Example:
+
+        bg = BetaGeoFitter(penalizer_coef=0.5) # highly recommended to use a penalizer_coef
+        bg.fit(summary['frequency'], summary['recency'], summary['cohort'])
+        bg.plot()
+
+
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -85,8 +92,8 @@ class BetaGeoFitter(BaseFitter):
             ll.append(output.fun)
             sols.append(output.x)
 
-        params = sols[np.argmin(ll)]
-        return params, np.min(ll)
+        minimizing_params = sols[np.argmin(ll)]
+        return minimizing_params, np.min(ll)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -113,7 +120,7 @@ class BetaGeoFitter(BaseFitter):
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
-        Calculate the expected number of purchases up to time t for a randomly choose individual from
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population.
 
         Parameters:
@@ -123,11 +130,11 @@ class BetaGeoFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params()
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
-        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r) + 1
+        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, x, t_x, T):
         """
-        Calculate the expected number of purchases up to time t for a randomly choose individual from
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population, given they have purchase history (x, t_x, T)
 
         Parameters:
@@ -166,6 +173,8 @@ class BetaGeoFitter(BaseFitter):
         times = np.linspace(max_T, 1.5 * max_T, 100)
         ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
 
+        plt.title('Expected Number of Repeat Purchases per Customer')
+        plt.xlabel('Time Since First Purchase')
         return ax
 
     def conditional_probability_alive(self, x, t_x, T):
@@ -202,5 +211,5 @@ class BetaGeoFitter(BaseFitter):
         plt.xticks(np.arange(len(bins))[:-1] + 0.5, bins[:-1])
         plt.title('Frequency of Repeat Transactions')
         plt.ylabel('Customers')
-        plt.xlabel('Calibration Period Transactions')
+        plt.xlabel('Number of Calibration Period Transactions')
         return ax
