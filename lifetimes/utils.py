@@ -5,6 +5,8 @@ import pandas as pd
 
 pd.options.mode.chained_assignment = None
 
+__all__ = ['coalesce', 'calibration_and_holdout_data', 'summary_data_from_transaction_data']
+
 
 def coalesce(*args):
     return next(s for s in args if s is not None)
@@ -50,9 +52,9 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     holdout_summary_data['cohort'] = delta_time
     holdout_summary_data['frequency'] += 1
-    del holdout_summary_data['recency']
 
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left', rsuffix='_holdout', lsuffix='_cal')
+    del combined_data['recency_holdout']
     combined_data['frequency_holdout'].fillna(0, inplace=True)
     combined_data['cohort_holdout'] = delta_time
 
@@ -79,6 +81,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
+    transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
 
     customers = transactions.groupby(customer_id_col)[datetime_col].agg(['max', 'min', 'count'])
 
@@ -87,7 +90,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     customers['cohort'] = (observation_period_end - customers['min']).map(lambda r: to_floating_freq(r, freq_string))
     customers['recency'] = (observation_period_end - customers['max']).map(lambda r: to_floating_freq(r, freq_string))
-
+    
     # according to Hardie and Fader this is by definition.
     # http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
     customers['recency'].ix[customers['frequency'] == 0] = 0

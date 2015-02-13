@@ -48,7 +48,7 @@ def test_summary_data_from_transaction_data_with_specific_datetime_format(transa
     transaction_level_data['date'] = transaction_level_data['date'].map(lambda x: x.replace('-',''))
     format = '%Y%m%d'
     today = '20150207'
-    actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today, format=format)
+    actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today, datetime_format=format)
     expected = pd.DataFrame([[1, 1., 1., 6.],
                              [2, 0., 0., 37.],
                              [3, 2., 33., 37.]], columns=['id', 'frequency', 'recency', 'cohort']).set_index('id')
@@ -72,4 +72,9 @@ def test_calibration_and_holdout_data(large_transaction_level_data):
     with pytest.raises(KeyError):
         actual.ix[6] 
 
-    
+def test_columns_returned_from_calibration_and_holdout_data(large_transaction_level_data):
+    today = '2015-02-07'
+    calibration_end = '2015-02-01'
+    actual = utils.calibration_and_holdout_data(large_transaction_level_data, 'id', 'date', calibration_end, observation_period_end=today)
+    assert sorted(list(actual.columns)) == ['cohort_cal', 'cohort_holdout', 'frequency_cal', 'frequency_holdout', 'recency_cal']
+
