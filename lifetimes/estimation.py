@@ -234,7 +234,7 @@ class BetaGeoFitter(BaseFitter):
         ax = plt.imshow(Z, interpolation=interpolation, **kwargs)
         plt.xlabel("Customer's Historical Frequency")
         plt.ylabel("Customer's Recency")
-        plt.title('Expected Number of Future Purchases,\nby Frequency and Recency of a Customer')
+        plt.title('Expected Number of Future Purchases over %.0f time,\nby Frequency and Recency of a Customer'%t)
         plt.colorbar()
         return ax
 

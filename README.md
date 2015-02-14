@@ -39,19 +39,19 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
 
     bgf = BetaGeoFitter()
     bgf.fit(data_A['frequency'], data_A['recency'], data_A['cohort'])
-    ax = bgf.plot(label='group A')
+    ax = bgf.plot_expected_repeat_purchases(label='group A')
 
     bgf.fit(data_B['frequency'], data_B['recency'], data_B['cohort'])
-    ax = bgf.plot(label='group B')
+    ax = bgf.plot_expected_repeat_purchases(label='group B')
     plt.legend(loc='lower right')
 
 
-![comp](http://i.imgur.com/ME70Qxgl.png)
+![comp](http://i.imgur.com/F88WX61l.png)
 
 
 ### Example to assess model fit
 
-    %matplotlib
+    from matplotlib import pyplot as plt
     import pandas as pd
     from lifetimes.estimation import BetaGeoFitter
 
@@ -63,6 +63,11 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
 
 ![model_fit](http://imgur.com/YDAdDrJl.png)
 
+    #continuing from the last code cell.
 
+    bg.plot_frequency_recency_matrix(t=10)
+
+
+![matrix](http://i.imgur.com/UDQ0oMdl.png)
 
 
