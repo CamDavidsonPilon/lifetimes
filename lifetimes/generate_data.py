@@ -33,7 +33,7 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
-    for i in xrange(size):
+    for i in range(size):
         p = probability_of_post_purchase_death[i]
         l = lambda_[i]
         churn = stats.geom.rvs(p)
