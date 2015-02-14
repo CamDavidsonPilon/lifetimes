@@ -63,6 +63,8 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
 
 ![model_fit](http://imgur.com/gcf4Alsl.png)
 
+### Example to find best customers
+
     #continuing from the last code cell.
 
     # plot a matrix representing a "health metric" of customers
