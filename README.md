@@ -46,7 +46,7 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
     plt.legend(loc='lower right')
 
 
-![comp](http://i.imgur.com/F88WX61l.png)
+![comp](http://imgur.com/l73FMmbl.png)
 
 
 ### Example to assess model fit
@@ -61,10 +61,11 @@ Measuring customer lifetime value is hard. *lifetimes* makes it easy.
 
     bg.plot_period_transactions()
 
-![model_fit](http://imgur.com/YDAdDrJl.png)
+![model_fit](http://imgur.com/gcf4Alsl.png)
 
     #continuing from the last code cell.
 
+    # plot a matrix representing a "health metric" of customers
     bg.plot_frequency_recency_matrix(t=10)
 
 
