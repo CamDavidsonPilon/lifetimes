@@ -1,6 +1,8 @@
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
 
 pd.options.mode.chained_assignment = None
 
@@ -104,3 +106,20 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     customers['recency'] = (customers['max'] - customers['min'])
 
     return customers[['frequency', 'recency', 'cohort']].astype(float)
+
+
+def _fit(minimizing_function, frequency, recency, cohort, iterative_fitting, penalizer_coef):
+    ll = []
+    sols = []
+    methods = ['Powell', 'Nelder-Mead']
+
+    for i in range(iterative_fitting + 1):
+        fit_method = methods[i % len(methods)]
+        params_init = np.random.exponential(0.5, size=4)
+        output = minimize(minimizing_function, method=fit_method, tol=1e-8,
+                          x0=params_init, args=(frequency, recency, cohort, penalizer_coef), options={'disp': False})
+        ll.append(output.fun)
+        sols.append(output.x)
+
+    minimizing_params = sols[np.argmin(ll)]
+    return minimizing_params, np.min(ll)

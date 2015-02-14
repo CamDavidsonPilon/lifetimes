@@ -43,12 +43,12 @@ class TestBetaGammaFitter():
         actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
         assert abs(expected - actual) < 0.001
 
-    def test_expecatation_returns_same_value_minus_one_as_Hardie_excel_sheet(self, cdnow_customers):
+    def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
-        expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576]) + 1
+        expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576])
         actual = bfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_array_almost_equal(actual, expected, decimal=3) 
 
@@ -73,7 +73,7 @@ class TestBetaGammaFitter():
 
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
-        bfg.plot()
+        bfg.plot_expected_repeat_purchases()
         plt.title('test_plot')
         plt.show()
 

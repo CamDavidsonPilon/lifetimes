@@ -5,10 +5,9 @@ import numpy as np
 from numpy import log, exp
 import pandas as pd
 
-from scipy.special import gammaln, hyp2f1
-from scipy.optimize import minimize
+from scipy.special import gammaln, hyp2f1, beta, gamma
 
-from lifetimes.utils import coalesce
+from lifetimes.utils import coalesce, _fit
 
 __all__ = ['BetaGeoFitter']
 
@@ -33,7 +32,7 @@ class BetaGeoFitter(BaseFitter):
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution respectively.
     3) Individuals purchases follow a Poisson process with rate lambda_i*t .
-    4) After each purchase, an individual has a p_i probablity of dieing (never buying again).
+    4) After each purchase, an individual has a p_i probability of dieing (never buying again).
 
     [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
         "Counting Your Customers the Easy Way: An Alternative to the
@@ -41,7 +40,7 @@ class BetaGeoFitter(BaseFitter):
 
     Example:
 
-        bg = BetaGeoFitter(penalizer_coef=0.5) # highly recommended to use a penalizer_coef
+        bg = BetaGeoFitter()
         bg.fit(summary['frequency'], summary['recency'], summary['cohort'])
         bg.plot()
 
@@ -71,29 +70,17 @@ class BetaGeoFitter(BaseFitter):
         recency = np.asarray(recency)
         cohort = np.asarray(cohort)
 
-        params, self._negative_log_likelihood_ = self._fit(frequency, recency, cohort, iterative_fitting, self.penalizer_coef)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, cohort, iterative_fitting, self.penalizer_coef)
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
-        self.plot = self._plot
+
+        # stick on the plotting methods
+        self.plot_expected_repeat_purchases = self._plot_expected_repeat_purchases
         self.plot_period_transactions = self._plot_period_transactions
+        self.plot_calibration_purchases_vs_holdout_purchases = self._plot_calibration_purchases_vs_holdout_purchases
+        self.plot_frequency_recency_matrix = self._plot_frequency_recency_matrix
         return self
-
-    def _fit(self, frequency, recency, cohort, iterative_fitting, penalizer_coef):
-        ll = []
-        sols = []
-        methods = ['Powell', 'Nelder-Mead']
-
-        for i in range(iterative_fitting + 1):
-            fit_method = methods[i % len(methods)]
-            params_init = np.random.exponential(0.5, size=4)
-            output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-8,
-                              x0=params_init, args=(frequency, recency, cohort, penalizer_coef), options={'disp': False})
-            ll.append(output.fun)
-            sols.append(output.x)
-
-        minimizing_params = sols[np.argmin(ll)]
-        return minimizing_params, np.min(ll)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -103,7 +90,6 @@ class BetaGeoFitter(BaseFitter):
             return np.inf
 
         r, alpha, a, b = params
-        n = freq.shape[0]
 
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
         A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
@@ -112,7 +98,7 @@ class BetaGeoFitter(BaseFitter):
         d = (freq > 0)
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
         A_4[np.isnan(A_4)] = 0
-        penalizer_term = n * penalizer_coef * np.log(params).sum()
+        penalizer_term = penalizer_coef * np.log(params).sum()
         return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
 
     def _unload_params(self):
@@ -157,7 +143,7 @@ class BetaGeoFitter(BaseFitter):
 
         return numerator / denominator
 
-    def _plot(self, **kwargs):
+    def _plot_expected_repeat_purchases(self, **kwargs):
         from matplotlib import pyplot as plt
 
         ax = plt.subplot(111)
@@ -213,3 +199,64 @@ class BetaGeoFitter(BaseFitter):
         plt.ylabel('Customers')
         plt.xlabel('Number of Calibration Period Transactions')
         return ax
+
+    def _plot_calibration_purchases_vs_holdout_purchases(self, calibration_holdout_matrix, n=7):
+        """
+        This currently relies too much on the lifetimes.util calibration_and_holdout_data function. 
+
+        """
+
+        from matplotlib import pyplot as plt
+
+        summary = calibration_hold_matrix.copy()
+        T = summary.iloc[0]['cohort_holdout']
+
+        summary['model'] = summary.apply(lambda r: self.conditional_expected_number_of_purchases_up_to_time(T, r['frequency_cal'], r['recency_cal'], r['cohort_cal']), axis=1)
+        
+        ax = summary.groupby('frequency_cal')[['frequency_holdout', 'model']].mean().ix[:n].plot()
+
+        plt.title('Actual Purchases in Holdout Period vs Predicted Purchases')
+        plt.xlabel('Puchases in Calibration Period')
+        plt.ylabel('Average of Purchases in Holdout Period')
+        plt.legend()
+
+        return ax
+
+    def _plot_frequency_recency_matrix(self, t, max_x=30, max_t=30, **kwargs):
+        from matplotlib import pyplot as plt
+
+        Z = np.zeros((max_t, max_x))
+        for i, t_x in enumerate(np.arange(max_t)):
+            for j, x in enumerate(np.arange(max_x)):
+                Z[i,j] = self.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
+
+        interpolation = kwargs.pop('interpolation', 'none')
+        ax = plt.imshow(Z, interpolation=interpolation, **kwargs)
+        plt.xlabel("Customer's Historical Frequency")
+        plt.ylabel("Customer's Recency")
+        plt.title('Expected Number of Future Purchases,\nby Frequency and Recency of a Customer')
+        plt.colorbar()
+        return ax
+
+    def probability_of_purchases_up_to_time(self, t, number_of_purchases):
+        """
+        Compute the probability of 
+
+        P(X(t) = x | model)
+
+        where X(t) is the number of repeat purchases a customer makes in t units of time. 
+        """
+
+        r, alpha, a, b = self._unload_params()
+
+        x = number_of_purchases
+        first_term = beta(a, b + x)/beta(a,b)*gamma(r+x)/gamma(r)/gamma(x+1)*(alpha/(alpha+t))**r * (t/(alpha+t))**x
+        if x > 0:
+            finite_sum = np.sum([gamma(r+j)/gamma(r)/gamma(j+1)*(t/(alpha+t))**j for j in range(0, x)]) 
+            second_term = beta(a+1, b+x-1)/beta(a,b)*(1 - (alpha/(alpha + t))**r*finite_sum)
+        else:
+            second_term = 0
+        return first_term + second_term
+
+
+
