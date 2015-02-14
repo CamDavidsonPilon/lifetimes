@@ -10,7 +10,7 @@ import lifetimes.estimation as estimation
 
 @pytest.fixture()
 def cdnow_customers():
-    return pd.read_csv('lifetimes/datasets/cdnow_customers.csv', sep='\s+', index_col=[0])
+    return pd.read_csv('lifetimes/datasets/cdnow_customers.csv', index_col=[0])
 
 
 
@@ -30,7 +30,7 @@ class TestBetaGammaFitter():
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
         expected = np.array([0.243, 4.414, 0.793, 2.426])
-        npt.assert_array_almost_equal(expected, np.array(bfg._unload_params()), decimal=3)
+        npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
     def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheeet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
@@ -68,13 +68,20 @@ class TestBetaGammaFitter():
                 for k in xrange(j, 100, 10):
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
 
-    def test_plot(self, cdnow_customers):
+    def test_plots(self, cdnow_customers):
         from matplotlib import pyplot as plt 
 
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        
+        plt.figure()
         bfg.plot_expected_repeat_purchases()
-        plt.title('test_plot')
+
+        plt.figure()
+        bfg.plot_period_transactions()
+
+        plt.figure()
+        bfg.plot_frequency_recency_matrix()
         plt.show()
 
     def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):

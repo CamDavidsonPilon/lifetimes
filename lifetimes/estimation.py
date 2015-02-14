@@ -143,7 +143,6 @@ class BetaGeoFitter(BaseFitter):
 
     def _plot_expected_repeat_purchases(self, **kwargs):
         from matplotlib import pyplot as plt
-
         ax = plt.subplot(111)
         color_cycle = ax._get_lines.color_cycle
 
@@ -229,10 +228,10 @@ class BetaGeoFitter(BaseFitter):
         from .plotting import forceAspect
 
         if max_x is None:
-            max_x = self.data['frequency'].max()
+            max_x = int(self.data['frequency'].max())
 
         if max_t is None:
-            max_t = self.data['cohort'].max()
+            max_t = int(self.data['cohort'].max())
 
         t = 1 # one unit of time
         Z = np.zeros((max_t, max_x))
@@ -242,8 +241,7 @@ class BetaGeoFitter(BaseFitter):
 
         interpolation = kwargs.pop('interpolation', 'none')
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        ax = plt.subplot(111)
         ax.imshow(Z, interpolation=interpolation, **kwargs)
         plt.xlabel("Customer's Historical Frequency")
         plt.ylabel("Customer's Recency")
