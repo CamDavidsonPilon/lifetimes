@@ -22,6 +22,9 @@ class BaseFitter():
             s = """<lifetimes.%s>""" % classname
         return s
 
+    def _unload_params(self, *args):
+        return [self.params_[x] for x in args]
+
 
 class BetaGeoFitter(BaseFitter):
 
@@ -38,17 +41,11 @@ class BetaGeoFitter(BaseFitter):
         "Counting Your Customers the Easy Way: An Alternative to the
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
-    Example:
-
-        bg = BetaGeoFitter()
-        bg.fit(summary['frequency'], summary['recency'], summary['cohort'])
-        bg.plot()
-
-
     """
 
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
+
 
     def fit(self, frequency, recency, cohort, iterative_fitting=1):
         """
@@ -82,6 +79,7 @@ class BetaGeoFitter(BaseFitter):
         self.plot_frequency_recency_matrix = self._plot_frequency_recency_matrix
         return self
 
+
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
         np.seterr(divide='ignore')
@@ -101,8 +99,6 @@ class BetaGeoFitter(BaseFitter):
         penalizer_term = penalizer_coef * np.log(params).sum()
         return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
 
-    def _unload_params(self):
-        return self.params_['r'], self.params_['alpha'], self.params_['a'], self.params_['b']
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
@@ -114,9 +110,10 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        r, alpha, a, b = self._unload_params()
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
+
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, x, t_x, T):
         """
@@ -132,7 +129,7 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar or array
         """
 
-        r, alpha, a, b = self._unload_params()
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
         first_term = (a + b + x - 1) / (a - 1)
@@ -142,6 +139,7 @@ class BetaGeoFitter(BaseFitter):
         denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x)
 
         return numerator / denominator
+
 
     def _plot_expected_repeat_purchases(self, **kwargs):
         from matplotlib import pyplot as plt
@@ -163,6 +161,7 @@ class BetaGeoFitter(BaseFitter):
         plt.xlabel('Time Since First Purchase')
         return ax
 
+
     def conditional_probability_alive(self, x, t_x, T):
         """
         Compute the probability that a customer with history (x, t_x, T) is currently
@@ -176,9 +175,10 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar
 
         """
-        r, alpha, a, b = self._unload_params()
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         return 1. / (1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
+
 
     def _plot_period_transactions(self, **kwargs):
         from lifetimes.generate_data import beta_geometric_nbd_model
@@ -187,7 +187,7 @@ class BetaGeoFitter(BaseFitter):
         bins = kwargs.pop('bins', range(9))
         labels = kwargs.pop('label', ['Actual', 'Model'])
 
-        r, alpha, a, b = self._unload_params()
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         n = self.data.shape[0]
         simulated_data = beta_geometric_nbd_model(self.data['cohort'], r, alpha, a, b, size=n)
 
@@ -199,6 +199,7 @@ class BetaGeoFitter(BaseFitter):
         plt.ylabel('Customers')
         plt.xlabel('Number of Calibration Period Transactions')
         return ax
+
 
     def _plot_calibration_purchases_vs_holdout_purchases(self, calibration_holdout_matrix, n=7):
         """
@@ -222,21 +223,41 @@ class BetaGeoFitter(BaseFitter):
 
         return ax
 
-    def _plot_frequency_recency_matrix(self, t, max_x=30, max_t=30, **kwargs):
-        from matplotlib import pyplot as plt
 
+    def _plot_frequency_recency_matrix(self, max_x=None, max_t=None, **kwargs):
+        from matplotlib import pyplot as plt
+        from .plotting import forceAspect
+
+        if max_x is None:
+            max_x = self.data['frequency'].max()
+
+        if max_t is None:
+            max_t = self.data['cohort'].max()
+
+        t = 1 # one unit of time
         Z = np.zeros((max_t, max_x))
         for i, t_x in enumerate(np.arange(max_t)):
             for j, x in enumerate(np.arange(max_x)):
                 Z[i, j] = self.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
 
         interpolation = kwargs.pop('interpolation', 'none')
-        ax = plt.imshow(Z, interpolation=interpolation, **kwargs)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.imshow(Z, interpolation=interpolation, **kwargs)
         plt.xlabel("Customer's Historical Frequency")
         plt.ylabel("Customer's Recency")
-        plt.title('Expected Number of Future Purchases over %.0f time,\nby Frequency and Recency of a Customer' % t)
-        plt.colorbar()
+        plt.title('Expected Number of Future Purchases over 1 Unit of Time,\nby Frequency and Recency of a Customer')
+        
+        # turn matrix into square
+        forceAspect(ax)
+
+        # necessary for colorbar to show up
+        PCM = ax.get_children()[2]
+        plt.colorbar(PCM, ax=ax) 
+
         return ax
+
 
     def probability_of_purchases_up_to_time(self, t, number_of_purchases):
         """
@@ -247,7 +268,7 @@ class BetaGeoFitter(BaseFitter):
         where X(t) is the number of repeat purchases a customer makes in t units of time.
         """
 
-        r, alpha, a, b = self._unload_params()
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         x = number_of_purchases
         first_term = beta(a, b + x) / beta(a, b) * gamma(r + x) / gamma(r) / gamma(x + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** x
