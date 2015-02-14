@@ -202,17 +202,17 @@ class BetaGeoFitter(BaseFitter):
 
     def _plot_calibration_purchases_vs_holdout_purchases(self, calibration_holdout_matrix, n=7):
         """
-        This currently relies too much on the lifetimes.util calibration_and_holdout_data function. 
+        This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
 
         """
 
         from matplotlib import pyplot as plt
 
-        summary = calibration_hold_matrix.copy()
+        summary = calibration_holdout_matrix.copy()
         T = summary.iloc[0]['cohort_holdout']
 
         summary['model'] = summary.apply(lambda r: self.conditional_expected_number_of_purchases_up_to_time(T, r['frequency_cal'], r['recency_cal'], r['cohort_cal']), axis=1)
-        
+
         ax = summary.groupby('frequency_cal')[['frequency_holdout', 'model']].mean().ix[:n].plot()
 
         plt.title('Actual Purchases in Holdout Period vs Predicted Purchases')
@@ -228,35 +228,32 @@ class BetaGeoFitter(BaseFitter):
         Z = np.zeros((max_t, max_x))
         for i, t_x in enumerate(np.arange(max_t)):
             for j, x in enumerate(np.arange(max_x)):
-                Z[i,j] = self.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
+                Z[i, j] = self.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
 
         interpolation = kwargs.pop('interpolation', 'none')
         ax = plt.imshow(Z, interpolation=interpolation, **kwargs)
         plt.xlabel("Customer's Historical Frequency")
         plt.ylabel("Customer's Recency")
-        plt.title('Expected Number of Future Purchases over %.0f time,\nby Frequency and Recency of a Customer'%t)
+        plt.title('Expected Number of Future Purchases over %.0f time,\nby Frequency and Recency of a Customer' % t)
         plt.colorbar()
         return ax
 
     def probability_of_purchases_up_to_time(self, t, number_of_purchases):
         """
-        Compute the probability of 
+        Compute the probability of
 
         P(X(t) = x | model)
 
-        where X(t) is the number of repeat purchases a customer makes in t units of time. 
+        where X(t) is the number of repeat purchases a customer makes in t units of time.
         """
 
         r, alpha, a, b = self._unload_params()
 
         x = number_of_purchases
-        first_term = beta(a, b + x)/beta(a,b)*gamma(r+x)/gamma(r)/gamma(x+1)*(alpha/(alpha+t))**r * (t/(alpha+t))**x
+        first_term = beta(a, b + x) / beta(a, b) * gamma(r + x) / gamma(r) / gamma(x + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** x
         if x > 0:
-            finite_sum = np.sum([gamma(r+j)/gamma(r)/gamma(j+1)*(t/(alpha+t))**j for j in range(0, x)]) 
-            second_term = beta(a+1, b+x-1)/beta(a,b)*(1 - (alpha/(alpha + t))**r*finite_sum)
+            finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, x)])
+            second_term = beta(a + 1, b + x - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
         return first_term + second_term
-
-
-
