@@ -58,8 +58,8 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
         DataFrame, with index as customer_ids and the following columns:
         'frequency', 'recency', 'T', 'lambda', 'mu', 'alive', 'customer_id'
 
-    [2]: Fader, Peter S. and Bruce G. S. Hardie (2005), “A Note on Deriving the Pareto/NBD Model
-    and Related Expressions,” <http://brucehardie.com/notes/009/>.
+    [2]: Fader, Peter S. and Bruce G. S. Hardie (2005), "A Note on Deriving the Pareto/NBD Model
+    and Related Expressions," <http://brucehardie.com/notes/009/>.
 
     """
     if type(T) in [float, int]:
@@ -77,11 +77,11 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
         l = lambda_[i]
         mu = mus[i]
         time_of_death = stats.expon.rvs(scale=1. / mu)
-        
+
         # hacky until I can find something better
         times = []
         while np.sum(times) < time_of_death:
-             times.append(stats.expon.rvs(scale=1. / l))
+            times.append(stats.expon.rvs(scale=1. / l))
         times = np.array(times).cumsum()
 
         t_cal = times[times < T[i]]

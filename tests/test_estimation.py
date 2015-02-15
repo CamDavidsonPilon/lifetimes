@@ -12,6 +12,24 @@ import lifetimes.estimation as estimation
 def cdnow_customers():
     return pd.read_csv('lifetimes/datasets/cdnow_customers.csv', index_col=[0])
 
+class TestParetoNBDFitter():
+
+    def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
+        ptf = estimation.ParetoNBDFitter
+        x = np.array([1,3])
+        t_x = np.array([2,2])
+        t = np.array([5,6])
+        params = [1,1,1,1]
+        assert ptf()._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
+             + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
+            == ptf()._negative_log_likelihood(params, x, t_x, t, 0)
+
+    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'], iterative_fitting=1)
+        expected = np.array([ 0.553, 10.578, 0.606, 11.669])
+        npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
+
 
 
 class TestBetaGammaFitter():
@@ -68,21 +86,6 @@ class TestBetaGammaFitter():
                 for k in xrange(j, 100, 10):
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
 
-    def test_plots(self, cdnow_customers):
-        from matplotlib import pyplot as plt 
-
-        bfg = estimation.BetaGeoFitter()
-        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
-        
-        plt.figure()
-        bfg.plot_expected_repeat_purchases()
-
-        plt.figure()
-        bfg.plot_period_transactions()
-
-        plt.figure()
-        bfg.plot_frequency_recency_matrix()
-        plt.show()
 
     def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
         bfg1 = estimation.BetaGeoFitter()

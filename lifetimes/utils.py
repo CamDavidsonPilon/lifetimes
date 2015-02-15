@@ -55,7 +55,6 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
     holdout_summary_data.columns = ['frequency_holdout']
 
-
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
     combined_data['frequency_holdout'].fillna(0, inplace=True)
 
@@ -122,7 +121,7 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
         params_init = np.random.exponential(0.5, size=4)
-        output = minimize(minimizing_function, method=fit_method, tol=1e-8,
+        output = minimize(minimizing_function, method=fit_method, tol=1e-6,
                           x0=params_init, args=(frequency, recency, T, penalizer_coef), options={'disp': False})
         ll.append(output.fun)
         sols.append(output.x)
