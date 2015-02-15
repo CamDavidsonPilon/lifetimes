@@ -48,19 +48,23 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
                                                                   datetime_format, observation_period_end=calibration_period_end, freq=freq)
+    calibration_summary_data.columns = map(lambda c: c + '_cal', calibration_summary_data.columns)
 
-    holdout_summary_data = summary_data_from_transaction_data(holdout_transactions, customer_id_col, datetime_col,
-                                                              datetime_format, observation_period_end=observation_period_end, freq=freq)
+    holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
+    holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
+    holdout_summary_data.columns = ['frequency_holdout']
 
     delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
-    holdout_summary_data['frequency'] += 1
 
-    combined_data = calibration_summary_data.join(holdout_summary_data, how='left', rsuffix='_holdout', lsuffix='_cal')
-    del combined_data['recency_holdout']
+    combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
     combined_data['frequency_holdout'].fillna(0, inplace=True)
     combined_data['cohort_holdout'] = delta_time
 
     return combined_data
+
+
+def reduce_events_to_period(transactions, customer_id_col, datetime_col):
+    return transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)
 
 
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, datetime_format=None,
@@ -94,10 +98,10 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
 
     # reduce all events per customer during the period to a single event:
-    period_transactions = transactions.groupby([customer_id_col, datetime_col]).agg(lambda r: 1).reset_index(level=datetime_col)
+    period_transactions = reduce_events_to_period(transactions, customer_id_col, datetime_col).reset_index(level=datetime_col)
 
     # count all orders by customer.
-    customers = period_transactions.groupby(level=customer_id_col)[datetime_col].agg(['max', 'min', 'count'])
+    customers = period_transactions.groupby(level=customer_id_col, sort=False)[datetime_col].agg(['max', 'min', 'count'])
 
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
