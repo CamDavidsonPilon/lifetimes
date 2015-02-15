@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 pd.options.mode.chained_assignment = None
 
-__all__ = ['coalesce', 'calibration_and_holdout_data', 'summary_data_from_transaction_data']
+__all__ = ['calibration_and_holdout_data', 'summary_data_from_transaction_data']
 
 
 def coalesce(*args):
@@ -43,21 +43,23 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
     calibration_period_end = pd.to_datetime(calibration_period_end, format=datetime_format)
 
+    # create calibration dataset
     calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
-    holdout_transactions = transactions.ix[transactions[datetime_col] > calibration_period_end]
-
     calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
                                                                   datetime_format, observation_period_end=calibration_period_end, freq=freq)
-    calibration_summary_data.columns = map(lambda c: c + '_cal', calibration_summary_data.columns)
+    calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
+    # create holdout dataset
+    holdout_transactions = transactions.ix[transactions[datetime_col] > calibration_period_end]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
     holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
     holdout_summary_data.columns = ['frequency_holdout']
 
-    delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
 
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
     combined_data['frequency_holdout'].fillna(0, inplace=True)
+
+    delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
     combined_data['cohort_holdout'] = delta_time
 
     return combined_data

@@ -30,7 +30,7 @@ class BetaGeoFitter(BaseFitter):
 
     """
 
-    Based on [1], this model has the following assumptions:
+    Also known as the BG/NBD model. Based on [1], this model has the following assumptions:
 
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution respectively.
