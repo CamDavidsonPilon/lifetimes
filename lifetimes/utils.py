@@ -113,14 +113,14 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     return customers[['frequency', 'recency', 'T']].astype(float)
 
 
-def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef):
+def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params):
     ll = []
     sols = []
     methods = ['Powell', 'Nelder-Mead']
 
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
-        params_init = np.random.exponential(0.5, size=4)
+        params_init = np.random.exponential(0.5, size=4) if initial_params is None else initial_params
         output = minimize(minimizing_function, method=fit_method, tol=1e-6,
                           x0=params_init, args=(frequency, recency, T, penalizer_coef), options={'disp': False})
         ll.append(output.fun)

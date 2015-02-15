@@ -37,7 +37,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -57,7 +57,7 @@ class ParetoNBDFitter(BaseFitter):
         recency = np.asarray(recency)
         T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
 
         self.params_ = dict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -116,7 +116,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -136,7 +136,7 @@ class BetaGeoFitter(BaseFitter):
         recency = np.asarray(recency)
         T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
