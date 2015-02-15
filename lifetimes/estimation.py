@@ -46,14 +46,14 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, cohort, iterative_fitting=1):
+    def fit(self, frequency, recency, T, iterative_fitting=1):
         """
         This methods fits the data to the BG/NBD model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
-            cohort: the cohort vector of customers' purchases (denoted T in literature).
+            T: the vector of customers' age (time since first purchase)
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
                 parameters for the model. Setting to 0 will improve peformance but possibly
                 hurt estimates.
@@ -64,12 +64,12 @@ class BetaGeoFitter(BaseFitter):
         """
         frequency = np.asarray(frequency)
         recency = np.asarray(recency)
-        cohort = np.asarray(cohort)
+        T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, cohort, iterative_fitting, self.penalizer_coef)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef)
 
         self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
-        self.data = pd.DataFrame(np.c_[frequency, recency, cohort], columns=['frequency', 'recency', 'cohort'])
+        self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
 
         # stick on the plotting methods
         self.plot_expected_repeat_purchases = self._plot_expected_repeat_purchases
@@ -111,20 +111,20 @@ class BetaGeoFitter(BaseFitter):
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, x, t_x, T):
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population, given they have purchase history (x, t_x, T)
 
         Parameters:
             t: a scalar or array of times.
-            x: a scalar: historical frequency of customer.
-            t_x: a scalar: historical recency of customer.
-            T: a scalar: cohort of the customer.
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
+            T: a scalar: age of the customer.
 
         Returns: a scalar or array
         """
-
+        x, t_x = frequency, recency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
@@ -144,7 +144,7 @@ class BetaGeoFitter(BaseFitter):
 
         label = kwargs.pop('label', None)
         color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
-        max_T = self.data['cohort'].max()
+        max_T = self.data['T'].max()
 
         times = np.linspace(0, max_T, 100)
         ax = plt.plot(times, self.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
@@ -164,7 +164,7 @@ class BetaGeoFitter(BaseFitter):
         Parameters:
             x: a scalar: historical frequency of customer.
             t_x: a scalar: historical recency of customer.
-            T: a scalar: cohort of the customer.
+            T: a scalar: age of the customer.
 
         Returns: a scalar
 
@@ -182,7 +182,7 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         n = self.data.shape[0]
-        simulated_data = beta_geometric_nbd_model(self.data['cohort'], r, alpha, a, b, size=n)
+        simulated_data = beta_geometric_nbd_model(self.data['T'], r, alpha, a, b, size=n)
 
         ax = plt.hist(np.c_[self.data['frequency'].values, simulated_data['frequency'].values],
                       bins=bins, label=labels)
@@ -202,9 +202,9 @@ class BetaGeoFitter(BaseFitter):
         from matplotlib import pyplot as plt
 
         summary = calibration_holdout_matrix.copy()
-        T = summary.iloc[0]['cohort_holdout']
+        T = summary.iloc[0]['duration_holdout']
 
-        summary['model'] = summary.apply(lambda r: self.conditional_expected_number_of_purchases_up_to_time(T, r['frequency_cal'], r['recency_cal'], r['cohort_cal']), axis=1)
+        summary['model'] = summary.apply(lambda r: self.conditional_expected_number_of_purchases_up_to_time(T, r['frequency_cal'], r['recency_cal'], r['T_cal']), axis=1)
 
         ax = summary.groupby('frequency_cal')[['frequency_holdout', 'model']].mean().ix[:n].plot()
 
@@ -223,7 +223,7 @@ class BetaGeoFitter(BaseFitter):
             max_x = int(self.data['frequency'].max())
 
         if max_t is None:
-            max_t = int(self.data['cohort'].max())
+            max_t = int(self.data['T'].max())
 
         t = 1  # one unit of time
         Z = np.zeros((max_t, max_x))

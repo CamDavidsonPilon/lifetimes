@@ -31,7 +31,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         freq: Default 'd' for days. Other examples: 'W' for weekly.
 
     Returns:
-        A dataframe with columns frequency_cal, recency_cal, cohort_cal, frequency_holdout, cohort_holdout
+        A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
 
     """
     def to_period(d):
@@ -60,7 +60,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     combined_data['frequency_holdout'].fillna(0, inplace=True)
 
     delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
-    combined_data['cohort_holdout'] = delta_time
+    combined_data['duration_holdout'] = delta_time
 
     return combined_data
 
@@ -77,7 +77,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
         to
 
-        customer_id, frequency, recency, cohort
+        customer_id, frequency, recency, T
 
     Parameters:
         transactions: a Pandas DataFrame of atleast two cols.
@@ -108,13 +108,13 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
 
-    customers['cohort'] = (observation_period_end - customers['min'])
+    customers['T'] = (observation_period_end - customers['min'])
     customers['recency'] = (customers['max'] - customers['min'])
 
-    return customers[['frequency', 'recency', 'cohort']].astype(float)
+    return customers[['frequency', 'recency', 'T']].astype(float)
 
 
-def _fit(minimizing_function, frequency, recency, cohort, iterative_fitting, penalizer_coef):
+def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef):
     ll = []
     sols = []
     methods = ['Powell', 'Nelder-Mead']
@@ -123,7 +123,7 @@ def _fit(minimizing_function, frequency, recency, cohort, iterative_fitting, pen
         fit_method = methods[i % len(methods)]
         params_init = np.random.exponential(0.5, size=4)
         output = minimize(minimizing_function, method=fit_method, tol=1e-8,
-                          x0=params_init, args=(frequency, recency, cohort, penalizer_coef), options={'disp': False})
+                          x0=params_init, args=(frequency, recency, T, penalizer_coef), options={'disp': False})
         ll.append(output.fun)
         sols.append(output.x)
 

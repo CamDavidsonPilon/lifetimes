@@ -41,7 +41,7 @@ def test_summary_data_from_transaction_data_returns_correct_results(transaction_
     actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today)
     expected = pd.DataFrame([[1, 1., 5., 6.],
                              [2, 0., 0., 37.],
-                             [3, 2., 4., 37.]], columns=['id', 'frequency', 'recency', 'cohort']).set_index('id')
+                             [3, 2., 4., 37.]], columns=['id', 'frequency', 'recency', 'T']).set_index('id')
     assert_frame_equal(actual, expected)
 
 def test_summary_data_from_transaction_data_with_specific_datetime_format(transaction_level_data):
@@ -51,7 +51,7 @@ def test_summary_data_from_transaction_data_with_specific_datetime_format(transa
     actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today, datetime_format=format)
     expected = pd.DataFrame([[1, 1., 5., 6.],
                              [2, 0., 0., 37.],
-                             [3, 2., 4., 37.]], columns=['id', 'frequency', 'recency', 'cohort']).set_index('id')
+                             [3, 2., 4., 37.]], columns=['id', 'frequency', 'recency', 'T']).set_index('id')
     assert_frame_equal(actual, expected)
 
 
@@ -63,7 +63,7 @@ def test_summary_date_from_transaction_data_with_specific_non_daily_frequency(la
                              [3, 1., 1., 5.],
                              [4, 1., 3., 3.],
                              [5, 0., 0., 3.],
-                             [6, 0., 0., 0.]], columns=['id', 'frequency', 'recency', 'cohort']).set_index('id')
+                             [6, 0., 0., 0.]], columns=['id', 'frequency', 'recency', 'T']).set_index('id')
     assert_frame_equal(actual, expected)
 
 
@@ -81,7 +81,7 @@ def test_calibration_and_holdout_data_works_with_specific_frequency(large_transa
     today = '2015-02-07'
     calibration_end = '2015-02-01'
     actual = utils.calibration_and_holdout_data(large_transaction_level_data, 'id', 'date', calibration_end, observation_period_end=today, freq='W')
-    expected_cols = ['id', 'frequency_cal', 'recency_cal', 'cohort_cal', 'frequency_holdout', 'cohort_holdout']
+    expected_cols = ['id', 'frequency_cal', 'recency_cal', 'T_cal', 'frequency_holdout', 'duration_holdout']
     expected = pd.DataFrame([[1, 0., 0., 4., 1, 1],
                              [2, 0., 0., 4., 0, 1],
                              [3, 1., 1., 4., 0, 1],
