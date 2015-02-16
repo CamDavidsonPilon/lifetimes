@@ -1,12 +1,12 @@
 lifetimes
 ======================
-### Measuring customer lifetime value is hard. *lifetimes* makes it easy. 
+#### Measuring customer lifetime value is hard. Lifetimes makes it easy. 
 
 
 ## Introduction
-As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s) (apparently). *lifetimes* is a Python library to calculate CLV for you.
+As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s) (apparently). *Lifetimes* is a Python library to calculate CLV for you.
 
-More generally, *lifetimes* can be used to understand and predict future usage based on a few lax assumption:
+More generally, Lifetimes can be used to understand and predict future usage based on a few lax assumption:
 
 1. Entities under study may die after some random period of time.
 2. Entities interact with you when they are alive.
@@ -17,7 +17,7 @@ Lifetimes can be used to both estimate if these entities are still *alive*, and 
  - Understanding how frequently a patient may return to a hospital.
  - Predicting individuals who gave "died" using only their usage history.
 
-Really, "customers" is a very general term here, (similar to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use *lifetimes* to help understand behaviour. 
+Really, "customers" is a very general term here, (similar to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand behaviour. 
 
 ## Installation
 
