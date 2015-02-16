@@ -4,6 +4,7 @@
 import pandas as pd
 from pkg_resources import resource_filename
 
+
 def load_dataset(filename, **kwargs):
     '''
     Load a dataset from lifetimes.datasets
@@ -14,11 +15,12 @@ def load_dataset(filename, **kwargs):
 
     Returns : Pandas dataframe
     '''
-    return pd.read_csv(resource_filename('lifetimes','datasets/' + filename),**kwargs)
+    return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)
 
 
 def load_cdnow(**kwargs):
     return load_dataset('cdnow_customers.csv', **kwargs)
+
 
 def load_transaction_data(**kwargs):
     return load_dataset('example_transactions.csv', **kwargs)

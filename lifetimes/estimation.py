@@ -108,11 +108,10 @@ class ParetoNBDFitter(BaseFitter):
         Returns: a scalar value representing a probability
         """
         x, t_x = frequency, recency
-        r, alpha, s, beta = self._unload_params('r','alpha','s', 'beta')
+        r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = self._A_0(self._unload_params('r','alpha','s', 'beta'), x, t_x, T)
-        return 1./(1. + (s/(r + s + x))*(alpha + T)**(r+x)*(beta + T)**s*A_0 ) 
-
+        A_0 = self._A_0(self._unload_params('r', 'alpha', 's', 'beta'), x, t_x, T)
+        return 1. / (1. + (s / (r + s + x)) * (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
@@ -132,10 +131,11 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         likelihood = exp(-self._negative_log_likelihood(params, x, t_x, T, 0))
-        first_term = (gamma(r+x)/gamma(r))*(alpha**r*beta**s)/(alpha + T)**(r+x)/(beta+T)**s
-        second_term = (r+x)*(beta+T)/(alpha+T)/(s-1)
-        third_term = 1 - ((beta+T)/(beta + T + t))**(s-1)
-        return first_term*second_term*third_term/likelihood
+        first_term = (gamma(r + x) / gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (beta + T) ** s
+        second_term = (r + x) * (beta + T) / (alpha + T) / (s - 1)
+        third_term = 1 - ((beta + T) / (beta + T + t)) ** (s - 1)
+        return first_term * second_term * third_term / likelihood
+
 
 class BetaGeoFitter(BaseFitter):
 
