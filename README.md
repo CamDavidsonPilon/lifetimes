@@ -4,7 +4,7 @@ lifetimes
 
 
 ## Introduction
-As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s) (apparently). *Lifetimes* is a Python library to calculate CLV for you.
+As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s) (apparently). *Lifetimes* is a Python library to calculate CLV for you.
 
 More generally, Lifetimes can be used to understand and predict future usage based on a few lax assumption:
 
@@ -182,4 +182,11 @@ Basic on customer history, we can predict what an individuals future purchases m
 ## Questions? Comments? 
 
 Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)! 
+
+
+## More Information
+
+1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
+2. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
+3. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy Til You Die*).
 
