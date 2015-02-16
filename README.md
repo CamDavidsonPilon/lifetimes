@@ -44,7 +44,7 @@ The examples below are using the `cdnow_customers.csv` located in the `datasets/
 
 `x` represents the number of repeat purchases the customer has made (also called `frequency`). `T` represents the age of the customer. `t_x` represents the age of the customer when they made their most recent purchases (also called `recency`).
 
-#### Fitting models to out data
+#### Fitting models to our data
 
 We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
 
