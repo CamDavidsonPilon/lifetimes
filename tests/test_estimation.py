@@ -59,7 +59,7 @@ class TestBetaGammaFitter():
         expected = np.array([0.243, 4.414, 0.793, 2.426])
         npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
-    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheeet(self, cdnow_customers):
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
         x = 2
