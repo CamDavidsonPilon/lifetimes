@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 from distutils.core import setup
 
 def read(fname):
@@ -14,7 +15,7 @@ setup(name='Lifetimes',
       license="MIT",
       keywords="customer lifetime value, clv, ltv, BG/NBD, pareto/NBD",
       url="https://github.com/CamDavidsonPilon/lifetimes",
-      long_description=read('README.txt'),
+      long_description=read('README.md'),
       classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
