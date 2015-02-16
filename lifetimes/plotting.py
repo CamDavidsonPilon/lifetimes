@@ -101,6 +101,7 @@ def plot_expected_repeat_purchases(model, **kwargs):
 
     plt.title('Expected Number of Repeat Purchases per Customer')
     plt.xlabel('Time Since First Purchase')
+    plt.legend(loc='lower right')
     return ax
 
 

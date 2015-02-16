@@ -1,3 +1,3 @@
-from .estimation import BetaGeoFitter
+from .estimation import BetaGeoFitter, ParetoNBDFitter
 
-__all__ = ['BetaGeoFitter']
+__all__ = ['BetaGeoFitter', 'ParetoNBDFitter']
