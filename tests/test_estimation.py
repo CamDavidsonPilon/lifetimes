@@ -31,6 +31,16 @@ class TestParetoNBDFitter():
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
 
 
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+
+        for i in xrange(0, 100, 10):
+            for j in xrange(0, 100, 10):
+                for k in xrange(j, 100, 10):
+                    assert 0 <= ptf.conditional_probability_alive(i, j, k) <= 1.0
+
+
 class TestBetaGammaFitter():
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):

@@ -95,6 +95,47 @@ class ParetoNBDFitter(BaseFitter):
         penalizer_term = penalizer_coef * np.log(params).sum()
         return -(A_1 + A_2).sum() + penalizer_term
 
+    def conditional_probability_alive(self, frequency, recency, T):
+        """
+        Compute the probability that a customer with history (x, t_x, T) is currently
+        alive. From http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
+
+        Parameters:
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
+            T: a scalar: age of the customer.
+
+        Returns: a scalar value representing a probability
+        """
+        x, t_x = frequency, recency
+        r, alpha, s, beta = self._unload_params('r','alpha','s', 'beta')
+
+        A_0 = self._A_0(self._unload_params('r','alpha','s', 'beta'), x, t_x, T)
+        return 1./(1. + (s/(r + s + x))*(alpha + T)**(r+x)*(beta + T)**s*A_0 ) 
+
+
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population, given they have purchase history (x, t_x, T)
+
+        Parameters:
+            t: a scalar or array of times.
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
+            T: a scalar: age of the customer.
+
+        Returns: a scalar or array
+        """
+        x, t_x = frequency, recency
+        params = self._unload_params('r', 'alpha', 's', 'beta')
+        r, alpha, s, beta = params
+
+        likelihood = exp(-self._negative_log_likelihood(params, x, t_x, T, 0))
+        first_term = (gamma(r+x)/gamma(r))*(alpha**r*beta**s)/(alpha + T)**(r+x)/(beta+T)**s
+        second_term = (r+x)*(beta+T)/(alpha+T)/(s-1)
+        third_term = 1 - ((beta+T)/(beta + T + t))**(s-1)
+        return first_term*second_term*third_term/likelihood
 
 class BetaGeoFitter(BaseFitter):
 
