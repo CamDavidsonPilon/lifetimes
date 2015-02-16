@@ -42,11 +42,11 @@ The examples below are using the `cdnow_customers.csv` located in the `datasets/
     5   0   0.00  38.86
     """
 
-`x` represents the number of repeat purchases the customer has made (also called `frequency`). `T` represents the age of the customer. `t_x` represents the age the customer was at when they made their most recent purchases (also called `recency`).
+`x` represents the number of repeat purchases the customer has made (also called `frequency`). `T` represents the age of the customer. `t_x` represents the age of the customer when they made their most recent purchases (also called `recency`).
 
 #### Fitting models to out data
 
-We'll use the BG/NBD model first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
+We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
 
     from lifetimes import BetaGeoFitter
 
@@ -62,7 +62,7 @@ After fitting, we have lots of nice methods and properties attached to the fitte
 
 #### Visualizing our Frequency/Recency Matrix
 
-Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the Frequency/Recency matrix, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
+Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the **Frequency/Recency matrix**, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
 
     from lifetimes.plotting import plot_frequency_recency_matrix
 
@@ -73,11 +73,11 @@ Consider: a customer bought from you every day for three weeks straight, and we 
 
 We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are you best customer (bottom-right). You coldest customers are those that in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks. 
 
-There's also that beautiful "tail" between around (5,25), that is the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between buying. 
+There's also that beautiful "tail" around (5,25). That represents the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between purchases. 
 
 #### Ranking customers from best to worst
 
-Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict the a customer's expected purchases in the next period using their history.
+Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict a customer's expected purchases in the next period using their history.
 
     t = 1
     data['predicted_purchases'] = data.apply(lambda r: bgf.conditional_expected_number_of_purchases_up_to_time(t, r['x'], r['t_x'], r['T']), axis=1)
@@ -92,22 +92,22 @@ Let's return to our customers and rank them from "highest expected purchases in 
     1516  26  30.86  31.00             0.710623
     """
 
-Great, we can see the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period. 
+Great, we can see that the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period. 
 
 #### Assessing model fit
 
-Ok, we can predict and we can visualize our customers behaviour, but is our model correct? There are a few ways to assess the model's correctness (which we call fit). The first is to compare your data versus artifical data simulated with your fitted models parameters. 
+Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artifical data simulated with your fitted model's parameters. 
 
     from lifetimes.plotting import plot_period_transactions
     plot_period_transactions(bgf)
 
 ![model_fit_1](http://imgur.com/4P6AfsQl.png)
 
-We can see that our actual data and our simulated data line up well. This is proves that our model doesn't suck.
+We can see that our actual data and our simulated data line up well. This proves that our model doesn't suck.
 
 #### Example using transactional datasets
 
-Most often, the dataset you have at hand will be at the transaction level. Lifetimes has some utility functions to transform that transactional data into summary data (frequency, recency and age).
+Most often, the dataset you have at hand will be at the transaction level. Lifetimes has some utility functions to transform that transactional data (one row per purchase) into summary data (a frequency, recency and age dataset).
 
     from lifetimes.datasets import load_transaction_data
     from lifetimes.utils import summary_data_from_transaction_data
@@ -141,7 +141,7 @@ Most often, the dataset you have at hand will be at the transaction level. Lifet
 
 #### More model fitting
 
-With transactional data, we can partition the dataset into a calibration period dataset and a holdout dataset. This is important as we want to test how our model perform on data not yet seen (think cross-validation in standard machine learning literature). Lifetimes has a function to partition our dataset like this:
+With transactional data, we can partition the dataset into a calibration period dataset and a holdout dataset. This is important as we want to test how our model performs on data not yet seen (think cross-validation in standard machine learning literature). Lifetimes has a function to partition our dataset like this:
 
     from lifetimes.utils import calibration_and_holdout_data
 
@@ -178,4 +178,8 @@ Basic on customer history, we can predict what an individuals future purchases m
     bgf.conditional_expected_number_of_purchases_up_to_time(t, individual['frequency'], individual['recency'], individual['T'])
     # 0.0576511
 
+
+## Questions? Comments? 
+
+Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)! 
 
