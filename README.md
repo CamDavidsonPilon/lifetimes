@@ -1,76 +1,181 @@
 lifetimes
 ======================
+### Measuring customer lifetime value is hard. *lifetimes* makes it easy. 
 
-Measuring customer lifetime value is hard. *lifetimes* makes it easy. 
+
+## Introduction
+As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s) (apparently). *lifetimes* is a Python library to calculate CLV for you.
+
+More generally, *lifetimes* can be used to understand and predict future usage based on a few lax assumption:
+
+1. Entities under study may die after some random period of time.
+2. Entities interact with you when they are alive.
+
+Lifetimes can be used to both estimate if these entities are still *alive*, and predict how much more they will interact based on their existing history. If this is too abstract, consider these situations:
+
+ - Predicting how often a visitor will return to your website. 
+ - Understanding how frequently a patient may return to a hospital.
+ - Predicting individuals who gave "died" using only their usage history.
+
+Really, "customers" is a very general term here, (similar to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use *lifetimes* to help understand behaviour. 
+
+## Installation
+
+    pip install lifetimes
+
+Requirements are only Numpy, Scipy, Pandas. 
 
 ## Quickstart
     
-### Example using transactional data:
+The examples below are using the `cdnow_customers.csv` located in the `datasets/` directory.
 
-    from matplotlib import pyplot as plt
-    from lifetimes.estimation import BetaGeoFitter
+    from lifetimes.datasets import load_cdnow
+    data = load_cdnow(index_col=[0])
+    data.head()
+    """
+        x    t_x      T
+    ID
+    1   2  30.43  38.86
+    2   1   1.71  38.86
+    3   0   0.00  38.86
+    4   0   0.00  38.86
+    5   0   0.00  38.86
+    """
+
+`x` represents the number of repeat purchases the customer has made (also called `frequency`). `T` represents the age of the customer. `t_x` represents the age the customer was at when they made their most recent purchases (also called `recency`).
+
+#### Fitting models to out data
+
+We'll use the BG/NBD model first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
+
+    from lifetimes import BetaGeoFitter
+
+    # similar API to scikit-learn and lifelines.
+    bgf = BetaGeoFitter()
+    bgf.fit(data['x'], data['t_x'], data['T'])
+    print bgf
+    """
+    <lifetimes.BetaGeoFitter: fitted with 2357 customers, a: 0.79, alpha: 4.41, r: 0.24, b: 2.43>
+    """
+
+After fitting, we have lots of nice methods and properties attached to the fitter object.
+
+#### Visualizing our Frequency/Recency Matrix
+
+Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the Frequency/Recency matrix, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
+
+    from lifetimes.plotting import plot_frequency_recency_matrix
+
+    plot_frequency_recency_matrix(bgf)
+
+![fr_matrix](http://i.imgur.com/oYfTH0Dl.png)
+
+
+We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are you best customer (bottom-right). You coldest customers are those that in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks. 
+
+There's also that beautiful "tail" between around (5,25), that is the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between buying. 
+
+#### Ranking customers from best to worst
+
+Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict the a customer's expected purchases in the next period using their history.
+
+    t = 1
+    data['predicted_purchases'] = data.apply(lambda r: bgf.conditional_expected_number_of_purchases_up_to_time(t, r['x'], r['t_x'], r['T']), axis=1)
+    data.sort('predicted_purchases').tail(5)
+    """
+           x    t_x      T  predicted_purchases
+    ID
+    509   18  35.14  35.86             0.424877
+    841   19  34.00  34.14             0.474738
+    1981  17  28.43  28.86             0.486526
+    157   29  37.71  38.00             0.662396
+    1516  26  30.86  31.00             0.710623
+    """
+
+Great, we can see the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period. 
+
+#### Assessing model fit
+
+Ok, we can predict and we can visualize our customers behaviour, but is our model correct? There are a few ways to assess the model's correctness (which we call fit). The first is to compare your data versus artifical data simulated with your fitted models parameters. 
+
+    from lifetimes.plotting import plot_period_transactions
+    plot_period_transactions(bgf)
+
+![model_fit_1](http://imgur.com/4P6AfsQl.png)
+
+We can see that our actual data and our simulated data line up well. This is proves that our model doesn't suck.
+
+#### Example using transactional datasets
+
+Most often, the dataset you have at hand will be at the transaction level. Lifetimes has some utility functions to transform that transactional data into summary data (frequency, recency and age).
+
+    from lifetimes.datasets import load_transaction_data
     from lifetimes.utils import summary_data_from_transaction_data
 
-    # transactions representing customers' shopping history.
-    transactions_A = pd.DataFrame([
-        {'id': 1, 'date': '2015-01-01'},
-        {'id': 1, 'date': '2015-01-05'},
-        {'id': 1, 'date': '2015-01-08'},
-        {'id': 2, 'date': '2015-01-04'},
-        {'id': 2, 'date': '2015-01-30'},
-        {'id': 3, 'date': '2015-01-10'},
-        {'id': 3, 'date': '2015-02-05'},
-        {'id': 3, 'date': '2015-02-06'},
-    ])
-    data_A = summary_data_from_transaction_data(transactions_A, 'id', 'date')
+    transaction_data = load_transaction_data()
+    transaction_data.head()
+    """
+                      date  id
+    0  2014-03-08 00:00:00   0
+    1  2014-05-21 00:00:00   1
+    2  2014-03-14 00:00:00   2
+    3  2014-04-09 00:00:00   2
+    4  2014-05-21 00:00:00   2
+    """
 
-    transactions_B = pd.DataFrame([
-        {'id': 1, 'date': '2015-01-01'},
-        {'id': 1, 'date': '2015-02-05'},
-        {'id': 2, 'date': '2015-02-01'},
-        {'id': 2, 'date': '2015-02-05'},
-        {'id': 3, 'date': '2015-01-16'},
-        {'id': 3, 'date': '2015-02-05'},
-        {'id': 3, 'date': '2015-02-06'},
-        {'id': 3, 'date': '2015-02-07'},
-    ])
-    data_B = summary_data_from_transaction_data(transactions_B, 'id', 'date')
+    summary = summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end='2014-12-31')
 
+    print summary.head()
+    """
+        frequency  recency    T
+    id
+    0           0        0  298
+    1           0        0  224
+    2           6      142  292
+    3           0        0  147
+    4           2        9  183
+    """
 
-    bgf = BetaGeoFitter()
-    bgf.fit(data_A['frequency'], data_A['recency'], data_A['cohort'])
-    ax = bgf.plot_expected_repeat_purchases(label='group A')
+    bgf.fit(summary['frequency'], summary['recency'], summary['T'])
+    # <lifetimes.BetaGeoFitter: fitted with 5000 customers, a: 1.85, alpha: 1.86, r: 0.16, b: 3.18>
 
-    bgf.fit(data_B['frequency'], data_B['recency'], data_B['cohort'])
-    ax = bgf.plot_expected_repeat_purchases(label='group B')
-    plt.legend(loc='lower right')
+#### More model fitting
 
+With transactional data, we can partition the dataset into a calibration period dataset and a holdout dataset. This is important as we want to test how our model perform on data not yet seen (think cross-validation in standard machine learning literature). Lifetimes has a function to partition our dataset like this:
 
-![comp](http://imgur.com/l73FMmbl.png)
+    from lifetimes.utils import calibration_and_holdout_data
 
+    summary_cal_holdout = calibration_and_holdout_data(transaction_data, 'id', 'date', 
+                                            calibration_period_end='2014-09-01',
+                                            observation_period_end='2014-12-31' )   
+    print summary_cal_holdout.head()
+    """
+        frequency_cal  recency_cal  T_cal  frequency_holdout  duration_holdout
+    id
+    0               0            0    177                  0               121
+    1               0            0    103                  0               121
+    2               6          142    171                  0               121
+    3               0            0     26                  0               121
+    4               2            9     62                  0               121
+    """
 
-### Example to assess model fit
+With this dataset, we can perform fitting on the `_cal` columns, and test on the `_holdout` columns:
 
-    from matplotlib import pyplot as plt
-    import pandas as pd
-    from lifetimes.estimation import BetaGeoFitter
+    from lifetimes.plotting import plot_calibration_purchases_vs_holdout_purchases
 
-    df = pd.read_csv('lifetimes/datasets/cdnow_customers.csv', sep='\s+', index_col=[0])
-    bg = BetaGeoFitter()
-    bg.fit(df['x'], df['t_x'], df['T'] )
+    bgf.fit(summary_cal_holdout['frequency_cal'], summary_cal_holdout['recency_cal'], summary_cal_holdout['T_cal'])
+    plot_calibration_purchases_vs_holdout_purchases(bgf, summary_cal_holdout)
 
-    bg.plot_period_transactions()
+![holdout](http://imgur.com/LdSEYUwl.png)
 
-![model_fit](http://imgur.com/gcf4Alsl.png)
+#### Customer Predicitions
 
-### Example to find best customers
+Basic on customer history, we can predict what an individuals future purchases might look like:
 
-    #continuing from the last code cell.
-
-    # plot a matrix representing a "health metric" of customers
-    bg.plot_frequency_recency_matrix(t=10)
-
-
-![matrix](http://i.imgur.com/UDQ0oMdl.png)
+    t = 10 #predict purchases in 10 periods
+    individual = summary.iloc[20]
+    # The below function may be renamed to `predict` in a future version of lifetimes
+    bgf.conditional_expected_number_of_purchases_up_to_time(t, individual['frequency'], individual['recency'], individual['T'])
+    # 0.0576511
 
 
