@@ -6,7 +6,8 @@ from scipy.optimize import minimize
 
 pd.options.mode.chained_assignment = None
 
-__all__ = ['calibration_and_holdout_data', 'summary_data_from_transaction_data']
+__all__ = ['calibration_and_holdout_data', 
+           'summary_data_from_transaction_data']
 
 
 def coalesce(*args):

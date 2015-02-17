@@ -4,6 +4,11 @@
 import pandas as pd
 from pkg_resources import resource_filename
 
+__all__ = [
+    'load_cdnow',
+    'load_transaction_data',
+]
+
 
 def load_dataset(filename, **kwargs):
     '''
