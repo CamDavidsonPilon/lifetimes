@@ -6,6 +6,7 @@ __all__ = [
     'plot_calibration_purchases_vs_holdout_purchases',
     'plot_frequency_recency_matrix',
     'plot_expected_repeat_purchases',
+    'plot_probability_alive_matrix',
 ]
 
 
@@ -51,6 +52,18 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
 
 
 def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
+    """
+    Plot a figure of expected transactions in one unit of time by a customer's 
+    frequency and recency.
+
+    Parameters:
+        model: a fitted lifetimes model.
+        max_x: the maximum frequency to plot. Default is max observed frequency.
+        max_t: the maximum recency to plot. This also determines the age of the customer.
+            Defaul to max observed age. 
+        kwargs: passed into the matplotlib.imshow command.
+
+    """
     from matplotlib import pyplot as plt
 
     if max_x is None:
@@ -71,7 +84,7 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
     ax.imshow(Z, interpolation=interpolation, **kwargs)
     plt.xlabel("Customer's Historical Frequency")
     plt.ylabel("Customer's Recency")
-    plt.title('Expected Number of Future Purchases over 1 Unit of Time,\nby Frequency and Recency of a Customer')
+    plt.title('Expected Number of Future Purchases for 1 Unit of Time,\nby Frequency and Recency of a Customer')
 
     # turn matrix into square
     forceAspect(ax)
@@ -82,6 +95,47 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
 
     return ax
 
+def plot_probability_alive_matrix(model, max_x=None, max_t=None, **kwargs):
+    """
+    Plot a figure of the probability a customer is alive based on their 
+    frequency and recency.
+
+    Parameters:
+        model: a fitted lifetimes model.
+        max_x: the maximum frequency to plot. Default is max observed frequency.
+        max_t: the maximum recency to plot. This also determines the age of the customer.
+            Defaul to max observed age. 
+        kwargs: passed into the matplotlib.imshow command.
+    """
+    from matplotlib import pyplot as plt
+
+    if max_x is None:
+        max_x = int(model.data['frequency'].max())
+
+    if max_t is None:
+        max_t = int(model.data['T'].max())
+
+    Z = np.zeros((max_t, max_x))
+    for i, t_x in enumerate(np.arange(max_t)):
+        for j, x in enumerate(np.arange(max_x)):
+            Z[i, j] = model.conditional_probability_alive(x, t_x, max_t)
+
+    interpolation = kwargs.pop('interpolation', 'none')
+
+    ax = plt.subplot(111)
+    ax.imshow(Z, interpolation=interpolation, **kwargs)
+    plt.xlabel("Customer's Historical Frequency")
+    plt.ylabel("Customer's Recency")
+    plt.title('Probability Customer is Alive,\nby Frequency and Recency of a Customer')
+
+    # turn matrix into square
+    forceAspect(ax)
+
+    # necessary for colorbar to show up
+    PCM = ax.get_children()[2]
+    plt.colorbar(PCM, ax=ax)
+
+    return ax
 
 def plot_expected_repeat_purchases(model, **kwargs):
     from matplotlib import pyplot as plt

@@ -75,6 +75,14 @@ We can see that if a customer has bought 25 times from you, and their lastest pu
 
 There's also that beautiful "tail" around (5,25). That represents the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between purchases. 
 
+Another interesting matrix to look at is the probability of still being *alive*:
+
+    from lifetimes.plotting import plot_frequency_recency_matrix
+
+    plot_probability_alive_matrix(bgf)
+
+![prob](http://i.imgur.com/qjellK6l.png)
+
 #### Ranking customers from best to worst
 
 Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict a customer's expected purchases in the next period using their history.
