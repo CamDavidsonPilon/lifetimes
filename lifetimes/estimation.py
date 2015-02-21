@@ -79,7 +79,7 @@ class ParetoNBDFitter(BaseFitter):
 
     def _negative_log_likelihood(self, params, freq, rec, T, penalizer_coef):
 
-        if np.any(params <= 0.):
+        if np.any(np.asarray(params) <= 0.):
             return np.inf
 
         r, alpha, s, beta = params
@@ -189,7 +189,7 @@ class BetaGeoFitter(BaseFitter):
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
         np.seterr(divide='ignore')
 
-        if np.any(params <= 0):
+        if np.any(np.asarray(params) <= 0):
             return np.inf
 
         r, alpha, a, b = params
