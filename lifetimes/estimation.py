@@ -63,6 +63,7 @@ class ParetoNBDFitter(BaseFitter):
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
+        self.predict = self.conditional_expected_number_of_purchases_up_to_time
         return self
 
     @staticmethod
@@ -157,7 +158,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -183,14 +184,15 @@ class BetaGeoFitter(BaseFitter):
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *params, size=size)
 
+        self.predict = self.conditional_expected_number_of_purchases_up_to_time
         return self
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
-        np.seterr(divide='ignore')
-
         if np.any(np.asarray(params) <= 0):
             return np.inf
+            
+        np.seterr(divide='ignore')
 
         r, alpha, a, b = params
 
@@ -260,7 +262,7 @@ class BetaGeoFitter(BaseFitter):
 
         return 1. / (1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
 
-    def probability_of_purchases_up_to_time(self, t, number_of_purchases):
+    def probability_of_n_purchases_up_to_time(self, t, x):
         """
         Compute the probability of
 
@@ -271,7 +273,6 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        x = number_of_purchases
         first_term = beta(a, b + x) / beta(a, b) * gamma(r + x) / gamma(r) / gamma(x + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** x
         if x > 0:
             finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, x)])

@@ -117,7 +117,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params):
     ll = []
     sols = []
-    methods = ['Powell', 'Nelder-Mead']
+    methods = ['Nelder-Mead', 'Powell']
 
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
@@ -126,6 +126,5 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
                           x0=params_init, args=(frequency, recency, T, penalizer_coef), options={'disp': False})
         ll.append(output.fun)
         sols.append(output.x)
-
     minimizing_params = sols[np.argmin(ll)]
     return minimizing_params, np.min(ll)
