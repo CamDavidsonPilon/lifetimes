@@ -26,6 +26,7 @@ install:
   # Should match requirements.txt
   - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas pytest
   - source activate test-environment
+  - python setup.py install
 # command to run tests
 script: py.test -vv
 # Don't want notifications
