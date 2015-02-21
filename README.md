@@ -1,7 +1,8 @@
 lifetimes
 ======================
 #### Measuring customer lifetime value is hard. Lifetimes makes it easy. 
-
+[![Latest Version](https://pypip.in/v/lifetimes/badge.png)](https://pypi.python.org/pypi/lifetimes/)
+[![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 
 ## Introduction
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
