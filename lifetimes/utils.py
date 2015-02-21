@@ -18,18 +18,18 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
                                  observation_period_end=datetime.today(), freq='D', datetime_format=None,):
     """
     This function creates a summary of each customer over a calibration and holdout period (training and testing, respectively).
-    It accepts transition data, and returns a Dataframe of sufficent statistics.
+    It accepts transition data, and returns a Dataframe of sufficient statistics.
 
     Parameters:
-        transactions: a Pandas DataFrame of atleast two cols.
-        customer_id_col: the column in transactions that denotes the cusomter_id
+        transactions: a Pandas DataFrame of at least two cols.
+        customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         calibration_period_end: a period to limit the calibration to.
         observation_period_end: a string or datetime to denote the final date of the study. Events
             after this date are truncated.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
-        freq: Default 'd' for days. Other examples: 'W' for weekly.
+        freq: Default 'D' for days. Other examples: 'W' for weekly.
 
     Returns:
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
@@ -38,7 +38,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     def to_period(d):
         return d.to_period(freq)
 
-    transactions = transactions.copy()
+    transactions = transactions[[customer_id_col, datetime_col]].copy()
 
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
@@ -80,16 +80,16 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         customer_id, frequency, recency, T
 
     Parameters:
-        transactions: a Pandas DataFrame of atleast two cols.
+        transactions: a Pandas DataFrame of at least two cols.
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         observation_period_end: a string or datetime to denote the final date of the study. Events
             after this date are truncated.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
-        freq: Default 'd' for days. Other examples: 'W' for weekly.
+        freq: Default 'D' for days. Other examples: 'W' for weekly.
     """
-    transactions = transactions.copy()
+    transactions = transactions[[customer_id_col, datetime_col]].copy()
 
     def to_period(d):
         return d.to_period(freq)
