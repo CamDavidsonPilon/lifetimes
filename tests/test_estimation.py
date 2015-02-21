@@ -35,9 +35,9 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
-        for i in xrange(0, 100, 10):
-            for j in xrange(0, 100, 10):
-                for k in xrange(j, 100, 10):
+        for i in range(0, 100, 10):
+            for j in range(0, 100, 10):
+                for k in range(j, 100, 10):
                     assert 0 <= ptf.conditional_probability_alive(i, j, k) <= 1.0
 
 
@@ -90,9 +90,9 @@ class TestBetaGammaFitter():
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
-        for i in xrange(0, 100, 10):
-            for j in xrange(0, 100, 10):
-                for k in xrange(j, 100, 10):
+        for i in range(0, 100, 10):
+            for j in range(0, 100, 10):
+                for k in range(j, 100, 10):
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
 
 
@@ -111,16 +111,16 @@ class TestBetaGammaFitter():
     def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         bfg_no_penalizer = estimation.BetaGeoFitter()
         bfg_no_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
-        params_1 = np.array(bfg_no_penalizer.params_.values())
+        params_1 = np.array(list(bfg_no_penalizer.params_.values()))
 
         bfg_with_penalizer = estimation.BetaGeoFitter(penalizer_coef=0.1)
         bfg_with_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
-        params_2 = np.array(bfg_with_penalizer.params_.values())
+        params_2 = np.array(list(bfg_with_penalizer.params_.values()))
         assert np.all(params_2 < params_1)
 
         bfg_with_more_penalizer = estimation.BetaGeoFitter(penalizer_coef=10)
         bfg_with_more_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
-        params_3 = np.array(bfg_with_more_penalizer.params_.values())
+        params_3 = np.array(list(bfg_with_more_penalizer.params_.values()))
         assert np.all(params_3 < params_2)
 
 
