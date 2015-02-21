@@ -183,8 +183,8 @@ Basic on customer history, we can predict what an individuals future purchases m
 
     t = 10 #predict purchases in 10 periods
     individual = summary.iloc[20]
-    # The below function may be renamed to `predict` in a future version of lifetimes
-    bgf.conditional_expected_number_of_purchases_up_to_time(t, individual['frequency'], individual['recency'], individual['T'])
+    # The below function is an alias to `bfg.conditional_expected_number_of_purchases_up_to_time`
+    bgf.predict(t, individual['frequency'], individual['recency'], individual['T'])
     # 0.0576511
 
 
