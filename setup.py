@@ -7,7 +7,7 @@ def read(fname):
 
 
 setup(name='Lifetimes',
-      version='0.1.1',
+      version='0.1.2',
       description='Measure customer lifetime value in Python',
       author='Cam Davidson-Pilon',
       author_email='cam.davidson.pilon@gmaillcom',
@@ -28,6 +28,12 @@ setup(name='Lifetimes',
         "pandas>=0.14",
         ],
       package_data={
-        "lifetimes": ["datasets/*",]
+        "lifetimes": [
+                    "datasets/*",
+                    "../README.md",
+                    "../README.txt",
+                    "../LICENSE",
+                    "../MANIFEST.in",
+          ]
       }
      )
