@@ -78,7 +78,7 @@ There's also that beautiful "tail" around (5,25). That represents the customer w
 
 Another interesting matrix to look at is the probability of still being *alive*:
 
-    from lifetimes.plotting import plot_frequency_recency_matrix
+    from lifetimes.plotting import plot_probability_alive_matrix
 
     plot_probability_alive_matrix(bgf)
 
