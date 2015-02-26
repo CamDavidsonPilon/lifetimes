@@ -73,9 +73,9 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
         max_t = int(model.data['T'].max())
 
     t = 1  # one unit of time
-    Z = np.zeros((max_t, max_x))
-    for i, t_x in enumerate(np.arange(max_t)):
-        for j, x in enumerate(np.arange(max_x)):
+    Z = np.zeros((max_t+1, max_x+1))
+    for i, t_x in enumerate(np.arange(max_t+1)):
+        for j, x in enumerate(np.arange(max_x+1)):
             Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
 
     interpolation = kwargs.pop('interpolation', 'none')

@@ -277,9 +277,9 @@ class BetaGeoFitter(BaseFitter):
         max_x = max_x or int(self.data['frequency'].max())
         max_t = max_t or int(self.data['T'].max())
 
-        Z = np.zeros((max_t, max_x))
-        for i, t_x in enumerate(np.arange(max_t)):
-            for j, x in enumerate(np.arange(max_x)):
+        Z = np.zeros((max_t+1, max_x+1))
+        for i, t_x in enumerate(np.arange(max_t+1)):
+            for j, x in enumerate(np.arange(max_x+1)):
                 Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
 
         return Z
