@@ -124,5 +124,14 @@ class TestBetaGammaFitter():
         assert np.all(params_3 < params_2)
 
 
+    def test_conditional_probability_alive_matrix(self, cdnow_customers):
+        bfg = estimation.BetaGeoFitter()
+        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        Z = bfg.conditional_probability_alive_matrix()
+        max_t = int(bfg.data['T'].max())
+        assert Z[0][0] == 1
 
+        for t_x in range(Z.shape[0]):
+            for x in range(Z.shape[1]):
+                assert Z[t_x][x] == bfg.conditional_probability_alive(x, t_x, max_t)
 

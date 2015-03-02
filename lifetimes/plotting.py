@@ -73,9 +73,9 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
         max_t = int(model.data['T'].max())
 
     t = 1  # one unit of time
-    Z = np.zeros((max_t, max_x))
-    for i, t_x in enumerate(np.arange(max_t)):
-        for j, x in enumerate(np.arange(max_x)):
+    Z = np.zeros((max_t+1, max_x+1))
+    for i, t_x in enumerate(np.arange(max_t+1)):
+        for j, x in enumerate(np.arange(max_x+1)):
             Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
 
     interpolation = kwargs.pop('interpolation', 'none')
@@ -95,6 +95,7 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
 
     return ax
 
+
 def plot_probability_alive_matrix(model, max_x=None, max_t=None, **kwargs):
     """
     Plot a figure of the probability a customer is alive based on their 
@@ -104,26 +105,17 @@ def plot_probability_alive_matrix(model, max_x=None, max_t=None, **kwargs):
         model: a fitted lifetimes model.
         max_x: the maximum frequency to plot. Default is max observed frequency.
         max_t: the maximum recency to plot. This also determines the age of the customer.
-            Defaul to max observed age. 
+            Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
     """
     from matplotlib import pyplot as plt
 
-    if max_x is None:
-        max_x = int(model.data['frequency'].max())
-
-    if max_t is None:
-        max_t = int(model.data['T'].max())
-
-    Z = np.zeros((max_t, max_x))
-    for i, t_x in enumerate(np.arange(max_t)):
-        for j, x in enumerate(np.arange(max_x)):
-            Z[i, j] = model.conditional_probability_alive(x, t_x, max_t)
+    z = model.conditional_probability_alive_matrix(max_x, max_t)
 
     interpolation = kwargs.pop('interpolation', 'none')
 
     ax = plt.subplot(111)
-    ax.imshow(Z, interpolation=interpolation, **kwargs)
+    ax.imshow(z, interpolation=interpolation, **kwargs)
     plt.xlabel("Customer's Historical Frequency")
     plt.ylabel("Customer's Recency")
     plt.title('Probability Customer is Alive,\nby Frequency and Recency of a Customer')
@@ -136,6 +128,7 @@ def plot_probability_alive_matrix(model, max_x=None, max_t=None, **kwargs):
     plt.colorbar(PCM, ax=ax)
 
     return ax
+
 
 def plot_expected_repeat_purchases(model, **kwargs):
     from matplotlib import pyplot as plt
