@@ -29,22 +29,41 @@ def plot_period_transactions(model, **kwargs):
     return ax
 
 
-def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_matrix, n=7):
+def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs):
     """
     This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
+
+    Parameters:
+        model: a fitted lifetimes model
+        calibration_holdout_matrix: dataframe from calibration_and_holdout_data function
+        kind: x-axis :"frequency_cal". Purchases in calibration period,
+                      "recency_cal". Age of customer at last purchase,
+                      "T_cal". Age of customer at the end of calibration period,
+                      "time_since_last_purchase". Time since user made last purchase
+        n: number of ticks on the x axis
 
     """
     from matplotlib import pyplot as plt
 
+    x_labels = {
+        "frequency_cal": "Purchases in calibration period",
+        "recency_cal": "Age of customer at last purchase",
+        "T_cal": "Age of customer at the end of calibration period",
+        "time_since_last_purchase": "Time since user made last purchase"
+    }
     summary = calibration_holdout_matrix.copy()
-    T = summary.iloc[0]['duration_holdout']
+    duration_holdout = summary.iloc[0]['duration_holdout']
 
-    summary['model'] = summary.apply(lambda r: model.conditional_expected_number_of_purchases_up_to_time(T, r['frequency_cal'], r['recency_cal'], r['T_cal']), axis=1)
+    summary['model_predictions'] = summary.apply(lambda r: model.conditional_expected_number_of_purchases_up_to_time(duration_holdout, r['frequency_cal'], r['recency_cal'], r['T_cal']), axis=1)
 
-    ax = summary.groupby('frequency_cal')[['frequency_holdout', 'model']].mean().ix[:n].plot()
+    if kind == "time_since_last_purchase":
+        summary["time_since_last_purchase"] = summary["T_cal"] - summary["recency_cal"]
+        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
+    else:
+        ax = summary.groupby(kind)[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
 
     plt.title('Actual Purchases in Holdout Period vs Predicted Purchases')
-    plt.xlabel('Puchases in Calibration Period')
+    plt.xlabel(x_labels[kind])
     plt.ylabel('Average of Purchases in Holdout Period')
     plt.legend()
 
@@ -60,7 +79,7 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
         model: a fitted lifetimes model.
         max_x: the maximum frequency to plot. Default is max observed frequency.
         max_t: the maximum recency to plot. This also determines the age of the customer.
-            Defaul to max observed age. 
+            Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
 
     """
