@@ -49,6 +49,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
                                                                   datetime_format, observation_period_end=calibration_period_end, freq=freq)
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
+    calibration_summary_data['duration_cal'] = to_period(calibration_period_end) - to_period(min(calibration_transactions[datetime_col]))
 
     # create holdout dataset
     holdout_transactions = transactions.ix[transactions[datetime_col] > calibration_period_end]
