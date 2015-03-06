@@ -263,6 +263,28 @@ class BetaGeoFitter(BaseFitter):
 
         return 1. / (1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
 
+    def conditional_probability_alive_matrix(self, max_x=None, max_t=None):
+        """
+        Compute the probability alive matrix
+        Parameters:
+            max_x: the maximum frequency to plot. Default is max observed frequency.
+            max_t: the maximum recency to plot. This also determines the age of the customer.
+                Default to max observed age.
+
+        Returns a matrix of the form [t_x: historical recency, x: historical frequency]
+
+        """
+
+        max_x = max_x or int(self.data['frequency'].max())
+        max_t = max_t or int(self.data['T'].max())
+
+        Z = np.zeros((max_t+1, max_x+1))
+        for i, t_x in enumerate(np.arange(max_t+1)):
+            for j, x in enumerate(np.arange(max_x+1)):
+                Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
+
+        return Z
+
     def probability_of_n_purchases_up_to_time(self, t, x):
         """
         Compute the probability of
