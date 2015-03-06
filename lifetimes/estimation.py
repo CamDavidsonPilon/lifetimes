@@ -1,4 +1,5 @@
 from __future__ import print_function
+from collections import OrderedDict
 
 import numpy as np
 from numpy import log, exp
@@ -59,7 +60,7 @@ class ParetoNBDFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
 
-        self.params_ = dict(zip(['r', 'alpha', 's', 'beta'], params))
+        self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
