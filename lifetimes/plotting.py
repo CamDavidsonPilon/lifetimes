@@ -51,13 +51,14 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
     return ax
 
 
-def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
+def plot_frequency_recency_matrix(model, T=1, max_x=None, max_t=None, **kwargs):
     """
-    Plot a figure of expected transactions in one unit of time by a customer's 
+    Plot a figure of expected transactions in T next units of time by a customer's
     frequency and recency.
 
     Parameters:
         model: a fitted lifetimes model.
+        T: next units of time to make predictions for
         max_x: the maximum frequency to plot. Default is max observed frequency.
         max_t: the maximum recency to plot. This also determines the age of the customer.
             Defaul to max observed age. 
@@ -72,11 +73,10 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
     if max_t is None:
         max_t = int(model.data['T'].max())
 
-    t = 1  # one unit of time
     Z = np.zeros((max_t+1, max_x+1))
     for i, t_x in enumerate(np.arange(max_t+1)):
         for j, x in enumerate(np.arange(max_x+1)):
-            Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, max_t)
+            Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(T, x, t_x, max_t)
 
     interpolation = kwargs.pop('interpolation', 'none')
 
@@ -84,7 +84,8 @@ def plot_frequency_recency_matrix(model, max_x=None, max_t=None, **kwargs):
     ax.imshow(Z, interpolation=interpolation, **kwargs)
     plt.xlabel("Customer's Historical Frequency")
     plt.ylabel("Customer's Recency")
-    plt.title('Expected Number of Future Purchases for 1 Unit of Time,\nby Frequency and Recency of a Customer')
+    plt.title('Expected Number of Future Purchases for %d Unit%s of Time,'
+              '\nby Frequency and Recency of a Customer' % (T, "s"[T==1:]))
 
     # turn matrix into square
     forceAspect(ax)
