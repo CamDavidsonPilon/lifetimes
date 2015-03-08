@@ -3,3 +3,5 @@ flake8
 autopep8
 pytest
 matplotlib
+pytest-cov
+coveralls
