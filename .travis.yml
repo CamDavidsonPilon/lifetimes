@@ -27,8 +27,12 @@ install:
   - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas pytest
   - source activate test-environment
   - python setup.py install
+  - pip install coveralls
 # command to run tests
-script: py.test -vv
+script: 
+  - py.test --cov lifetimes
+after_success:
+  coveralls
 # Don't want notifications
 notifications:
   email: false

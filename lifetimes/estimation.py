@@ -159,7 +159,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
         """
         This methods fits the data to the BG/NBD model.
 
