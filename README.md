@@ -1,5 +1,5 @@
-lifetimes
-======================
+![logo](http://i.imgur.com/7s3jqZM.png)
+
 #### Measuring customer lifetime value is hard. Lifetimes makes it easy. 
 [![Latest Version](https://pypip.in/v/lifetimes/badge.png)](https://pypi.python.org/pypi/lifetimes/)
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
