@@ -1,5 +1,6 @@
 import numpy as np
-from lifetimes.utils import coalesce
+import pandas as pd
+from lifetimes.utils import coalesce, calculate_alive_path
 
 __all__ = [
     'plot_period_transactions',
@@ -7,6 +8,7 @@ __all__ = [
     'plot_frequency_recency_matrix',
     'plot_expected_repeat_purchases',
     'plot_probability_alive_matrix',
+    'plot_history_alive'
 ]
 
 
@@ -169,6 +171,48 @@ def plot_expected_repeat_purchases(model, **kwargs):
     plt.title('Expected Number of Repeat Purchases per Customer')
     plt.xlabel('Time Since First Purchase')
     plt.legend(loc='lower right')
+    return ax
+
+
+def plot_history_alive(model, transactions, datetime_col, units, freq='D', **kwargs):
+
+    """
+    Draws a graph showing the probablility of being alive for a customer in time
+    :param model: A fitted lifetimes model
+    :param transactions: a Pandas DataFrame containing the transactions history of the customer_id
+    :param datetime_col: the column in the transactions that denotes the datetime the purchase was made
+    :param units: the number of time units since the birth we want to draw the p_alive
+    :param freq: Default 'D' for days. Other examples= 'W' for weekly
+    """
+
+    from matplotlib import pyplot as plt
+
+    start_date = kwargs.pop('start_date', min(transactions[datetime_col]))
+    ax = kwargs.pop('ax', None) or plt.subplot(111)
+
+    # Get purchasing history of user
+    customer_history = transactions[[datetime_col]].copy()
+    customer_history.index = customer_history[datetime_col]
+    # Add transactions column
+    customer_history['transactions'] = 1
+    customer_history = customer_history.resample(freq, how='sum').reset_index()
+
+    # plot alive_path
+    path = calculate_alive_path(model, transactions, datetime_col, units, freq)
+    path_dates = pd.date_range(start=min(transactions[datetime_col]), periods=len(path), freq=freq)
+    plt.plot(path_dates, path, '-', label='P_alive')
+
+    # plot buying dates
+    payment_dates = customer_history[customer_history['transactions'] >= 1][datetime_col]
+    plt.vlines(payment_dates.values, ymin=0, ymax=1, colors='r', linestyles='dashed', label='purchases')
+
+    plt.ylim(0, 1.0)
+    plt.yticks(np.arange(0, 1.1, 0.1))
+    plt.xlim(start_date, path_dates[-1])
+    plt.legend(loc=3)
+    plt.ylabel('P_alive')
+    plt.title('History of P_alive')
+
     return ax
 
 

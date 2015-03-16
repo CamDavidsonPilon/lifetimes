@@ -7,7 +7,8 @@ from scipy.optimize import minimize
 pd.options.mode.chained_assignment = None
 
 __all__ = ['calibration_and_holdout_data', 
-           'summary_data_from_transaction_data']
+           'summary_data_from_transaction_data'
+           'calculate_alive_path']
 
 
 def coalesce(*args):
@@ -112,6 +113,32 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     customers['recency'] = (customers['max'] - customers['min'])
 
     return customers[['frequency', 'recency', 'T']].astype(float)
+
+
+def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
+    """
+    :param model: A fitted lifetimes model
+    :param transactions: a Pandas DataFrame containing the transactions history of the customer_id
+    :param datetime_col: the column in the transactions that denotes the datetime the purchase was made
+    :param t: the number of time units since the birth for which we want to draw the p_alive
+    :param freq: Default 'D' for days. Other examples= 'W' for weekly
+    :return: A pandas Series containing the p_alive as a function of T (age of the customer)
+    """
+    customer_history = transactions[[datetime_col]].copy()
+    customer_history = customer_history.set_index(datetime_col)
+    # Add transactions column
+    customer_history['transactions'] = 1
+    purchase_history = customer_history.resample(freq, how='sum').fillna(0)['transactions'].values
+    extra_columns = t - len(purchase_history)
+    customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=['transactions'])
+    # add T column
+    customer_history['T'] = np.arange(customer_history.shape[0])
+    # add cumulative transactions column
+    customer_history['x_sum'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
+    # Add t_x column
+    customer_history['t_x'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
+    customer_history['t_x'] = customer_history['t_x'].fillna(method='ffill').fillna(0)
+    return customer_history.apply(lambda row: model.conditional_probability_alive(row['x_sum'], row['t_x'], row['T']), axis=1)
 
 
 def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params):

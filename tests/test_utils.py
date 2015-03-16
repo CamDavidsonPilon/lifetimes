@@ -2,8 +2,22 @@
 import pytest
 import pandas as pd 
 from pandas.util.testing import assert_frame_equal
-from lifetimes import utils
+from lifetimes import utils, BetaGeoFitter
 
+
+@pytest.fixture()
+def example_transaction_data():
+    return pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
+
+@pytest.fixture()
+def example_summary_data(example_transaction_data):
+    return utils.summary_data_from_transaction_data(example_transaction_data, 'id', 'date', observation_period_end=max(example_transaction_data.date))
+
+@pytest.fixture()
+def fitted_bg(example_summary_data):
+    bg = BetaGeoFitter()
+    bg.fit(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T'], iterative_fitting=0)
+    return bg
 
 @pytest.fixture()
 def transaction_level_data():
@@ -95,3 +109,10 @@ def test_summary_data_from_transaction_data_squashes_period_purchases_to_one_pur
     actual = utils.summary_data_from_transaction_data(transactions, 'id', 't', freq='W')
     assert actual.ix[1]['frequency'] == 1. - 1.
 
+
+def test_calculate_alive_path(example_transaction_data, example_summary_data, fitted_bg):
+    user_data = example_transaction_data[example_transaction_data['id'] == 33]
+    frequency, recency, T = example_summary_data.loc[33]
+    alive_path = utils.calculate_alive_path(fitted_bg, user_data, 'date', 205)
+    assert alive_path[0] == 1
+    assert alive_path[T] == fitted_bg.conditional_probability_alive(frequency, recency, T)
