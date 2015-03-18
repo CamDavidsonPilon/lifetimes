@@ -125,6 +125,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     :return: A pandas Series containing the p_alive as a function of T (age of the customer)
     """
     customer_history = transactions[[datetime_col]].copy()
+    customer_history[datetime_col] = pd.to_datetime(customer_history[datetime_col])
     customer_history = customer_history.set_index(datetime_col)
     # Add transactions column
     customer_history['transactions'] = 1

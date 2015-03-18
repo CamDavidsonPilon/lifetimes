@@ -192,7 +192,8 @@ def plot_history_alive(model, transactions, datetime_col, units, freq='D', **kwa
 
     # Get purchasing history of user
     customer_history = transactions[[datetime_col]].copy()
-    customer_history.index = customer_history[datetime_col]
+    customer_history.index = pd.DatetimeIndex(customer_history[datetime_col])
+
     # Add transactions column
     customer_history['transactions'] = 1
     customer_history = customer_history.resample(freq, how='sum').reset_index()
@@ -203,7 +204,7 @@ def plot_history_alive(model, transactions, datetime_col, units, freq='D', **kwa
     plt.plot(path_dates, path, '-', label='P_alive')
 
     # plot buying dates
-    payment_dates = customer_history[customer_history['transactions'] >= 1][datetime_col]
+    payment_dates = customer_history[customer_history['transactions'] >= 1]['index']
     plt.vlines(payment_dates.values, ymin=0, ymax=1, colors='r', linestyles='dashed', label='purchases')
 
     plt.ylim(0, 1.0)
