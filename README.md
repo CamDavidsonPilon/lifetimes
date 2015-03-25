@@ -48,7 +48,7 @@ The examples below are using the `cdnow_customers.csv` located in the `datasets/
 
 #### Fitting models to our data
 
-We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
+We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf). 
 
     from lifetimes import BetaGeoFitter
 

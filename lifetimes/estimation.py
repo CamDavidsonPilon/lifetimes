@@ -115,6 +115,28 @@ class ParetoNBDFitter(BaseFitter):
         A_0 = self._A_0(self._unload_params('r', 'alpha', 's', 'beta'), x, t_x, T)
         return 1. / (1. + (s / (r + s + x)) * (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
 
+    def conditional_probability_alive_matrix(self, max_x=None, max_t=None):
+        """
+        Compute the probability alive matrix
+        Parameters:
+            max_x: the maximum frequency to plot. Default is max observed frequency.
+            max_t: the maximum recency to plot. This also determines the age of the customer.
+                Default to max observed age.
+
+        Returns a matrix of the form [t_x: historical recency, x: historical frequency]
+
+        """
+
+        max_x = max_x or int(self.data['frequency'].max())
+        max_t = max_t or int(self.data['T'].max())
+
+        Z = np.zeros((max_t+1, max_x+1))
+        for i, t_x in enumerate(np.arange(max_t+1)):
+            for j, x in enumerate(np.arange(max_x+1)):
+                Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
+
+        return Z
+
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
