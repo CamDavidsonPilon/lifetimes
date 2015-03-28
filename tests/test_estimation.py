@@ -7,10 +7,9 @@ import numpy.testing as npt
 import pytest
 
 import lifetimes.estimation as estimation
+from lifetimes.datasets import load_cdnow
 
-@pytest.fixture()
-def cdnow_customers():
-    return pd.read_csv('lifetimes/datasets/cdnow_customers.csv', index_col=[0])
+cdnow_customers = load_cdnow()
 
 class TestParetoNBDFitter():
 
@@ -24,14 +23,14 @@ class TestParetoNBDFitter():
              + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
             == ptf()._negative_log_likelihood(params, x, t_x, t, 0)
 
-    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
+    def test_params_out_is_close_to_Hardie_paper(self):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'], iterative_fitting=1)
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
 
 
-    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
+    def test_conditional_probability_alive_is_between_0_and_1(self):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
@@ -53,13 +52,13 @@ class TestBetaGammaFitter():
              + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
             == bgf._negative_log_likelihood(params, x, t_x, t, 0)
  
-    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
+    def test_params_out_is_close_to_Hardie_paper(self):
         bfg = estimation.BetaGeoFitter()
-        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
+        bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'], iterative_fitting=2)
         expected = np.array([0.243, 4.414, 0.793, 2.426])
         npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
-    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
         x = 2
@@ -70,7 +69,7 @@ class TestBetaGammaFitter():
         actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
         assert abs(expected - actual) < 0.001
 
-    def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
+    def test_expectation_returns_same_value_Hardie_excel_sheet(self):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
@@ -79,14 +78,14 @@ class TestBetaGammaFitter():
         actual = bfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_array_almost_equal(actual, expected, decimal=3) 
 
-    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self, cdnow_customers):
+    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
         assert bfg.conditional_probability_alive(0, 1, 1) == 1.0
 
 
-    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
+    def test_conditional_probability_alive_is_between_0_and_1(self):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
 
@@ -96,7 +95,7 @@ class TestBetaGammaFitter():
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
 
 
-    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
+    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self):
         bfg1 = estimation.BetaGeoFitter()
         bfg2 = estimation.BetaGeoFitter()
 
@@ -108,7 +107,7 @@ class TestBetaGammaFitter():
         assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
 
 
-    def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
+    def test_penalizer_term_will_shrink_coefs_to_0(self):
         bfg_no_penalizer = estimation.BetaGeoFitter()
         bfg_no_penalizer.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
         params_1 = np.array(list(bfg_no_penalizer.params_.values()))
@@ -124,7 +123,7 @@ class TestBetaGammaFitter():
         assert np.all(params_3 < params_2)
 
 
-    def test_conditional_probability_alive_matrix(self, cdnow_customers):
+    def test_conditional_probability_alive_matrix(self):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['x'], cdnow_customers['t_x'], cdnow_customers['T'])
         Z = bfg.conditional_probability_alive_matrix()
