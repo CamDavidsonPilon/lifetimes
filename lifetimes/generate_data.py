@@ -51,8 +51,9 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
 
     Parameters:
         T: scalar or array, the length of time observing new customers.
-        r, alpha, s, beta: scalars, represening parameters in the model. See [2]
-        size: the number of customers to generate
+        r, alpha, s, beta: scalars, representing parameters in the model. See [2]
+        size: the number of customers to generate, equal to size of T if T is
+           an array.
 
     Returns:
         DataFrame, with index as customer_ids and the following columns:
@@ -80,11 +81,12 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
 
         # hacky until I can find something better
         times = []
-        while np.sum(times) < time_of_death:
-            times.append(stats.expon.rvs(scale=1. / l))
-        times = np.array(times).cumsum()
+        next_purchase_in = stats.expon.rvs(scale=1. / l)
+        while np.sum(times) + next_purchase_in < min(time_of_death, T[i]):
+            times.append(next_purchase_in)
+            next_purchase_in = stats.expon.rvs(scale=1. / l)
 
-        t_cal = times[times < T[i]]
-        df.ix[i] = len(t_cal),  np.max(t_cal if t_cal.shape[0] > 0 else 0), T[i], l, mu, time_of_death > T[i], i
+        times = np.array(times).cumsum()
+        df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, mu, time_of_death > T[i], i
 
     return df.set_index('customer_id')
