@@ -130,9 +130,9 @@ class ParetoNBDFitter(BaseFitter):
         max_x = max_x or int(self.data['frequency'].max())
         max_t = max_t or int(self.data['T'].max())
 
-        Z = np.zeros((max_t+1, max_x+1))
-        for i, t_x in enumerate(np.arange(max_t+1)):
-            for j, x in enumerate(np.arange(max_x+1)):
+        Z = np.zeros((max_t + 1, max_x + 1))
+        for i, t_x in enumerate(np.arange(max_t + 1)):
+            for j, x in enumerate(np.arange(max_x + 1)):
                 Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
 
         return Z
@@ -159,6 +159,21 @@ class ParetoNBDFitter(BaseFitter):
         second_term = (r + x) * (beta + T) / (alpha + T) / (s - 1)
         third_term = 1 - ((beta + T) / (beta + T + t)) ** (s - 1)
         return first_term * second_term * third_term / likelihood
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+
+        Returns: a scalar or array
+        """
+        r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
+        first_term = r * beta / alpha / (s - 1)
+        second_term = 1 - (beta / (beta + t)) ** (s - 1)
+        return first_term * second_term
 
 
 class BetaGeoFitter(BaseFitter):
@@ -214,7 +229,7 @@ class BetaGeoFitter(BaseFitter):
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
         if np.any(np.asarray(params) <= 0):
             return np.inf
-            
+
         np.seterr(divide='ignore')
 
         r, alpha, a, b = params
@@ -300,9 +315,9 @@ class BetaGeoFitter(BaseFitter):
         max_x = max_x or int(self.data['frequency'].max())
         max_t = max_t or int(self.data['T'].max())
 
-        Z = np.zeros((max_t+1, max_x+1))
-        for i, t_x in enumerate(np.arange(max_t+1)):
-            for j, x in enumerate(np.arange(max_x+1)):
+        Z = np.zeros((max_t + 1, max_x + 1))
+        for i, t_x in enumerate(np.arange(max_t + 1)):
+            for j, x in enumerate(np.arange(max_x + 1)):
                 Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
 
         return Z
