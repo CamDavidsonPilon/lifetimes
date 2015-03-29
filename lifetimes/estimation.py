@@ -218,7 +218,7 @@ class BetaGeoFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
 
-        self.params_ = dict(zip(['r', 'alpha', 'a', 'b'], params))
+        self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *params, size=size)
 
