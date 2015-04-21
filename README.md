@@ -36,16 +36,16 @@ The examples below are using the `cdnow_customers.csv` located in the `datasets/
     data = load_cdnow(index_col=[0])
     data.head()
     """
-        x    t_x      T
-    ID
-    1   2  30.43  38.86
-    2   1   1.71  38.86
-    3   0   0.00  38.86
-    4   0   0.00  38.86
-    5   0   0.00  38.86
+         frequency   recency      T
+    ID 
+    1    2           30.43       38.86
+    2    1            1.71       38.86
+    3    0            0.00       38.86
+    4    0            0.00       38.86
+    5    0            0.00       38.86
     """
 
-`x` represents the number of repeat purchases the customer has made (also called `frequency`). `T` represents the age of the customer. `t_x` represents the age of the customer when they made their most recent purchases (also called `recency`).
+`frequency` represents the number of repeat purchases the customer has made. `T` represents the age of the customer. `recency` represents the age of the customer when they made their most recent purchases.
 
 #### Fitting models to our data
 
@@ -54,11 +54,11 @@ We'll use the **BG/NBD model** first. Interested in the model? See this [nice pa
     from lifetimes import BetaGeoFitter
 
     # similar API to scikit-learn and lifelines.
-    bgf = BetaGeoFitter()
-    bgf.fit(data['x'], data['t_x'], data['T'])
+    bgf = BetaGeoFitter(penalizer_coef=0.0)
+    bgf.fit(data['frequency'], data['recency'], data['T'])
     print bgf
     """
-    <lifetimes.BetaGeoFitter: fitted with 2357 customers, a: 0.79, alpha: 4.41, r: 0.24, b: 2.43>
+    <lifetimes.BetaGeoFitter: fitted with 2357 subjects, a: 0.79, alpha: 4.41, r: 0.24, b: 2.43>
     """
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
@@ -91,16 +91,16 @@ Another interesting matrix to look at is the probability of still being *alive*:
 Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict a customer's expected purchases in the next period using their history.
 
     t = 1
-    data['predicted_purchases'] = data.apply(lambda r: bgf.conditional_expected_number_of_purchases_up_to_time(t, r['x'], r['t_x'], r['T']), axis=1)
+    data['predicted_purchases'] = data.apply(lambda r: bgf.conditional_expected_number_of_purchases_up_to_time(t, r['frequency'], r['recency'], r['T']), axis=1)
     data.sort('predicted_purchases').tail(5)
     """
-           x    t_x      T  predicted_purchases
+           frequency  recency      T        predicted_purchases
     ID
-    509   18  35.14  35.86             0.424877
-    841   19  34.00  34.14             0.474738
-    1981  17  28.43  28.86             0.486526
-    157   29  37.71  38.00             0.662396
-    1516  26  30.86  31.00             0.710623
+    509   18          35.14        35.86    0.424877
+    841   19          34.00        34.14    0.474738
+    1981  17          28.43        28.86    0.486526
+    157   29          37.71        38.00    0.662396
+    1516  26          30.86        31.00    0.710623
     """
 
 Great, we can see that the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period. 

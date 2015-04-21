@@ -135,11 +135,11 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     # add T column
     customer_history['T'] = np.arange(customer_history.shape[0])
     # add cumulative transactions column
-    customer_history['x_sum'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
+    customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
     # Add t_x column
-    customer_history['t_x'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
-    customer_history['t_x'] = customer_history['t_x'].fillna(method='ffill').fillna(0)
-    return customer_history.apply(lambda row: model.conditional_probability_alive(row['x_sum'], row['t_x'], row['T']), axis=1)
+    customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
+    customer_history['recency'] = customer_history['recency'].fillna(method='ffill').fillna(0)
+    return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
 def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params):

@@ -6,9 +6,9 @@ from lifetimes import plotting
 from lifetimes import BetaGeoFitter
 
 
-BG = BetaGeoFitter()
+bfg = BetaGeoFitter()
 data = pd.read_csv('lifetimes/datasets/cdnow_customers.csv', index_col=[0])
-BG.fit(data['x'], data['t_x'], data['T'], iterative_fitting=0)
+bfg.fit(data['frequency'], data['recency'], data['T'], iterative_fitting=0)
 
 @pytest.mark.plottest
 @pytest.mark.skipif("DISPLAY" not in os.environ, reason="requires display")
@@ -18,23 +18,23 @@ class TestPlotting():
         from matplotlib import pyplot as plt
         
         plt.figure()
-        plotting.plot_period_transactions(BG)
+        plotting.plot_period_transactions(bfg)
         
         plt.figure()
-        plotting.plot_period_transactions(BG, bins=range(5))
+        plotting.plot_period_transactions(bfg, bins=range(5))
         
         plt.figure()
-        plotting.plot_period_transactions(BG, label=['A', 'B'])
+        plotting.plot_period_transactions(bfg, label=['A', 'B'])
         plt.show()
 
     def test_plot_frequency_recency_matrix(self):
         from matplotlib import pyplot as plt
 
         plt.figure()
-        plotting.plot_frequency_recency_matrix(BG)
+        plotting.plot_frequency_recency_matrix(bfg)
 
         plt.figure()
-        plotting.plot_frequency_recency_matrix(BG, max_t=100, max_x=50)
+        plotting.plot_frequency_recency_matrix(bfg, max_recency=100, max_frequency=50)
 
         plt.show()
 
@@ -42,10 +42,10 @@ class TestPlotting():
         from matplotlib import pyplot as plt
 
         plt.figure()
-        plotting.plot_expected_repeat_purchases(BG)
+        plotting.plot_expected_repeat_purchases(bfg)
 
         plt.figure()
-        plotting.plot_expected_repeat_purchases(BG, label='test label')
+        plotting.plot_expected_repeat_purchases(bfg, label='test label')
 
         plt.show()
 

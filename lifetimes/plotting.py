@@ -72,7 +72,7 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
     return ax
 
 
-def plot_frequency_recency_matrix(model, T=1, max_x=None, max_t=None, **kwargs):
+def plot_frequency_recency_matrix(model, T=1, max_freqency=None, max_recency=None, **kwargs):
     """
     Plot a figure of expected transactions in T next units of time by a customer's
     frequency and recency.
@@ -80,24 +80,24 @@ def plot_frequency_recency_matrix(model, T=1, max_x=None, max_t=None, **kwargs):
     Parameters:
         model: a fitted lifetimes model.
         T: next units of time to make predictions for
-        max_x: the maximum frequency to plot. Default is max observed frequency.
-        max_t: the maximum recency to plot. This also determines the age of the customer.
+        max_freqency: the maximum frequency to plot. Default is max observed frequency.
+        max_recency: the maximum recency to plot. This also determines the age of the customer.
             Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
 
     """
     from matplotlib import pyplot as plt
 
-    if max_x is None:
-        max_x = int(model.data['frequency'].max())
+    if max_freqency is None:
+        max_freqency = int(model.data['frequency'].max())
 
-    if max_t is None:
-        max_t = int(model.data['T'].max())
+    if max_recency is None:
+        max_recency = int(model.data['T'].max())
 
-    Z = np.zeros((max_t + 1, max_x + 1))
-    for i, t_x in enumerate(np.arange(max_t + 1)):
-        for j, x in enumerate(np.arange(max_x + 1)):
-            Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(T, x, t_x, max_t)
+    Z = np.zeros((max_recency + 1, max_freqency + 1))
+    for i, recency in enumerate(np.arange(max_recency + 1)):
+        for j, frequency in enumerate(np.arange(max_freqency + 1)):
+            Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(T, frequency, recency, max_recency)
 
     interpolation = kwargs.pop('interpolation', 'none')
 
@@ -118,21 +118,21 @@ def plot_frequency_recency_matrix(model, T=1, max_x=None, max_t=None, **kwargs):
     return ax
 
 
-def plot_probability_alive_matrix(model, max_x=None, max_t=None, **kwargs):
+def plot_probability_alive_matrix(model, max_freqency=None, max_recency=None, **kwargs):
     """
     Plot a figure of the probability a customer is alive based on their
     frequency and recency.
 
     Parameters:
         model: a fitted lifetimes model.
-        max_x: the maximum frequency to plot. Default is max observed frequency.
-        max_t: the maximum recency to plot. This also determines the age of the customer.
+        max_freqency: the maximum frequency to plot. Default is max observed frequency.
+        max_recency: the maximum recency to plot. This also determines the age of the customer.
             Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
     """
     from matplotlib import pyplot as plt
 
-    z = model.conditional_probability_alive_matrix(max_x, max_t)
+    z = model.conditional_probability_alive_matrix(max_freqency, max_recency)
 
     interpolation = kwargs.pop('interpolation', 'none')
 
@@ -174,13 +174,13 @@ def plot_expected_repeat_purchases(model, **kwargs):
     return ax
 
 
-def plot_history_alive(model, transactions, datetime_col, units, freq='D', **kwargs):
+def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs):
     """
     Draws a graph showing the probablility of being alive for a customer in time
     :param model: A fitted lifetimes model
+    :param t: the number of time units since the birth we want to draw the p_alive
     :param transactions: a Pandas DataFrame containing the transactions history of the customer_id
     :param datetime_col: the column in the transactions that denotes the datetime the purchase was made
-    :param units: the number of time units since the birth we want to draw the p_alive
     :param freq: Default 'D' for days. Other examples= 'W' for weekly
     """
 

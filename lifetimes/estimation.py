@@ -18,7 +18,7 @@ class BaseFitter():
     def __repr__(self):
         classname = self.__class__.__name__
         try:
-            s = """<lifetimes.%s: fitted with %d customers, %s>""" % (classname, self.data.shape[0], self._print_params())
+            s = """<lifetimes.%s: fitted with %d subjects, %s>""" % (classname, self.data.shape[0], self._print_params())
         except AttributeError:
             s = """<lifetimes.%s>""" % classname
         return s
@@ -99,7 +99,7 @@ class ParetoNBDFitter(BaseFitter):
 
     def conditional_probability_alive(self, frequency, recency, T):
         """
-        Compute the probability that a customer with history (x, t_x, T) is currently
+        Compute the probability that a customer with history (frequency, recency, T) is currently
         alive. From http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
         Parameters:
@@ -115,32 +115,32 @@ class ParetoNBDFitter(BaseFitter):
         A_0 = self._A_0(self._unload_params('r', 'alpha', 's', 'beta'), x, t_x, T)
         return 1. / (1. + (s / (r + s + x)) * (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
 
-    def conditional_probability_alive_matrix(self, max_x=None, max_t=None):
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
         Compute the probability alive matrix
         Parameters:
-            max_x: the maximum frequency to plot. Default is max observed frequency.
-            max_t: the maximum recency to plot. This also determines the age of the customer.
+            max_frequency: the maximum frequency to plot. Default is max observed frequency.
+            max_recency: the maximum recency to plot. This also determines the age of the customer.
                 Default to max observed age.
 
         Returns a matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
 
-        max_x = max_x or int(self.data['frequency'].max())
-        max_t = max_t or int(self.data['T'].max())
+        max_frequency = max_frequency or int(self.data['frequency'].max())
+        max_recency = max_recency or int(self.data['T'].max())
 
-        Z = np.zeros((max_t + 1, max_x + 1))
-        for i, t_x in enumerate(np.arange(max_t + 1)):
-            for j, x in enumerate(np.arange(max_x + 1)):
-                Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
+        Z = np.zeros((max_recency + 1, max_frequency + 1))
+        for i, recency in enumerate(np.arange(max_recency + 1)):
+            for j, frequency in enumerate(np.arange(max_frequency + 1)):
+                Z[i, j] = self.conditional_probability_alive(recency, frequency, max_recency)
 
         return Z
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
-        the population, given they have purchase history (x, t_x, T)
+        the population, given they have purchase history (frequency, recency, T)
 
         Parameters:
             t: a scalar or array of times.
@@ -261,7 +261,7 @@ class BetaGeoFitter(BaseFitter):
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
-        the population, given they have purchase history (x, t_x, T)
+        the population, given they have purchase history (frequency, recency, T)
 
         Parameters:
             t: a scalar or array of times.
@@ -283,14 +283,14 @@ class BetaGeoFitter(BaseFitter):
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, x, t_x, T):
+    def conditional_probability_alive(self, frequency, recency, T):
         """
-        Compute the probability that a customer with history (x, t_x, T) is currently
+        Compute the probability that a customer with history (frequency, recency, T) is currently
         alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
 
         Parameters:
-            x: a scalar: historical frequency of customer.
-            t_x: a scalar: historical recency of customer.
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
             T: a scalar: age of the customer.
 
         Returns: a scalar
@@ -298,27 +298,27 @@ class BetaGeoFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        return 1. / (1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x))
+        return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
-    def conditional_probability_alive_matrix(self, max_x=None, max_t=None):
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
         Compute the probability alive matrix
         Parameters:
-            max_x: the maximum frequency to plot. Default is max observed frequency.
-            max_t: the maximum recency to plot. This also determines the age of the customer.
+            max_frequency: the maximum frequency to plot. Default is max observed frequency.
+            max_recency: the maximum recency to plot. This also determines the age of the customer.
                 Default to max observed age.
 
         Returns a matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
 
-        max_x = max_x or int(self.data['frequency'].max())
-        max_t = max_t or int(self.data['T'].max())
+        max_frequency = max_frequency or int(self.data['frequency'].max())
+        max_recency = max_recency or int(self.data['T'].max())
 
-        Z = np.zeros((max_t + 1, max_x + 1))
-        for i, t_x in enumerate(np.arange(max_t + 1)):
-            for j, x in enumerate(np.arange(max_x + 1)):
-                Z[i, j] = self.conditional_probability_alive(x, t_x, max_t)
+        Z = np.zeros((max_recency + 1, max_frequency + 1))
+        for i, t_x in enumerate(np.arange(max_recency + 1)):
+            for j, x in enumerate(np.arange(max_frequency + 1)):
+                Z[i, j] = self.conditional_probability_alive(x, t_x, max_recency)
 
         return Z
 
