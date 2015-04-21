@@ -8,16 +8,17 @@
 ## Introduction
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
 
-More generally, Lifetimes can be used to understand and predict future usage based on a few lax assumption:
+More generally, Lifetimes can be used to understand and predict future usage based on a few assumption:
 
-1. Entities under study may die after some random period of time.
-2. Entities interact with you when they are alive.
+1. Entities interact with you when they are alive.
+2. Entities under study may die (leave the service) after some random period of time.
 
-Lifetimes can be used to both estimate if these entities are still *alive*, and predict how much more they will interact based on their existing history. If this is too abstract, consider these situations:
+If this is too abstract, consider these applications:
 
  - Predicting how often a visitor will return to your website. 
  - Understanding how frequently a patient may return to a hospital.
- - Predicting individuals who gave "died" using only their usage history.
+ - Predicting individuals who have churned using only their usage history.
+ - Predicting repeat purchases from a commerce customer.
 
 Really, "customers" is a very general term here, (similar to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand behaviour. 
 
@@ -25,7 +26,7 @@ Really, "customers" is a very general term here, (similar to "birth" and "death"
 
     pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas. 
+Requirements are only Numpy, Scipy, Pandas (and optionally-but-seriously matplotlib). 
 
 ## Quickstart
     
