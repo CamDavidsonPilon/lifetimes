@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-def plot_period_transactions(model, **kwargs):
+def plot_period_transactions(model, max_frequency=7, **kwargs):
     from matplotlib import pyplot as plt
 
     bins = kwargs.pop('bins', range(9))
@@ -21,10 +21,14 @@ def plot_period_transactions(model, **kwargs):
     n = model.data.shape[0]
     simulated_data = model.generate_new_data(size=n)
 
-    ax = plt.hist(np.c_[model.data['frequency'].values, simulated_data['frequency'].values],
-                  bins=bins, label=labels)
+    model_counts = pd.DataFrame(model.data['frequency'].value_counts().sort_index().ix[:max_frequency])
+    simulated_counts = pd.DataFrame(simulated_data['frequency'].value_counts().sort_index().ix[:max_frequency])
+    combined_counts = model_counts.merge(simulated_counts, how='outer', left_index=True, right_index=True).fillna(0)
+    combined_counts.columns = labels
+    
+    ax = combined_counts.plot(kind='bar')
+
     plt.legend()
-    plt.xticks(np.arange(len(bins))[:-1] + 0.5, bins[:-1])
     plt.title('Frequency of Repeat Transactions')
     plt.ylabel('Customers')
     plt.xlabel('Number of Calibration Period Transactions')
