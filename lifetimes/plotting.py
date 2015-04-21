@@ -198,7 +198,7 @@ def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs)
     customer_history = customer_history.resample(freq, how='sum').reset_index()
 
     # plot alive_path
-    path = calculate_alive_path(model, transactions, datetime_col, units, freq)
+    path = calculate_alive_path(model, transactions, datetime_col, t, freq)
     path_dates = pd.date_range(start=min(transactions[datetime_col]), periods=len(path), freq=freq)
     plt.plot(path_dates, path, '-', label='P_alive')
 

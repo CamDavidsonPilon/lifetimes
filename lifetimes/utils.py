@@ -16,7 +16,7 @@ def coalesce(*args):
 
 
 def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, calibration_period_end,
-                                 observation_period_end=datetime.today(), freq='D', datetime_format=None,):
+                                 observation_period_end=datetime.today(), freq='D', datetime_format=None):
     """
     This function creates a summary of each customer over a calibration and holdout period (training and testing, respectively).
     It accepts transition data, and returns a Dataframe of sufficient statistics.

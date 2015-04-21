@@ -181,13 +181,28 @@ With this dataset, we can perform fitting on the `_cal` columns, and test on the
 
 #### Customer Predicitions
 
-Basic on customer history, we can predict what an individuals future purchases might look like:
+Based on customer history, we can predict what an individuals future purchases might look like:
 
     t = 10 #predict purchases in 10 periods
     individual = summary.iloc[20]
     # The below function is an alias to `bfg.conditional_expected_number_of_purchases_up_to_time`
     bgf.predict(t, individual['frequency'], individual['recency'], individual['T'])
     # 0.0576511
+
+
+### Customer Probability Histories
+
+Given a customer transaction history, we can calculate their historical probability of being alive, according to 
+our trained model. For example:
+
+    from lifetimes.plotting import plot_history_alive
+
+    id = 35
+    days_since_birth = 200
+    sp_trans = transaction_data.ix[transaction_data['id'] == id]
+    plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
+
+![history](http://i.imgur.com/y45tum4.png)
 
 
 ## Questions? Comments? 
