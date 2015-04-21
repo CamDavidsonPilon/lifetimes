@@ -263,6 +263,7 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
+        t /= self._scale
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
@@ -280,7 +281,9 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        x, t_x = frequency / self._scale, recency / self._scale
+        t /= self._scale
+        x = frequency / self._scale 
+        t_x = recency / self._scale
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
@@ -307,6 +310,7 @@ class BetaGeoFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         frequency /= self._scale
+        recency /= self._scale
         T /= self._scale
         return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
@@ -325,6 +329,9 @@ class BetaGeoFitter(BaseFitter):
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
 
+        max_recency /= self._scale
+        max_frequency /= self._scale
+
         Z = np.zeros((max_recency + 1, max_frequency + 1))
         for i, t_x in enumerate(np.arange(max_recency + 1)):
             for j, x in enumerate(np.arange(max_frequency + 1)):
@@ -342,6 +349,7 @@ class BetaGeoFitter(BaseFitter):
         """
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        t /= self._scale
 
         first_term = beta(a, b + x) / beta(a, b) * gamma(r + x) / gamma(r) / gamma(x + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** x
         if x > 0:
