@@ -7,7 +7,7 @@ def read(fname):
 
 
 setup(name='Lifetimes',
-      version='0.1.3',
+      version='0.1.4',
       description='Measure customer lifetime value in Python',
       author='Cam Davidson-Pilon',
       author_email='cam.davidson.pilon@gmaillcom',
