@@ -47,14 +47,15 @@ class TestPlotting():
         plt.show()
 
     def test_plot_customer_alive_history(self):
+        from matplotlib import pyplot as plt
 
         transaction_data = load_transaction_data()
         # yes I know this is using the wrong data, but I'm testing plotting here.
         id = 35
         days_since_birth = 200
         sp_trans = transaction_data.ix[transaction_data['id'] == id]
-        plot.figure()
+        plt.figure()
         plotting.plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
-        plot.show()
+        plt.show()
 
 

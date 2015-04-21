@@ -14,8 +14,6 @@ __all__ = [
 
 def plot_period_transactions(model, max_frequency=7, **kwargs):
     from matplotlib import pyplot as plt
-
-    bins = kwargs.pop('bins', range(9))
     labels = kwargs.pop('label', ['Actual', 'Model'])
 
     n = model.data.shape[0]

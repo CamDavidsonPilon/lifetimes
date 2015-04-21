@@ -158,4 +158,7 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
     return minimizing_params, np.min(ll)
 
 def _scale_time(age):
-    return age.max()/10.
+    if age.max() > 100:
+        return age.max()/10.
+    else:
+        return 1
