@@ -7,7 +7,7 @@ import pandas as pd
 
 from scipy.special import gammaln, hyp2f1, beta, gamma
 
-from lifetimes.utils import _fit
+from lifetimes.utils import _fit, _scale_time
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter']
@@ -221,7 +221,11 @@ class BetaGeoFitter(BaseFitter):
         recency = np.asarray(recency)
         T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
+        self._scale = _scale_time(T)
+        scaled_recency  = recency / self._scale
+        scaled_T = T / self._scale
+
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -245,7 +249,7 @@ class BetaGeoFitter(BaseFitter):
 
         d = (freq > 0)
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
-        A_4[np.isnan(A_4)] = 0
+        A_4[np.isnan(A_4) | np.isinf(A_4) | np.isinf(-A_4)] = 0
         penalizer_term = penalizer_coef * np.log(params).sum()
         return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
 
@@ -276,7 +280,7 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        x, t_x = frequency, recency
+        x, t_x = frequency / self._scale, recency / self._scale
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
@@ -302,7 +306,8 @@ class BetaGeoFitter(BaseFitter):
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-
+        frequency /= self._scale
+        T /= self._scale
         return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):

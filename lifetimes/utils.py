@@ -145,7 +145,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params, disp):
     ll = []
     sols = []
-    methods = ['Powell', 'Nelder-Mead']
+    methods = ['Nelder-Mead', 'Powell']
 
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
@@ -156,3 +156,6 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
         sols.append(output.x)
     minimizing_params = sols[np.argmin(ll)]
     return minimizing_params, np.min(ll)
+
+def _scale_time(age):
+    return age.max()/10.
