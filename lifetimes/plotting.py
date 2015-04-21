@@ -6,8 +6,8 @@ __all__ = [
     'plot_period_transactions',
     'plot_calibration_purchases_vs_holdout_purchases',
     'plot_frequency_recency_matrix',
-    'plot_expected_repeat_purchases',
     'plot_probability_alive_matrix',
+    'plot_expected_repeat_purchases',
     'plot_history_alive'
 ]
 
@@ -72,7 +72,7 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
     return ax
 
 
-def plot_frequency_recency_matrix(model, T=1, max_freqency=None, max_recency=None, **kwargs):
+def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=None, **kwargs):
     """
     Plot a figure of expected transactions in T next units of time by a customer's
     frequency and recency.
@@ -80,7 +80,7 @@ def plot_frequency_recency_matrix(model, T=1, max_freqency=None, max_recency=Non
     Parameters:
         model: a fitted lifetimes model.
         T: next units of time to make predictions for
-        max_freqency: the maximum frequency to plot. Default is max observed frequency.
+        max_frequency: the maximum frequency to plot. Default is max observed frequency.
         max_recency: the maximum recency to plot. This also determines the age of the customer.
             Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
@@ -88,15 +88,15 @@ def plot_frequency_recency_matrix(model, T=1, max_freqency=None, max_recency=Non
     """
     from matplotlib import pyplot as plt
 
-    if max_freqency is None:
-        max_freqency = int(model.data['frequency'].max())
+    if max_frequency is None:
+        max_frequency = int(model.data['frequency'].max())
 
     if max_recency is None:
         max_recency = int(model.data['T'].max())
 
-    Z = np.zeros((max_recency + 1, max_freqency + 1))
+    Z = np.zeros((max_recency + 1, max_frequency + 1))
     for i, recency in enumerate(np.arange(max_recency + 1)):
-        for j, frequency in enumerate(np.arange(max_freqency + 1)):
+        for j, frequency in enumerate(np.arange(max_frequency + 1)):
             Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(T, frequency, recency, max_recency)
 
     interpolation = kwargs.pop('interpolation', 'none')
@@ -118,21 +118,21 @@ def plot_frequency_recency_matrix(model, T=1, max_freqency=None, max_recency=Non
     return ax
 
 
-def plot_probability_alive_matrix(model, max_freqency=None, max_recency=None, **kwargs):
+def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, **kwargs):
     """
     Plot a figure of the probability a customer is alive based on their
     frequency and recency.
 
     Parameters:
         model: a fitted lifetimes model.
-        max_freqency: the maximum frequency to plot. Default is max observed frequency.
+        max_frequency: the maximum frequency to plot. Default is max observed frequency.
         max_recency: the maximum recency to plot. This also determines the age of the customer.
             Default to max observed age.
         kwargs: passed into the matplotlib.imshow command.
     """
     from matplotlib import pyplot as plt
 
-    z = model.conditional_probability_alive_matrix(max_freqency, max_recency)
+    z = model.conditional_probability_alive_matrix(max_frequency, max_recency)
 
     interpolation = kwargs.pop('interpolation', 'none')
 
