@@ -38,7 +38,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -49,6 +49,8 @@ class ParetoNBDFitter(BaseFitter):
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
                 parameters for the model. Setting to 0 will improve peformance but possibly
                 hurt estimates.
+            initial_params: set intial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -58,7 +60,7 @@ class ParetoNBDFitter(BaseFitter):
         recency = np.asarray(recency)
         T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -196,7 +198,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -207,6 +209,9 @@ class BetaGeoFitter(BaseFitter):
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
                 parameters for the model. Setting to 0 will improve peformance but possibly
                 hurt estimates.
+            initial_params: set the initial parameters for the fitter.
+            verbose: set to true to print out convergence diagnostics.
+
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -216,7 +221,7 @@ class BetaGeoFitter(BaseFitter):
         recency = np.asarray(recency)
         T = np.asarray(T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
