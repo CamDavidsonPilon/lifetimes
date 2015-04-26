@@ -7,13 +7,13 @@ def read(fname):
 
 
 setup(name='Lifetimes',
-      version='0.1.5',
+      version=__version__,
       description='Measure customer lifetime value in Python',
       author='Cam Davidson-Pilon',
       author_email='cam.davidson.pilon@gmaillcom',
       packages=['lifetimes', 'lifetimes.datasets'],
       license="MIT",
-      keywords="customer lifetime value, clv, ltv, BG/NBD, pareto/NBD",
+      keywords="customer lifetime value, clv, ltv, BG/NBD, pareto/NBD, frequency, recency",
       url="https://github.com/CamDavidsonPilon/lifetimes",
       long_description=read('README.md'),
       classifiers=[
