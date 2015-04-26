@@ -23,7 +23,7 @@ def plot_period_transactions(model, max_frequency=7, **kwargs):
     simulated_counts = pd.DataFrame(simulated_data['frequency'].value_counts().sort_index().ix[:max_frequency])
     combined_counts = model_counts.merge(simulated_counts, how='outer', left_index=True, right_index=True).fillna(0)
     combined_counts.columns = labels
-    
+
     ax = combined_counts.plot(kind='bar')
 
     plt.legend()

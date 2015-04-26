@@ -2,6 +2,9 @@
 import os
 from distutils.core import setup
 
+exec(compile(open('lifetimes/version.py').read(),
+                  'lifetimes/version.py', 'exec'))
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 

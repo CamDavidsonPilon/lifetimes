@@ -222,7 +222,7 @@ class BetaGeoFitter(BaseFitter):
         T = np.asarray(T)
 
         self._scale = _scale_time(T)
-        scaled_recency  = recency / self._scale
+        scaled_recency = recency / self._scale
         scaled_T = T / self._scale
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
@@ -282,7 +282,7 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar or array
         """
         t /= self._scale
-        x = frequency / self._scale 
+        x = frequency / self._scale
         t_x = recency / self._scale
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 

@@ -157,10 +157,11 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
     minimizing_params = sols[np.argmin(ll)]
     return minimizing_params, np.min(ll)
 
+
 def _scale_time(age):
     # create a scaler such that the maximum age is 100.
     upper_bound = 100.
     if age.max() > upper_bound:
-        return upper_bound/age.max() 
+        return upper_bound / age.max()
     else:
         return 1.
