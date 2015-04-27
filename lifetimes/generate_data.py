@@ -36,10 +36,18 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     for i in range(size):
         p = probability_of_post_purchase_death[i]
         l = lambda_[i]
-        churn = stats.geom.rvs(p)
-        times = np.cumsum(stats.expon.rvs(scale=1. / l, size=churn))
-        t_cal = times[times < T[i]]
-        df.ix[i] = len(t_cal),  np.max(t_cal if t_cal.shape[0] > 0 else 0), T[i], l, p, churn > len(t_cal), i
+
+        # hacky until I can find something better
+        times = []
+        next_purchase_in = stats.expon.rvs(scale=1. / l)
+        alive = True
+        while (np.sum(times) + next_purchase_in < T[i]) and alive:
+            times.append(next_purchase_in)
+            next_purchase_in = stats.expon.rvs(scale=1. / l)
+            alive = np.random.random() > p
+
+        times = np.array(times).cumsum()
+        df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
 
