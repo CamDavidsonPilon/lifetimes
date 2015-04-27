@@ -144,8 +144,8 @@ class TestBetaGammaFitter():
         bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
         assert bgf_with_large_inputs._scale < 1.
 
-        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, 1, 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
-        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, 2, 10) == bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale*1, scale*2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale*2, scale*10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
 
 
 
