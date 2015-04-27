@@ -28,4 +28,18 @@ def load_cdnow(**kwargs):
 
 
 def load_transaction_data(**kwargs):
+    """
+    Returns a Pandas dataframe of transactional data. Looks like:
+
+                      date  id
+    0  2014-03-08 00:00:00   0
+    1  2014-05-21 00:00:00   1
+    2  2014-03-14 00:00:00   2
+    3  2014-04-09 00:00:00   2
+    4  2014-05-21 00:00:00   2
+
+    The data was artificially created using Lifetimes data generation routines. Data was generated 
+    between 2014-01-01 to 2014-12-31.
+
+    """
     return load_dataset('example_transactions.csv', **kwargs)

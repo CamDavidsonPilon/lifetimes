@@ -1,7 +1,8 @@
-
 import pytest
 import pandas as pd 
+import numpy as np 
 from pandas.util.testing import assert_frame_equal
+
 from lifetimes import utils, BetaGeoFitter
 
 
@@ -116,3 +117,24 @@ def test_calculate_alive_path(example_transaction_data, example_summary_data, fi
     alive_path = utils.calculate_alive_path(fitted_bg, user_data, 'date', 205)
     assert alive_path[0] == 1
     assert alive_path[T] == fitted_bg.conditional_probability_alive(frequency, recency, T)
+
+def test_check_inputs():
+    freq, recency, T = np.array([0,1,2]), np.array([0, 1, 10]), np.array([5, 6, 15])
+    assert utils._check_inputs(freq, recency, T) is None
+
+    with pytest.raises(ValueError):
+        bad_recency = T + 1
+        utils._check_inputs(freq, bad_recency, T)
+
+    with pytest.raises(ValueError):
+        bad_recency = recency.copy()
+        bad_recency[0] = 1
+        utils._check_inputs(freq, bad_recency, T)
+
+    with pytest.raises(ValueError):
+        bad_freq = np.array([0, 0.5, 2])
+        utils._check_inputs(bad_freq, recency, T)
+
+
+
+

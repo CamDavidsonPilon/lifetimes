@@ -5,6 +5,7 @@ import pytest
 from lifetimes import plotting
 from lifetimes import BetaGeoFitter
 from lifetimes.datasets import load_cdnow, load_transaction_data
+from lifetimes import utils
 
 bgf = BetaGeoFitter()
 cd_data = load_cdnow()
@@ -58,4 +59,13 @@ class TestPlotting():
         plotting.plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
         plt.show()
 
+    def test_plot_calibration_purchases_vs_holdout_purchases(self):
+        from matplotlib import pyplot as plt 
 
+        transaction_data = load_transaction_data()
+        summary = utils.calibration_and_holdout_data(transaction_data, 'id', 'date', '2014-09-01', '2014-12-31')
+        bgf.fit(summary['frequency_cal'], summary['recency_cal'], summary['T_cal'])
+        
+        plt.figure()
+        plotting.plot_calibration_purchases_vs_holdout_purchases(bgf, summary)
+        plt.show()
