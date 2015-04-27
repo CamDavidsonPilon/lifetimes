@@ -232,6 +232,8 @@ class BetaGeoFitter(BaseFitter):
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
+        self.params_['alpha'] /= self._scale
+
         self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *params, size=size)
 
@@ -267,7 +269,6 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        t /= self._scale
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
@@ -285,9 +286,6 @@ class BetaGeoFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        t /= self._scale
-        t_x = recency / self._scale
-        T /= self._scale
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
@@ -296,7 +294,7 @@ class BetaGeoFitter(BaseFitter):
         second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
         numerator = first_term * second_term
 
-        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + t_x)) ** (r + x)
+        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
@@ -314,8 +312,6 @@ class BetaGeoFitter(BaseFitter):
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        recency /= self._scale
-        T /= self._scale
         return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
@@ -332,8 +328,6 @@ class BetaGeoFitter(BaseFitter):
 
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
-
-        max_recency /= self._scale
 
         Z = np.zeros((max_recency + 1, max_frequency + 1))
         for i, t_x in enumerate(np.arange(max_recency + 1)):
@@ -352,7 +346,6 @@ class BetaGeoFitter(BaseFitter):
         """
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        t /= self._scale
 
         first_term = beta(a, b + n) / beta(a, b) * gamma(r + n) / gamma(r) / gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
         if n > 0:

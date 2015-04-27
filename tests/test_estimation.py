@@ -134,3 +134,20 @@ class TestBetaGammaFitter():
             for x in range(Z.shape[1]):
                 assert Z[t_x][x] == bfg.conditional_probability_alive(x, t_x, max_t)
 
+
+    def test_scaling_inputs_gives_same_or_similar_results(self):
+        bgf = estimation.BetaGeoFitter()
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        scale = 10
+        bgf_with_large_inputs = estimation.BetaGeoFitter()
+        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
+        assert bgf_with_large_inputs._scale < 1.
+
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, 1, 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, 2, 10) == bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
+
+
+
+
+
