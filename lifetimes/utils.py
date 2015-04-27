@@ -165,3 +165,23 @@ def _scale_time(age):
         return upper_bound / age.max()
     else:
         return 1.
+
+def _check_inputs(frequency, recency, T):
+
+    def check_recency_is_less_than_T(recency, T):
+        if np.any(recency > T):
+            raise ValueError("""Some values in recency vector are larger than T vector. This is impossible according to the model.""")
+
+    def check_frequency_of_zero_implies_recency_of_zero(frequency, recency):
+        ix = frequency == 0
+        if np.any(recency[ix] != 0):
+           raise ValueError("""There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
+
+    def check_all_frequency_values_are_integer_values(frequency):
+        if np.sum((frequency - frequency.astype(int))**2) != 0:
+            raise ValueError("""There exist non-integer values in the frequency vector. This is impossible according to the model.""")
+
+    check_recency_is_less_than_T(recency, T)
+    check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
+    check_all_frequency_values_are_integer_values(frequency)
+
