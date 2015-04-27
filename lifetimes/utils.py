@@ -160,12 +160,8 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
 
 
 def _scale_time(age):
-    # create a scaler such that the maximum age is 100.
-    upper_bound = 100.
-    if age.max() > upper_bound:
-        return upper_bound / age.max()
-    else:
-        return 1.
+    # create a scalar such that the maximum age is 100.
+    return 10./age.max()
 
 
 def _check_inputs(frequency, recency, T):

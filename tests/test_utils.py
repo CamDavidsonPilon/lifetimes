@@ -142,10 +142,7 @@ def test_summary_data_from_transaction_data_obeys_data_contraints(example_summar
 def test_scale_time():
     max_T = 200.
     T = np.arange(max_T)
-    assert utils._scale_time(T) ==100. / (max_T-1)
+    assert utils._scale_time(T) == 10. / (max_T-1)
 
-    max_T = 20.
-    T = np.arange(max_T)
-    assert utils._scale_time(T) == 1.
 
 
