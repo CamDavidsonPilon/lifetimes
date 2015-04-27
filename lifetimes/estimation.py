@@ -7,7 +7,7 @@ import pandas as pd
 
 from scipy.special import gammaln, hyp2f1, beta, gamma
 
-from lifetimes.utils import _fit, _scale_time
+from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter']
@@ -59,6 +59,7 @@ class ParetoNBDFitter(BaseFitter):
         frequency = np.asarray(frequency)
         recency = np.asarray(recency)
         T = np.asarray(T)
+        _check_inputs(frequency, recency, T)
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
@@ -220,6 +221,7 @@ class BetaGeoFitter(BaseFitter):
         frequency = np.asarray(frequency)
         recency = np.asarray(recency)
         T = np.asarray(T)
+        _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
         scaled_recency = recency / self._scale
@@ -282,8 +284,9 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar or array
         """
         t /= self._scale
-        x = frequency / self._scale
         t_x = recency / self._scale
+        T /= self._scale
+        x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
@@ -309,7 +312,6 @@ class BetaGeoFitter(BaseFitter):
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        frequency /= self._scale
         recency /= self._scale
         T /= self._scale
         return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
@@ -330,7 +332,6 @@ class BetaGeoFitter(BaseFitter):
         max_recency = max_recency or int(self.data['T'].max())
 
         max_recency /= self._scale
-        max_frequency /= self._scale
 
         Z = np.zeros((max_recency + 1, max_frequency + 1))
         for i, t_x in enumerate(np.arange(max_recency + 1)):
