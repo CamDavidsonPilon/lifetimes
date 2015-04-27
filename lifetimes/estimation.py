@@ -226,8 +226,8 @@ class BetaGeoFitter(BaseFitter):
         _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
-        scaled_recency = recency / self._scale
-        scaled_T = T / self._scale
+        scaled_recency = recency * self._scale
+        scaled_T = T * self._scale
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
