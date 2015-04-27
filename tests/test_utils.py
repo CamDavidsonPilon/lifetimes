@@ -136,5 +136,16 @@ def test_check_inputs():
         utils._check_inputs(bad_freq, recency, T)
 
 
+def test_summary_data_from_transaction_data_obeys_data_contraints(example_summary_data):
+    assert utils._check_inputs(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T']) is None
+
+def test_scale_time():
+    max_T = 200.
+    T = np.arange(max_T)
+    assert utils._scale_time(T) ==100. / (max_T-1)
+
+    max_T = 20.
+    T = np.arange(max_T)
+    assert utils._scale_time(T) == 1.
 
 

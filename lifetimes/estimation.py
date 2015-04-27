@@ -24,6 +24,8 @@ class BaseFitter():
         return s
 
     def _unload_params(self, *args):
+        if not hasattr(self, 'params_'):
+            raise ValueError("Model has not been fit yet. Please call the .fit method first.")
         return [self.params_[x] for x in args]
 
     def _print_params(self):
@@ -115,7 +117,7 @@ class ParetoNBDFitter(BaseFitter):
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = self._A_0(self._unload_params('r', 'alpha', 's', 'beta'), x, t_x, T)
+        A_0 = self._A_0([r, alpha, s, beta], x, t_x, T)
         return 1. / (1. + (s / (r + s + x)) * (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
@@ -215,7 +217,7 @@ class BetaGeoFitter(BaseFitter):
 
 
         Returns:
-            self, with additional properties and methods like params_ and plot
+            self, with additional properties and methods like params_ and predict
 
         """
         frequency = np.asarray(frequency)
@@ -340,22 +342,22 @@ class BetaGeoFitter(BaseFitter):
 
         return Z
 
-    def probability_of_n_purchases_up_to_time(self, t, x):
+    def probability_of_n_purchases_up_to_time(self, t, n):
         """
         Compute the probability of
 
-        P(X(t) = x | model)
+        P( N(t) = n | model )
 
-        where X(t) is the number of repeat purchases a customer makes in t units of time.
+        where N(t) is the number of repeat purchases a customer makes in t units of time.
         """
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         t /= self._scale
 
-        first_term = beta(a, b + x) / beta(a, b) * gamma(r + x) / gamma(r) / gamma(x + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** x
-        if x > 0:
-            finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, x)])
-            second_term = beta(a + 1, b + x - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+        first_term = beta(a, b + n) / beta(a, b) * gamma(r + n) / gamma(r) / gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        if n > 0:
+            finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+            second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
         return first_term + second_term

@@ -73,15 +73,16 @@ def reduce_events_to_period(transactions, customer_id_col, datetime_col):
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, datetime_format=None,
                                        observation_period_end=datetime.today(), freq='D'):
     """
-    This transform transaction data of the form:
-        customer_id, time
+    This transforms a Dataframe of transaction data of the form:
 
-        to
+        customer_id, datetime
+
+    to a Dataframe of the form:
 
         customer_id, frequency, recency, T
 
     Parameters:
-        transactions: a Pandas DataFrame of at least two cols.
+        transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         observation_period_end: a string or datetime to denote the final date of the study. Events
@@ -166,6 +167,7 @@ def _scale_time(age):
     else:
         return 1.
 
+
 def _check_inputs(frequency, recency, T):
 
     def check_recency_is_less_than_T(recency, T):
@@ -175,13 +177,12 @@ def _check_inputs(frequency, recency, T):
     def check_frequency_of_zero_implies_recency_of_zero(frequency, recency):
         ix = frequency == 0
         if np.any(recency[ix] != 0):
-           raise ValueError("""There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
+            raise ValueError("""There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
 
     def check_all_frequency_values_are_integer_values(frequency):
-        if np.sum((frequency - frequency.astype(int))**2) != 0:
+        if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
             raise ValueError("""There exist non-integer values in the frequency vector. This is impossible according to the model.""")
 
     check_recency_is_less_than_T(recency, T)
     check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
     check_all_frequency_values_are_integer_values(frequency)
-
