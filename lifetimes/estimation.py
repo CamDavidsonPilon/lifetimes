@@ -2,10 +2,12 @@ from __future__ import print_function
 from collections import OrderedDict
 
 import numpy as np
-from numpy import log, exp
-import pandas as pd
+from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
+                  isinf, isnan, ones_like
+from pandas import DataFrame
 
 from scipy.special import gammaln, hyp2f1, beta, gamma
+from scipy.misc import logsumexp
 
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
@@ -58,15 +60,15 @@ class ParetoNBDFitter(BaseFitter):
             self, with additional properties and methods like params_ and plot
 
         """
-        frequency = np.asarray(frequency)
-        recency = np.asarray(recency)
-        T = np.asarray(T)
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
         _check_inputs(frequency, recency, T)
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
-        self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
@@ -86,7 +88,7 @@ class ParetoNBDFitter(BaseFitter):
 
     def _negative_log_likelihood(self, params, freq, rec, T, penalizer_coef):
 
-        if np.any(np.asarray(params) <= 0.):
+        if npany(asarray(params) <= 0.):
             return np.inf
 
         r, alpha, s, beta = params
@@ -97,9 +99,9 @@ class ParetoNBDFitter(BaseFitter):
         A_1 = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta)
         A_0 = self._A_0(params, freq, rec, T)
 
-        A_2 = log(1. / (alpha + T) ** (r + x) / (beta + T) ** s + (s / r_s_x) * A_0)
+        A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log(A_0) - log(r_s_x))
 
-        penalizer_term = penalizer_coef * np.log(params).sum()
+        penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2).sum() + penalizer_term
 
     def conditional_probability_alive(self, frequency, recency, T):
@@ -220,9 +222,9 @@ class BetaGeoFitter(BaseFitter):
             self, with additional properties and methods like params_ and predict
 
         """
-        frequency = np.asarray(frequency)
-        recency = np.asarray(recency)
-        T = np.asarray(T)
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
         _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
@@ -234,7 +236,7 @@ class BetaGeoFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.params_['alpha'] /= self._scale
 
-        self.data = pd.DataFrame(np.c_[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
@@ -242,10 +244,8 @@ class BetaGeoFitter(BaseFitter):
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
-        if np.any(np.asarray(params) <= 0):
+        if npany(asarray(params) <= 0):
             return np.inf
-
-        np.seterr(divide='ignore')
 
         r, alpha, a, b = params
 
@@ -253,11 +253,11 @@ class BetaGeoFitter(BaseFitter):
         A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
         A_3 = -(r + freq) * log(alpha + T)
 
-        d = (freq > 0)
+        d = vconcat[ones_like(freq), (freq > 0)]
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
-        A_4[np.isnan(A_4) | np.isinf(A_4) | np.isinf(-A_4)] = 0
-        penalizer_term = penalizer_coef * np.log(params).sum()
-        return -np.sum(A_1 + A_2 + log(exp(A_3) + d * exp(A_4))) + penalizer_term
+        A_4[isnan(A_4) | isinf(A_4)] = 0
+        penalizer_term = penalizer_coef * log(params).sum()
+        return -(A_1 + A_2 + logsumexp(vconcat[A_3, A_4], axis=1, b=d)).sum() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
