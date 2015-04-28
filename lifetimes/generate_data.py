@@ -40,7 +40,7 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         # hacky until I can find something better
         times = []
         next_purchase_in = stats.expon.rvs(scale=1. / l)
-        alive = True
+        alive = np.random.random() > p
         while (np.sum(times) + next_purchase_in < T[i]) and alive:
             times.append(next_purchase_in)
             next_purchase_in = stats.expon.rvs(scale=1. / l)

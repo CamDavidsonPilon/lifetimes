@@ -160,7 +160,7 @@ def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalize
 
 
 def _scale_time(age):
-    # create a scalar such that the maximum age is 100.
+    # create a scalar such that the maximum age is 10.
     return 10./age.max()
 
 
