@@ -45,7 +45,7 @@ class GammaGammaFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(params, frequency, avg_monetary_value, penalizer_coef):
         if any(i < 0 for i in params):
-            return np.inf()
+            return np.inf
 
         p, q, v = params
 
@@ -57,13 +57,13 @@ class GammaGammaFitter(BaseFitter):
 
         negative_log_likelihood_values = (-np.log(p_0 * p_1))
         negative_log_likelihood_values = negative_log_likelihood_values[
-            np.abs(negative_log_likelihood_values) != np.inf()]
+            np.abs(negative_log_likelihood_values) != np.inf]
 
         penalizer_term = penalizer_coef * log(params).sum()
         negative_log_likelihood = np.sum(negative_log_likelihood_values) + penalizer_term
 
         if np.any(np.isnan(negative_log_likelihood_values)) or np.isnan(negative_log_likelihood):
-            return np.inf()
+            return np.inf
 
         return negative_log_likelihood
 
@@ -75,21 +75,16 @@ class GammaGammaFitter(BaseFitter):
         return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
 
     def fit(self, frequency, monetary_value, iterative_fitting=1, initial_params=None, verbose=False):
-        ll = []
-        sols = []
-        methods = ['Nelder-Mead', 'Powell']
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, monetary_value, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      3,
+                                                      verbose)
 
-        for i in range(iterative_fitting + 1):
-            fit_method = methods[i % len(methods)]
-            params_init = np.random.exponential(0.5, size=3) if initial_params is None else initial_params
-            output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-6,
-                              x0=params_init, args=(frequency, monetary_value), options={'disp': verbose})
-            ll.append(output.fun)
-            sols.append(output.x)
-
-        minimizing_params = sols[np.argmin(ll)]
-        return minimizing_params, np.min(ll)
-
+        self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
+        
+        return self
 
 class ParetoNBDFitter(BaseFitter):
 
@@ -119,7 +114,12 @@ class ParetoNBDFitter(BaseFitter):
         T = asarray(T)
         _check_inputs(frequency, recency, T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      (frequency, recency, T),
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -285,7 +285,12 @@ class BetaGeoFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.params_['alpha'] /= self._scale
