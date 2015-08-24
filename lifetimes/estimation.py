@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 from scipy import special
 from scipy import misc
+from scipy.optimize import minimize
 
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
@@ -35,6 +36,59 @@ class BaseFitter():
         for p, value in self.params_.iteritems():
             s += "%s: %.2f, " % (p, value)
         return s.strip(', ')
+
+
+class GammaGammaFitter(BaseFitter):
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, frequency, avg_monetary_value, penalizer_coef):
+        if any(i < 0 for i in params):
+            return np.inf()
+
+        p, q, v = params
+
+        x = frequency.astype('int')
+        m = avg_monetary_value.astype('int')
+
+        p_0 = special.gamma((p * x) + q) / (special.gamma(p * x) * special.gamma(q))
+        p_1 = ((v ** q) + (m ** ((p * x) - 1)) * (x ** (p * x))) / ((v + (m * x)) ** ((p * x) + q))
+
+        negative_log_likelihood_values = (-np.log(p_0 * p_1))
+        negative_log_likelihood_values = negative_log_likelihood_values[
+            np.abs(negative_log_likelihood_values) != np.inf()]
+
+        penalizer_term = penalizer_coef * log(params).sum()
+        negative_log_likelihood = np.sum(negative_log_likelihood_values) + penalizer_term
+
+        if np.any(np.isnan(negative_log_likelihood_values)) or np.isnan(negative_log_likelihood):
+            return np.inf()
+
+        return negative_log_likelihood
+
+    @staticmethod
+    def conditional_expected_average_profit(params, frequency, monetary_value):
+        m = monetary_value
+        x = frequency
+        p, q, v = params
+        return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
+
+    def fit(self, frequency, monetary_value, iterative_fitting=1, initial_params=None, verbose=False):
+        ll = []
+        sols = []
+        methods = ['Nelder-Mead', 'Powell']
+
+        for i in range(iterative_fitting + 1):
+            fit_method = methods[i % len(methods)]
+            params_init = np.random.exponential(0.5, size=3) if initial_params is None else initial_params
+            output = minimize(self._negative_log_likelihood, method=fit_method, tol=1e-6,
+                              x0=params_init, args=(frequency, monetary_value), options={'disp': verbose})
+            ll.append(output.fun)
+            sols.append(output.x)
+
+        minimizing_params = sols[np.argmin(ll)]
+        return minimizing_params, np.min(ll)
 
 
 class ParetoNBDFitter(BaseFitter):
