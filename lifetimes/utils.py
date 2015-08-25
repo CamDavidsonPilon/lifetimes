@@ -66,8 +66,8 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     return combined_data
 
 
-def reduce_events_to_period(transactions, customer_id_col, datetime_col):
-    return transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)
+def reduce_events_to_period(transactions, *aggregation_columns):
+    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
@@ -91,7 +91,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
             after this date are truncated.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
-        freq: Default 'D' for days. Other examples: 'W' for weekly.
+        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
     """
     select_columns = [customer_id_col, datetime_col]
 
@@ -109,7 +110,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
 
     # reduce all events per customer during the period to a single event:
-    period_transactions = reduce_events_to_period(transactions, customer_id_col, datetime_col).reset_index(level=datetime_col)
+    period_transactions = reduce_events_to_period(transactions, *select_columns).reset_index(level=select_columns[1:])
 
     # count all orders by customer.
     customers = period_transactions[datetime_col].groupby(level=customer_id_col, sort=False).agg(['max', 'min', 'count'])
@@ -123,7 +124,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     summary_columns = ['frequency', 'recency', 'T']
 
     if monetary_value_col:
-        customers['monetary_value'] = period_transactions.groupby(level=customer_id_col, sort=False)[
+        customers['monetary_value'] = period_transactions.groupby(level=customer_id_col)[
             monetary_value_col].mean()
         summary_columns.append('monetary_value')
 
@@ -160,7 +161,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'Powell']
+    methods = ['Nelder-Mead', 'Powell', 'BFGS']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)

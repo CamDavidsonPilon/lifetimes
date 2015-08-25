@@ -56,6 +56,7 @@ class GammaGammaFitter(BaseFitter):
         p_1 = ((v ** q) + (m ** ((p * x) - 1)) * (x ** (p * x))) / ((v + (m * x)) ** ((p * x) + q))
 
         negative_log_likelihood_values = (-np.log(p_0 * p_1))
+        negative_log_likelihood_values = negative_log_likelihood_values.dropna()
         negative_log_likelihood_values = negative_log_likelihood_values[
             np.abs(negative_log_likelihood_values) != np.inf]
 
@@ -67,14 +68,28 @@ class GammaGammaFitter(BaseFitter):
 
         return negative_log_likelihood
 
-    @staticmethod
-    def conditional_expected_average_profit(params, frequency, monetary_value):
-        m = monetary_value
-        x = frequency
-        p, q, v = params
+    def conditional_expected_average_profit(self):
+        m = self.data['monetary_value']
+        x = self.data['frequency']
+        p, q, v = self.params_.values()
         return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
 
-    def fit(self, frequency, monetary_value, iterative_fitting=1, initial_params=None, verbose=False):
+    def fit(self, frequency, monetary_value, iterative_fitting=20, initial_params=None, verbose=False):
+        """
+        This methods fits the data to the Pareto/NBD model.
+
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates. This model is not very stable so we suggest >10 for best estimates evaluation.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+
+        Returns:
+            self, fitted and with parameters estimated
+        """
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, monetary_value, self.penalizer_coef],
                                                       iterative_fitting,
@@ -82,6 +97,7 @@ class GammaGammaFitter(BaseFitter):
                                                       3,
                                                       verbose)
 
+        self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
         self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
         
         return self
@@ -100,9 +116,9 @@ class ParetoNBDFitter(BaseFitter):
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve peformance but possibly
+                parameters for the model. Setting to 0 will improve performances but possibly
                 hurt estimates.
-            initial_params: set intial params for the iterative fitter.
+            initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
 
         Returns:
@@ -266,7 +282,7 @@ class BetaGeoFitter(BaseFitter):
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve peformance but possibly
+                parameters for the model. Setting to 0 will improve performances but possibly
                 hurt estimates.
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
