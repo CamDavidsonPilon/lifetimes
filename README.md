@@ -22,7 +22,8 @@ If this is too abstract, consider these applications:
  - Understanding how frequently a patient may return to a hospital. (Alive = visiting. Die = maybe the patient moved to a new city, or became deceased.)
  - Predicting individuals who have churned from an app using only their usage history. (Alive = logins. Die = removed the app)
  - Predicting repeat purchases from a customer. (Alive = actively purchasing. Die = became disinterested with your product)
-
+ - Predicting the lifetime values of your customers
+ 
 ### Specific Application: Customer Lifetime Value
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
  
@@ -209,6 +210,42 @@ our trained model. For example:
 
 ![history](http://i.imgur.com/y45tum4.png)
 
+### Estimating Customer Lifetime Value
+
+For this whole time we didn't take into account the economic value of each transaction and we focused mainly on
+transactions' occurences. To estimate this we can use the Gamma/Gamma model. But first we need to create summary data
+from transactional data also containing economic values for each transaction (i.e. profits or revenues).
+
+*Note that there is currently no test dataset in lifetimes that contains economic value for transactions*
+
+    from lifetimes.utils import summary_data_from_transaction_data
+    
+    summary = summary_data_from_transaction_data(transaction_data, 'id', 'date', 'revenues', observation_period_end='2014-12-31')
+    
+    print summary.head()
+    """
+        frequency  recency    T    money_value
+    id
+    0           0        0  298           1.99
+    1           0        0  224           0.99
+    2           6      142  292           2.99
+    3           0        0  147           7.49
+    4           2        9  183          10.59
+    """
+
+At this point we can train our Gamma/Gamma model and predict the conditional, expected average lifetime value for our customers.
+
+    ggf = GammaGammaFitter(penalizer_coef = 0)
+    ggf.fit(summary['frequency'], summary['monetary_value'])
+    print ggf
+    """
+    <lifetimes.GammaGammaFitter: fitted with 2357 subjects, p: 4.65, q: 2.98, v: 0.13>
+    """
+    
+    ggf.conditional_expected_average_profit()
+    """
+    1.68
+    """
 
 ## Questions? Comments? 
 
