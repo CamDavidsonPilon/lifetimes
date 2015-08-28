@@ -68,15 +68,62 @@ class GammaGammaFitter(BaseFitter):
 
         return negative_log_likelihood
 
-    def conditional_expected_average_profit(self):
-        m = self.data['monetary_value']
-        x = self.data['frequency']
+    def conditional_expected_average_profit(self, x=None, m=None):
+        """
+        This method computes the conditional expectation of the average profit per transaction
+        for a group of one or more customers.
+            x: a vector containing the customers' frequencies. Defaults to the whole set of
+                frequencies used for fitting the model.
+            m: a vector containing the customers' monetary values. Defaults to the whole set of
+                monetary values used for fitting the model.
+
+        Returns:
+            the conditional expectation of the average profit per transaction
+        """
+        m = self.data['monetary_value'] if m is None else m
+        x = self.data['frequency'] if x is None else x
         p, q, v = self.params_.values()
         return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
 
+    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+        """
+        This method computes the average lifetime value for a group of one or more customers.
+            transaction_prediction_model: the model to predict future transactions, literature uses
+                pareto/ndb but we can also use a different model like bg
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+            time: the lifetime expected for the user in months. Default: 12
+            discount_rate: the monthly adjusted discount rate. Default: 1
+
+        Returns:
+            the conditional expectation of the average profit per transaction.
+            Also creates a discounted_monthly_cash_flows attribute
+        """
+        df = DataFrame()
+        df['frequency'] = frequency
+        df['recency'] = recency
+        df['T'] = T
+        df['monetary_value'] = monetary_value
+
+        d = discount_rate
+        m = self.conditional_expected_average_profit()
+        self.discounted_monthly_cash_flows = []
+
+        for i in range(30, (time*30)+1, 30):
+            df['expected_revenues_period_'+str(i)] = df.apply(
+                lambda r: (m*transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])/(1+d)**(i/30)),
+                axis=1
+            )
+            self.discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
+
+        return sum(self.discounted_monthly_cash_flows)
+
+
     def fit(self, frequency, monetary_value, iterative_fitting=20, initial_params=None, verbose=False):
         """
-        This methods fits the data to the Pareto/NBD model.
+        This methods fits the data to the Gamma/Gamma model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
@@ -131,7 +178,7 @@ class ParetoNBDFitter(BaseFitter):
         _check_inputs(frequency, recency, T)
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                      (frequency, recency, T),
+                                                      [frequency, recency, T, self.penalizer_coef],
                                                       iterative_fitting,
                                                       initial_params,
                                                       4,
@@ -156,7 +203,8 @@ class ParetoNBDFitter(BaseFitter):
         return special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + rec)) / (max_alpha_beta + rec) ** r_s_x\
             - special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + T)) / (max_alpha_beta + T) ** r_s_x
 
-    def _negative_log_likelihood(self, params, freq, rec, T, penalizer_coef):
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -167,7 +215,7 @@ class ParetoNBDFitter(BaseFitter):
         r_s_x = r + s + x
 
         A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
-        A_0 = self._A_0(params, freq, rec, T)
+        A_0 = ParetoNBDFitter._A_0(params, freq, rec, T)
 
         A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log(A_0) - log(r_s_x))
 

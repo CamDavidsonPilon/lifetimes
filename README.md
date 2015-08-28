@@ -210,42 +210,71 @@ our trained model. For example:
 
 ![history](http://i.imgur.com/y45tum4.png)
 
-### Estimating Customer Lifetime Value
+### Estimating Customers' Lifetime Value
 
 For this whole time we didn't take into account the economic value of each transaction and we focused mainly on
 transactions' occurences. To estimate this we can use the Gamma/Gamma model. But first we need to create summary data
 from transactional data also containing economic values for each transaction (i.e. profits or revenues).
 
-*Note that there is currently no test dataset in lifetimes that contains economic value for transactions*
+    from lifetimes.datasets import load_transaction_data_with_monetary_value
 
-    from lifetimes.utils import summary_data_from_transaction_data
+    summary_with_money_value = load_transaction_data_with_monetary_value()
+    summary_with_money_value.head()
+    returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency']>0]
     
-    summary = summary_data_from_transaction_data(transaction_data, 'id', 'date', 'revenues', observation_period_end='2014-12-31')
-    
-    print summary.head()
+    returning_customers_summary.head()
     """
-        frequency  recency    T    money_value
-    id
-    0           0        0  298           1.99
-    1           0        0  224           0.99
-    2           6      142  292           2.99
-    3           0        0  147           7.49
-    4           2        9  183          10.59
+    	frequency	recency	T	monetary_value
+    id				
+    2	1	        0	    262	44.500000
+    3	2	        90	    272	20.353333
+    4	2	        213	    273	24.673333
+    5	7	        257	    273	32.651250
+    8	3	        183	    273	26.447500
     """
 
-At this point we can train our Gamma/Gamma model and predict the conditional, expected average lifetime value for our customers.
+#### Gamma-Gamma independence assumption
+Gamma-Gamma assumes that the relationship between the monetary value and the frequency of your data is non existing. 
+In practice we need to check whether the Pearson correlation between the two vectors is close to 0 in order to use this model.
+
+    returning_customers_summary[['monetary_value', 'frequency']].corr()
+    """
+                    monetary_value	frequency
+    monetary_value	1.000000	    0.070505
+    frequency	    0.070505	    1.000000
+    """
+
+At this point we can train our Gamma/Gamma model and predict the conditional, expected average lifetime value of our customers.
 
     ggf = GammaGammaFitter(penalizer_coef = 0)
-    ggf.fit(summary['frequency'], summary['monetary_value'])
-    print ggf
+    ggf.fit(returning_customers_summary['frequency'], 
+            returning_customers_summary['monetary_value'])
+    print ggf    
     """
-    <lifetimes.GammaGammaFitter: fitted with 2357 subjects, p: 4.65, q: 2.98, v: 0.13>
+    <lifetimes.GammaGammaFitter: fitted with 9591 subjects, p: 163.91, q: 7.36, v: 0.06>
     """
     
-    ggf.conditional_expected_average_profit()
+We can now produce the average CLV figure for our dataset as follows:
+    
+    print "Epected conditional average profit: %s, Average profit: %s" % (
+        ggf.conditional_expected_average_profit(), 
+        summary_with_money_value[summary_with_money_value['frequency']>0]['monetary_value'].mean()
+    )
     """
-    1.68
+    Epected conditional average profit: 34.4038955386, Average profit: 35.1922197294
     """
+
+While for computing the total CLV using the DCF method (https://en.wikipedia.org/wiki/Discounted_cash_flow) adjusting for cost of capital:
+ 
+    print ggf.customer_lifetime_value(
+        bgf, #the model to use to predict the number of future transactions
+        returning_customers_summary['frequency'],
+        returning_customers_summary['recency'],
+        returning_customers_summary['T'], 
+        returning_customers_summary['monetary_value'], 
+        time=12, 
+        discount_rate=0.7
+    ) #10689.30
 
 ## Questions? Comments? 
 

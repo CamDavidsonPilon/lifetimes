@@ -2,11 +2,13 @@
 # modified from https://github.com/CamDavidsonPilon/lifelines/
 
 import pandas as pd
+from .. import utils
 from pkg_resources import resource_filename
 
 __all__ = [
     'load_cdnow',
     'load_transaction_data',
+    'load_transaction_data_with_monetary_value'
 ]
 
 
@@ -43,3 +45,23 @@ def load_transaction_data(**kwargs):
 
     """
     return load_dataset('example_transactions.csv', **kwargs)
+
+
+def load_transaction_data_with_monetary_value(**kwargs):
+    transactions = pd.read_csv(
+        resource_filename(
+            'lifetimes', 'datasets/CDNOW_master.txt'
+        ),
+        sep='[\t|\s]+',
+        engine='python', **kwargs
+    )
+
+    transactions['date'] = pd.to_datetime(transactions['date'], format='%Y%m%d')
+
+    return utils.summary_data_from_transaction_data(
+        transactions,
+        'customer_id',
+        'date',
+        monetary_value_col='dollar_value',
+        observation_period_end=min(transactions['date'])
+    )
