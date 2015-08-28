@@ -233,9 +233,11 @@ from transactional data also containing economic values for each transaction (i.
     8	3	        183	    273	26.447500
     """
 
-#### Gamma-Gamma independence assumption
-Gamma-Gamma assumes that the relationship between the monetary value and the frequency of your data is non existing. 
-In practice we need to check whether the Pearson correlation between the two vectors is close to 0 in order to use this model.
+#### The Gamma-Gamma model and the independence assumption
+The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma model, which relies upon
+an important assumption. Gamma-Gamma, in fact, assumes that the relationship between the monetary value and the frequency 
+of your data is non existing. In practice we need to check whether the Pearson correlation between the two vectors 
+is close to 0 in order to use this model.
 
     returning_customers_summary[['monetary_value', 'frequency']].corr()
     """
