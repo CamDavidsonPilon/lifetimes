@@ -8,7 +8,6 @@ from pandas import DataFrame
 
 from scipy import special
 from scipy import misc
-from scipy.optimize import minimize
 
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
@@ -52,10 +51,10 @@ class GammaGammaFitter(BaseFitter):
         x = frequency.astype('int')
         m = avg_monetary_value.astype('int')
 
-        p_0 = special.gamma((p * x) + q) / (special.gamma(p * x) * special.gamma(q))
-        p_1 = ((v ** q) + (m ** ((p * x) - 1)) * (x ** (p * x))) / ((v + (m * x)) ** ((p * x) + q))
+        p_0 = np.log(special.gamma(p*x+q)) - np.log(special.gamma(p)) - np.log(special.gamma(x)) - np.log(special.gamma(q))
+        p_1 = q*np.log(v) + (p*x-1)*np.log(m) + p*x*np.log(x) - (p*x+q)*np.log(v + m*x)
 
-        negative_log_likelihood_values = (-np.log(p_0 * p_1))
+        negative_log_likelihood_values = - (p_0 + p_1)
         negative_log_likelihood_values = negative_log_likelihood_values.dropna()
         negative_log_likelihood_values = negative_log_likelihood_values[
             np.abs(negative_log_likelihood_values) != np.inf]
@@ -121,7 +120,7 @@ class GammaGammaFitter(BaseFitter):
         return sum(self.discounted_monthly_cash_flows)
 
 
-    def fit(self, frequency, monetary_value, iterative_fitting=20, initial_params=None, verbose=False):
+    def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
         """
         This methods fits the data to the Gamma/Gamma model.
 
