@@ -12,7 +12,7 @@ from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 
-__all__ = ['BetaGeoFitter', 'ParetoNBDFitter']
+__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter']
 
 
 class BaseFitter():
@@ -81,7 +81,7 @@ class GammaGammaFitter(BaseFitter):
         """
         m = self.data['monetary_value'] if m is None else m
         x = self.data['frequency'] if x is None else x
-        p, q, v = self.params_.values()
+        p, q, v = self._unload_params('p', 'q', 'v')
         return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
 
     def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
