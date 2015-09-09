@@ -48,13 +48,8 @@ def load_transaction_data(**kwargs):
 
 
 def load_transaction_data_with_monetary_value(**kwargs):
-    transactions = load_dataset('CDNOW_master.txt', sep='[\t|\s]+', engine='python', **kwargs)
-
-    return utils.summary_data_from_transaction_data(
-        transactions,
-        'customer_id',
-        'date',
-        datetime_format='%Y%m%d',
-        monetary_value_col='dollar_value',
-        observation_period_end=max(transactions['date'])
-    )
+    df = load_dataset('cdnow_customers_transactions.csv', **kwargs)
+    df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
+    df.index = df['customer_id']
+    del df['customer_id']
+    return df

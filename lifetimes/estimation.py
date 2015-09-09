@@ -42,28 +42,20 @@ class GammaGammaFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(params, frequency, avg_monetary_value, penalizer_coef):
+    def _negative_log_likelihood(params, frequency, avg_monetary_value, penalizer_coef=0):
         if any(i < 0 for i in params):
             return np.inf
 
         p, q, v = params
 
-        x = frequency.astype('int')
-        m = avg_monetary_value.astype('int')
+        x = frequency
+        m = avg_monetary_value
 
-        p_0 = np.log(special.gamma(p*x+q)) - np.log(special.gamma(p)) - np.log(special.gamma(x)) - np.log(special.gamma(q))
-        p_1 = q*np.log(v) + (p*x-1)*np.log(m) + p*x*np.log(x) - (p*x+q)*np.log(v + m*x)
-
-        negative_log_likelihood_values = - (p_0 + p_1)
-        negative_log_likelihood_values = negative_log_likelihood_values.dropna()
-        negative_log_likelihood_values = negative_log_likelihood_values[
-            np.abs(negative_log_likelihood_values) != np.inf]
+        negative_log_likelihood_values = special.gammaln(p*x+q)-special.gammaln(p*x)-special.gammaln(q)\
+                                         +q*np.log(v)+(p*x-1)*np.log(m)+(p*x)*np.log(x)-(p*x+q)*np.log(x*m+v)
 
         penalizer_term = penalizer_coef * log(params).sum()
-        negative_log_likelihood = np.sum(negative_log_likelihood_values) + penalizer_term
-
-        if np.any(np.isnan(negative_log_likelihood_values)) or np.isnan(negative_log_likelihood):
-            return np.inf
+        negative_log_likelihood = -np.sum(negative_log_likelihood_values) + penalizer_term
 
         return negative_log_likelihood
 
