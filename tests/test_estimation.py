@@ -1,15 +1,27 @@
 from __future__ import print_function
 
 import numpy as np
-import pandas as pd
 
 import numpy.testing as npt
-import pytest
 
 import lifetimes.estimation as estimation
-from lifetimes.datasets import load_cdnow
+from lifetimes.datasets import load_cdnow, load_transaction_data_with_monetary_value
 
 cdnow_customers = load_cdnow()
+cdnow_customers_with_monetary_value = load_transaction_data_with_monetary_value()
+
+class TestGammaGammaFitter():
+
+    def test_params_out_is_close_to_Hardie_paper(self):
+        ggf = estimation.GammaGammaFitter()
+        ggf.fit(
+            cdnow_customers_with_monetary_value['frequency'],
+            cdnow_customers_with_monetary_value['monetary_value'],
+            iterative_fitting=1
+        )
+        expected = np.array([6.25, 3.74, 15.44])
+        npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
+
 
 class TestParetoNBDFitter():
 
