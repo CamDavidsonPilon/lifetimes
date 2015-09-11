@@ -111,9 +111,6 @@ def test_summary_date_from_transaction_with_monetary_values(large_transaction_le
                              [4, 2., 20., 22., 4],
                              [5, 2.,  2., 22., 4],
                              [6, 0.,  0.,  5., 5]], columns=['id', 'frequency', 'recency', 'T', 'monetary_value']).set_index('id')
-    print actual
-    print "-"
-    print expected
     assert_frame_equal(actual, expected)
 
 
