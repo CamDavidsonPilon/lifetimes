@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
                   isinf, isnan, ones_like
-from pandas import DataFrame, ols
+from pandas import DataFrame
 
 from scipy import special
 from scipy import misc
