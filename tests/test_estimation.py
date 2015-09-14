@@ -5,10 +5,10 @@ import numpy as np
 import numpy.testing as npt
 
 import lifetimes.estimation as estimation
-from lifetimes.datasets import load_cdnow, load_transaction_data_with_monetary_value
+from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value
 
 cdnow_customers = load_cdnow()
-cdnow_customers_with_monetary_value = load_transaction_data_with_monetary_value()
+cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
 
 class TestGammaGammaFitter():
 

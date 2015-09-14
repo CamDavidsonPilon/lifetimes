@@ -213,12 +213,12 @@ our trained model. For example:
 ### Estimating Customers' Lifetime Value
 
 For this whole time we didn't take into account the economic value of each transaction and we focused mainly on
-transactions' occurences. To estimate this we can use the Gamma/Gamma model. But first we need to create summary data
+transactions' occurrences. To estimate this we can use the Gamma-Gamma submodel. But first we need to create summary data
 from transactional data also containing economic values for each transaction (i.e. profits or revenues).
 
-    from lifetimes.datasets import load_transaction_data_with_monetary_value
+    from lifetimes.datasets import load_summary_data_with_monetary_value
 
-    summary_with_money_value = load_transaction_data_with_monetary_value()
+    summary_with_money_value = load_summary_data_with_monetary_value()
     summary_with_money_value.head()
     returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency']>0]
     
@@ -234,10 +234,10 @@ from transactional data also containing economic values for each transaction (i.
     """
 
 #### The Gamma-Gamma model and the independence assumption
-The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma model, which relies upon
-an important assumption. Gamma-Gamma, in fact, assumes that the relationship between the monetary value and the frequency 
-of your data is non existing. In practice we need to check whether the Pearson correlation between the two vectors 
-is close to 0 in order to use this model.
+The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma submodel, 
+which relies upon an important assumption. The Gamma-Gamma submodel, in fact, assumes that there is no 
+relationship between the monetary value and the purchase frequency. In practice we need to check whether 
+the Pearson correlation between the two vectors is close to 0 in order to use this model.
 
     returning_customers_summary[['monetary_value', 'frequency']].corr()
     """
@@ -246,7 +246,7 @@ is close to 0 in order to use this model.
     frequency	    0.070505	    1.000000
     """
 
-At this point we can train our Gamma/Gamma model and predict the conditional, expected average lifetime value of our customers.
+At this point we can train our Gamma-Gamma submodel and predict the conditional, expected average lifetime value of our customers.
 
     ggf = GammaGammaFitter(penalizer_coef = 0)
     ggf.fit(returning_customers_summary['frequency'], 
@@ -258,12 +258,15 @@ At this point we can train our Gamma/Gamma model and predict the conditional, ex
     
 We can now produce the average CLV figure for our dataset as follows:
     
-    print "Epected conditional average profit: %s, Average profit: %s" % (
-        ggf.conditional_expected_average_profit(), 
+    print "Expected conditional average profit: %s, Average profit: %s" % (
+        ggf.conditional_expected_average_profit(
+            returning_customers_summary['frequency'], 
+            returning_customers_summary['monetary_value']
+        ), 
         summary_with_money_value[summary_with_money_value['frequency']>0]['monetary_value'].mean()
     )
     """
-    Epected conditional average profit: 34.4038955386, Average profit: 35.1922197294
+    Expected conditional average profit: 34.4038955386, Average profit: 35.1922197294
     """
 
 While for computing the total CLV using the DCF method (https://en.wikipedia.org/wiki/Discounted_cash_flow) adjusting for cost of capital:

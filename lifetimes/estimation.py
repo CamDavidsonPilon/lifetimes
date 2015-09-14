@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
                   isinf, isnan, ones_like
-from pandas import DataFrame
+from pandas import DataFrame, ols
 
 from scipy import special
 from scipy import misc
@@ -59,7 +59,7 @@ class GammaGammaFitter(BaseFitter):
 
         return negative_log_likelihood
 
-    def conditional_expected_average_profit(self, x=None, m=None):
+    def conditional_expected_average_profit(self, x, m):
         """
         This method computes the conditional expectation of the average profit per transaction
         for a group of one or more customers.
@@ -100,16 +100,16 @@ class GammaGammaFitter(BaseFitter):
 
         d = discount_rate
         m = self.conditional_expected_average_profit()
-        self.discounted_monthly_cash_flows = []
+        discounted_monthly_cash_flows = []
 
         for i in range(30, (time*30)+1, 30):
             df['expected_revenues_period_'+str(i)] = df.apply(
                 lambda r: (m*transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])/(1+d)**(i/30)),
                 axis=1
             )
-            self.discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
+            discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
 
-        return sum(self.discounted_monthly_cash_flows)
+        return sum(discounted_monthly_cash_flows)
 
 
     def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
