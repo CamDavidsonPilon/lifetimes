@@ -17,7 +17,7 @@ class TestGammaGammaFitter():
         ggf.fit(
             cdnow_customers_with_monetary_value['frequency'],
             cdnow_customers_with_monetary_value['monetary_value'],
-            iterative_fitting=1
+            iterative_fitting=3
         )
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
@@ -37,7 +37,7 @@ class TestParetoNBDFitter():
 
     def test_params_out_is_close_to_Hardie_paper(self):
         ptf = estimation.ParetoNBDFitter()
-        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=1)
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
 
@@ -66,7 +66,7 @@ class TestBetaGammaFitter():
  
     def test_params_out_is_close_to_Hardie_paper(self):
         bfg = estimation.BetaGeoFitter()
-        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=2)
+        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([0.243, 4.414, 0.793, 2.426])
         npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
