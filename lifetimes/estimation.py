@@ -59,7 +59,7 @@ class GammaGammaFitter(BaseFitter):
 
         return negative_log_likelihood
 
-    def conditional_expected_average_profit(self, x, m):
+    def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
         """
         This method computes the conditional expectation of the average profit per transaction
         for a group of one or more customers.
@@ -71,8 +71,8 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             the conditional expectation of the average profit per transaction
         """
-        m = self.data['monetary_value'] if m is None else m
-        x = self.data['frequency'] if x is None else x
+        m = self.data['monetary_value'] if monetary_value is None else monetary_value
+        x = self.data['frequency'] if frequency is None else frequency
         p, q, v = self._unload_params('p', 'q', 'v')
         return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
 
