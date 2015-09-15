@@ -96,7 +96,6 @@ class GammaGammaFitter(BaseFitter):
         df['frequency'] = frequency
         df['recency'] = recency
         df['T'] = T
-        df['monetary_value'] = monetary_value
 
         d = discount_rate
         m = self.conditional_expected_average_profit()
