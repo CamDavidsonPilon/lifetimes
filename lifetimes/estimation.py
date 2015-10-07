@@ -53,7 +53,7 @@ class ParetoNBDFitter(BaseFitter):
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
                 parameters for the model. Setting to 0 will improve peformance but possibly
                 hurt estimates.
-            initial_params: set intial params for the iterative fitter.
+            initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
 
         Returns:
@@ -140,7 +140,7 @@ class ParetoNBDFitter(BaseFitter):
         Z = np.zeros((max_recency + 1, max_frequency + 1))
         for i, recency in enumerate(np.arange(max_recency + 1)):
             for j, frequency in enumerate(np.arange(max_frequency + 1)):
-                Z[i, j] = self.conditional_probability_alive(recency, frequency, max_recency)
+                Z[i, j] = self.conditional_probability_alive(frequency, recency, max_recency)
 
         return Z
 
