@@ -25,9 +25,9 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         transactions: a Pandas DataFrame of at least two cols.
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        calibration_period_end: a period to limit the calibration to.
+        calibration_period_end: a period to limit the calibration to, inclusive.
         observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated.
+            after this date are truncated, inclusive.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
         freq: Default 'D' for days. Other examples: 'W' for weekly.
@@ -52,7 +52,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
     # create holdout dataset
-    holdout_transactions = transactions.ix[transactions[datetime_col] > calibration_period_end]
+    holdout_transactions = transactions.ix[(observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
     holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
     holdout_summary_data.columns = ['frequency_holdout']

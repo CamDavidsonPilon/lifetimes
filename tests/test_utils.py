@@ -104,6 +104,28 @@ def test_calibration_and_holdout_data_works_with_specific_frequency(large_transa
                              [5, 0., 0., 2., 0, 1]], columns=expected_cols).set_index('id')
     assert_frame_equal(actual, expected, check_dtype=False)
 
+def test_calibration_and_holdout_data_gives_correct_date_boundaries():
+
+    d = [
+            [1, '2015-01-01'],
+            [1, '2015-02-06'], # excluded from both holdout and calibration
+            [2, '2015-01-01'],
+            [3, '2015-01-01'],
+            [3, '2015-01-02'],
+            [3, '2015-01-05'],
+            [4, '2015-01-16'],
+            [4, '2015-02-02'],
+            [4, '2015-02-05'], # excluded from both holdout and calibration
+            [5, '2015-01-16'],
+            [5, '2015-01-17'],
+            [5, '2015-01-18'],
+            [6, '2015-02-02'],
+    ]
+    transactions = pd.DataFrame(d, columns=['id', 'date'])
+    actual = utils.calibration_and_holdout_data(transactions, 'id', 'date', calibration_period_end='2015-02-01', observation_period_end='2015-02-04')
+    assert actual['frequency_holdout'].ix[1] == 0 
+    assert actual['frequency_holdout'].ix[4] == 1 
+
 
 def test_summary_data_from_transaction_data_squashes_period_purchases_to_one_purchase():
     transactions = pd.DataFrame([[1, '2015-01-01'], [1, '2015-01-01']], columns=['id', 't'])
