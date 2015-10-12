@@ -66,32 +66,40 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     return combined_data
 
 
-def reduce_events_to_period(transactions, customer_id_col, datetime_col):
-    return transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)
+def reduce_events_to_period(transactions, *aggregation_columns):
+    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
-def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, datetime_format=None,
+def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
                                        observation_period_end=datetime.today(), freq='D'):
     """
     This transforms a Dataframe of transaction data of the form:
 
-        customer_id, datetime
+        customer_id, datetime [, monetary_value]
 
     to a Dataframe of the form:
 
-        customer_id, frequency, recency, T
+        customer_id, frequency, recency, T [, monetary_value]
 
     Parameters:
         transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
+        monetary_value_col: the columns in the transactions that denotes the monetary value of the transaction.
+            Optional, only needed for customer lifetime value estimation models.
         observation_period_end: a string or datetime to denote the final date of the study. Events
             after this date are truncated.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
-        freq: Default 'D' for days. Other examples: 'W' for weekly.
+        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
     """
-    transactions = transactions[[customer_id_col, datetime_col]].copy()
+    select_columns = [customer_id_col, datetime_col]
+
+    if monetary_value_col:
+        select_columns.append(monetary_value_col)
+
+    transactions = transactions[select_columns].copy()
 
     def to_period(d):
         return d.to_period(freq)
@@ -102,10 +110,10 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
 
     # reduce all events per customer during the period to a single event:
-    period_transactions = reduce_events_to_period(transactions, customer_id_col, datetime_col).reset_index(level=datetime_col)
+    period_transactions = reduce_events_to_period(transactions, *select_columns).reset_index(level=select_columns[1:])
 
     # count all orders by customer.
-    customers = period_transactions.groupby(level=customer_id_col, sort=False)[datetime_col].agg(['max', 'min', 'count'])
+    customers = period_transactions[datetime_col].groupby(level=customer_id_col, sort=False).agg(['max', 'min', 'count'])
 
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
@@ -113,7 +121,14 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     customers['T'] = (observation_period_end - customers['min'])
     customers['recency'] = (customers['max'] - customers['min'])
 
-    return customers[['frequency', 'recency', 'T']].astype(float)
+    summary_columns = ['frequency', 'recency', 'T']
+
+    if monetary_value_col:
+        customers['monetary_value'] = period_transactions.groupby(level=customer_id_col)[
+            monetary_value_col].mean()
+        summary_columns.append('monetary_value')
+
+    return customers[summary_columns].astype(float)
 
 
 def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
@@ -143,16 +158,19 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
-def _fit(minimizing_function, frequency, recency, T, iterative_fitting, penalizer_coef, initial_params, disp):
+def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'Powell']
+    methods = ['Nelder-Mead', 'Powell', 'BFGS']
+
+    def _func_caller(params, func_args, function):
+        return function(params, *func_args)
 
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
-        params_init = np.random.exponential(0.5, size=4) if initial_params is None else initial_params
-        output = minimize(minimizing_function, method=fit_method, tol=1e-6,
-                          x0=params_init, args=(frequency, recency, T, penalizer_coef), options={'disp': disp})
+        params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
+        output = minimize(_func_caller, method=fit_method, tol=1e-6,
+                          x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
         ll.append(output.fun)
         sols.append(output.x)
     minimizing_params = sols[np.argmin(ll)]

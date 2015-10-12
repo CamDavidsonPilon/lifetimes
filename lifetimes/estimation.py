@@ -12,7 +12,7 @@ from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 
-__all__ = ['BetaGeoFitter', 'ParetoNBDFitter']
+__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter']
 
 
 class BaseFitter():
@@ -37,6 +37,108 @@ class BaseFitter():
         return s.strip(', ')
 
 
+class GammaGammaFitter(BaseFitter):
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, frequency, avg_monetary_value, penalizer_coef=0):
+        if any(i < 0 for i in params):
+            return np.inf
+
+        p, q, v = params
+
+        x = frequency
+        m = avg_monetary_value
+
+        negative_log_likelihood_values = special.gammaln(p*x+q)-special.gammaln(p*x)-special.gammaln(q)\
+                                         +q*np.log(v)+(p*x-1)*np.log(m)+(p*x)*np.log(x)-(p*x+q)*np.log(x*m+v)
+
+        penalizer_term = penalizer_coef * log(params).sum()
+        negative_log_likelihood = -np.sum(negative_log_likelihood_values) + penalizer_term
+
+        return negative_log_likelihood
+
+    def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
+        """
+        This method computes the conditional expectation of the average profit per transaction
+        for a group of one or more customers.
+            x: a vector containing the customers' frequencies. Defaults to the whole set of
+                frequencies used for fitting the model.
+            m: a vector containing the customers' monetary values. Defaults to the whole set of
+                monetary values used for fitting the model.
+
+        Returns:
+            the conditional expectation of the average profit per transaction
+        """
+        m = self.data['monetary_value'] if monetary_value is None else monetary_value
+        x = self.data['frequency'] if frequency is None else frequency
+        p, q, v = self._unload_params('p', 'q', 'v')
+        return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
+
+    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+        """
+        This method computes the average lifetime value for a group of one or more customers.
+            transaction_prediction_model: the model to predict future transactions, literature uses
+                pareto/ndb but we can also use a different model like bg
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+            time: the lifetime expected for the user in months. Default: 12
+            discount_rate: the monthly adjusted discount rate. Default: 1
+
+        Returns:
+            the conditional expectation of the average profit per transaction.
+            Also creates a discounted_monthly_cash_flows attribute
+        """
+        df = DataFrame()
+        df['frequency'] = frequency
+        df['recency'] = recency
+        df['T'] = T
+
+        d = discount_rate
+        m = self.conditional_expected_average_profit()
+        discounted_monthly_cash_flows = []
+
+        for i in range(30, (time*30)+1, 30):
+            df['expected_revenues_period_'+str(i)] = df.apply(
+                lambda r: (m*transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])/(1+d)**(i/30)),
+                axis=1
+            )
+            discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
+
+        return sum(discounted_monthly_cash_flows)
+
+
+    def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
+        """
+        This methods fits the data to the Gamma/Gamma model.
+
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates. This model is not very stable so we suggest >10 for best estimates evaluation.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+
+        Returns:
+            self, fitted and with parameters estimated
+        """
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, monetary_value, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      3,
+                                                      verbose)
+
+        self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
+        self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
+        
+        return self
+
 class ParetoNBDFitter(BaseFitter):
 
     def __init__(self, penalizer_coef=0.):
@@ -51,7 +153,7 @@ class ParetoNBDFitter(BaseFitter):
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve peformance but possibly
+                parameters for the model. Setting to 0 will improve performances but possibly
                 hurt estimates.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
@@ -65,7 +167,12 @@ class ParetoNBDFitter(BaseFitter):
         T = asarray(T)
         _check_inputs(frequency, recency, T)
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, recency, T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, recency, T, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -86,7 +193,8 @@ class ParetoNBDFitter(BaseFitter):
         return special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + rec)) / (max_alpha_beta + rec) ** r_s_x\
             - special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + T)) / (max_alpha_beta + T) ** r_s_x
 
-    def _negative_log_likelihood(self, params, freq, rec, T, penalizer_coef):
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -97,7 +205,7 @@ class ParetoNBDFitter(BaseFitter):
         r_s_x = r + s + x
 
         A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
-        A_0 = self._A_0(params, freq, rec, T)
+        A_0 = ParetoNBDFitter._A_0(params, freq, rec, T)
 
         A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log(A_0) - log(r_s_x))
 
@@ -212,7 +320,7 @@ class BetaGeoFitter(BaseFitter):
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve peformance but possibly
+                parameters for the model. Setting to 0 will improve performances but possibly
                 hurt estimates.
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
@@ -231,7 +339,12 @@ class BetaGeoFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood, frequency, scaled_recency, scaled_T, iterative_fitting, self.penalizer_coef, initial_params, verbose)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.params_['alpha'] /= self._scale

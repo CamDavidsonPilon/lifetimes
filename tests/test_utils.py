@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd 
-import numpy as np 
+import numpy as np
 from pandas.util.testing import assert_frame_equal
 
 from lifetimes import utils, BetaGeoFitter
@@ -51,6 +51,26 @@ def large_transaction_level_data():
     ]
     return pd.DataFrame(d, columns=['id', 'date'])
 
+@pytest.fixture()
+def large_transaction_level_data_with_monetary_value():
+    d = [
+            [1, '2015-01-01', 1],
+            [1, '2015-02-06', 2],
+            [2, '2015-01-01', 2],
+            [3, '2015-01-01', 3],
+            [3, '2015-01-02', 1],
+            [3, '2015-01-05', 5],
+            [4, '2015-01-16', 6],
+            [4, '2015-02-02', 3],
+            [4, '2015-02-05', 3],
+            [5, '2015-01-16', 3],
+            [5, '2015-01-17', 1],
+            [5, '2015-01-18', 8],
+            [6, '2015-02-02', 5],
+    ]
+    return pd.DataFrame(d, columns=['id', 'date', 'monetary_value'])
+
+
 def test_summary_data_from_transaction_data_returns_correct_results(transaction_level_data):
     today = '2015-02-07'
     actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today)
@@ -79,6 +99,18 @@ def test_summary_date_from_transaction_data_with_specific_non_daily_frequency(la
                              [4, 1., 3., 3.],
                              [5, 0., 0., 3.],
                              [6, 0., 0., 0.]], columns=['id', 'frequency', 'recency', 'T']).set_index('id')
+    assert_frame_equal(actual, expected)
+
+
+def test_summary_date_from_transaction_with_monetary_values(large_transaction_level_data_with_monetary_value):
+    today = '20150207'
+    actual = utils.summary_data_from_transaction_data(large_transaction_level_data_with_monetary_value, 'id', 'date', monetary_value_col='monetary_value', observation_period_end=today)
+    expected = pd.DataFrame([[1, 1., 36., 37., 1.5],
+                             [2, 0.,  0., 37., 2],
+                             [3, 2.,  4., 37., 3],
+                             [4, 2., 20., 22., 4],
+                             [5, 2.,  2., 22., 4],
+                             [6, 0.,  0.,  5., 5]], columns=['id', 'frequency', 'recency', 'T', 'monetary_value']).set_index('id')
     assert_frame_equal(actual, expected)
 
 

@@ -2,11 +2,13 @@
 # modified from https://github.com/CamDavidsonPilon/lifelines/
 
 import pandas as pd
+from .. import utils
 from pkg_resources import resource_filename
 
 __all__ = [
     'load_cdnow',
     'load_transaction_data',
+    'load_summary_data_with_monetary_value'
 ]
 
 
@@ -43,3 +45,10 @@ def load_transaction_data(**kwargs):
 
     """
     return load_dataset('example_transactions.csv', **kwargs)
+
+
+def load_summary_data_with_monetary_value(**kwargs):
+    df = load_dataset('cdnow_customers_transactions.csv', **kwargs)
+    df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
+    df = df.set_index('customer_id')
+    return df
