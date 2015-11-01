@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import numpy as np
-
+import pandas as pd
 import numpy.testing as npt
 
 import lifetimes.estimation as estimation
@@ -24,6 +24,18 @@ class TestGammaGammaFitter():
 
 
 class TestParetoNBDFitter():
+
+    def test_overflow_error(self):
+        ptf = estimation.ParetoNBDFitter()
+
+        data = pd.DataFrame([[1, 400., 5., 6.],
+                                 [2, 500., 0., 37.],
+                                 [3, 500., 4., 37.]], 
+                                 columns=['id', 'frequency', 'recency', 'T'])\
+                     .set_index('id')
+
+        ptf.fit(data['frequency'], data['recency'], data['T'])
+
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         ptf = estimation.ParetoNBDFitter
