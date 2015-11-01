@@ -26,15 +26,14 @@ class TestGammaGammaFitter():
 class TestParetoNBDFitter():
 
     def test_overflow_error(self):
+         
         ptf = estimation.ParetoNBDFitter()
-
-        data = pd.DataFrame([[1, 400., 5., 6.],
-                                 [2, 500., 0., 37.],
-                                 [3, 500., 4., 37.]], 
-                                 columns=['id', 'frequency', 'recency', 'T'])\
-                     .set_index('id')
-
-        ptf.fit(data['frequency'], data['recency'], data['T'])
+        params = np.array([10.465, 7.98565181e-03, 3.0516, 2.820])
+        freq = np.array([400., 500., 500.] )
+        rec = np.array([5., 1., 4.])
+        age = np.array([6., 37., 37.])
+        assert all([r < 0 and not np.isinf(r) and not pd.isnull(r) 
+                    for r in ptf._log_A_0(params, freq, rec, age)])
 
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):

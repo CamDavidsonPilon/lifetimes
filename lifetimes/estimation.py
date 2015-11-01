@@ -182,16 +182,17 @@ class ParetoNBDFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _A_0(params, freq, rec, T):
-        x = freq
-        r, alpha, s, beta = params
-        max_alpha_beta = max(alpha, beta)
-        min_alpha_beta = min(alpha, beta)
-        t = s + 1. if alpha > beta else r + x
-        r_s_x = r + s + x
+    def _log_A_0(params, freq, rec, age):
 
-        return special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + rec)) / (max_alpha_beta + rec) ** r_s_x\
-            - special.hyp2f1(r_s_x, t, r_s_x + 1., (max_alpha_beta - min_alpha_beta) / (max_alpha_beta + T)) / (max_alpha_beta + T) ** r_s_x
+        r, alpha, s, beta = params
+        min_ab, max_ab, t = (alpha, beta, r + freq) if alpha < beta else (beta, alpha, s + 1)
+        abs_ab = max_ab - min_ab
+        rsx = r + s + freq
+        p_1, q_1 = special.hyp2f1(rsx, t, rsx + 1., abs_ab / (max_ab + rec)), (max_ab + rec)
+        p_2, q_2 = special.hyp2f1(rsx, t, rsx + 1., abs_ab / (max_ab + age)), (max_ab + age)
+        sign = np.ones(len(freq))
+        return misc.logsumexp([log(p_1) + rsx * log(q_2), log(p_2) + rsx * log(q_1)],
+            axis=0, b=[sign, -sign]) - rsx * log(q_1 * q_2)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -205,9 +206,9 @@ class ParetoNBDFitter(BaseFitter):
         r_s_x = r + s + x
 
         A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
-        A_0 = ParetoNBDFitter._A_0(params, freq, rec, T)
+        log_A_0 = ParetoNBDFitter._log_A_0(params, freq, rec, T)
 
-        A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log(A_0) - log(r_s_x))
+        A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log_A_0 - log(r_s_x))
 
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2).sum() + penalizer_term
