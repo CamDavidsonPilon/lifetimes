@@ -97,7 +97,7 @@ Another interesting matrix to look at is the probability of still being *alive*:
 Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict a customer's expected purchases in the next period using their history.
 
     t = 1
-    data['predicted_purchases'] = data.apply(lambda r: bgf.conditional_expected_number_of_purchases_up_to_time(t, r['frequency'], r['recency'], r['T']), axis=1)
+    data['predicted_purchases'] = bgf.conditional_expected_number_of_purchases_up_to_time(t, data['frequency'], data['recency'], data['T'])
     data.sort('predicted_purchases').tail(5)
     """
            frequency  recency      T        predicted_purchases
