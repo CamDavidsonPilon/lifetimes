@@ -200,7 +200,7 @@ class ParetoNBDFitter(BaseFitter):
             sign = 1
 
         return misc.logsumexp([log(p_1) + rsf * log(q_2), log(p_2) + rsf * log(q_1)], axis=0, b=[sign, -sign]) \
-                            - rsx * log(q_1 * q_2)
+                            - rsf * log(q_1 * q_2)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
