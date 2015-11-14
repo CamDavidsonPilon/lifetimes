@@ -57,10 +57,10 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
-        for i in range(0, 100, 10):
-            for j in range(0, 100, 10):
-                for k in range(j, 100, 10):
-                    assert 0 <= ptf.conditional_probability_alive(i, j, k) <= 1.0
+        for freq in np.arange(0, 100, 10.):
+            for recency in np.arange(0, 100, 10.):
+                for t in np.arange(recency, 100, 10.):
+                    assert 0.0 <= ptf.conditional_probability_alive(freq, recency, t) <= 1.0
 
 
 class TestBetaGammaFitter():
