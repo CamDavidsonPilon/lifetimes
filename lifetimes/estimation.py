@@ -182,17 +182,25 @@ class ParetoNBDFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _log_A_0(params, freq, rec, age):
+    def _log_A_0(params, freq, recency, age):
 
         r, alpha, s, beta = params
-        min_ab, max_ab, t = (alpha, beta, r + freq) if alpha < beta else (beta, alpha, s + 1)
-        abs_ab = max_ab - min_ab
-        rsx = r + s + freq
-        p_1, q_1 = special.hyp2f1(rsx, t, rsx + 1., abs_ab / (max_ab + rec)), (max_ab + rec)
-        p_2, q_2 = special.hyp2f1(rsx, t, rsx + 1., abs_ab / (max_ab + age)), (max_ab + age)
-        sign = np.ones(len(freq))
-        return misc.logsumexp([log(p_1) + rsx * log(q_2), log(p_2) + rsx * log(q_1)],
-            axis=0, b=[sign, -sign]) - rsx * log(q_1 * q_2)
+
+        min_of_alpha_beta, max_of_alpha_beta, t = (alpha, beta, r + freq) if alpha < beta else (beta, alpha, s + 1)
+        abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
+
+        rsf = r + s + freq
+        p_1, q_1 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (max_of_alpha_beta + recency)
+        p_2, q_2 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (max_of_alpha_beta + age)
+
+        try:
+            size = len(freq)
+            sign = np.ones(size)
+        except TypeError:
+            sign = 1
+
+        return misc.logsumexp([log(p_1) + rsf * log(q_2), log(p_2) + rsf * log(q_1)], axis=0, b=[sign, -sign]) \
+                            - rsf * log(q_1 * q_2)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -228,7 +236,7 @@ class ParetoNBDFitter(BaseFitter):
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = self._A_0([r, alpha, s, beta], x, t_x, T)
+        A_0 = np.exp(self._log_A_0([r, alpha, s, beta], x, t_x, T))
         return 1. / (1. + (s / (r + s + x)) * (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
