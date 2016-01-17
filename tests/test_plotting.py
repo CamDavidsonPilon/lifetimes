@@ -36,6 +36,17 @@ class TestPlotting():
 
         plt.show()
 
+    def test_plot_probability_alive_matrix(self):
+        from matplotlib import pyplot as plt
+
+        plt.figure()
+        plotting.plot_probability_alive_matrix(bgf)
+
+        plt.figure()
+        plotting.plot_probability_alive_matrix(bgf, max_recency=100, max_frequency=50)
+
+        plt.show()
+
     def test_plot_expected_repeat_purchases(self):
         from matplotlib import pyplot as plt
 
