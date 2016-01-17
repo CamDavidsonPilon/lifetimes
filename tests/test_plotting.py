@@ -37,7 +37,7 @@ class TestPlotting():
         plt.show()
 
     def test_plot_probability_alive_matrix(self):
-        print plt.matplotlib.__version__
+        from matplotlib import pyplot as plt
 
         plt.figure()
         plotting.plot_probability_alive_matrix(bgf)
