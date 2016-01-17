@@ -104,7 +104,7 @@ def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=No
     interpolation = kwargs.pop('interpolation', 'none')
 
     ax = plt.subplot(111)
-    ax.imshow(Z, interpolation=interpolation, **kwargs)
+    PCM = ax.imshow(Z, interpolation=interpolation, **kwargs)
     plt.xlabel("Customer's Historical Frequency")
     plt.ylabel("Customer's Recency")
     plt.title('Expected Number of Future Purchases for %d Unit%s of Time,'
@@ -113,8 +113,7 @@ def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=No
     # turn matrix into square
     forceAspect(ax)
 
-    # necessary for colorbar to show up
-    PCM = ax.get_children()[2]
+    # plot colorbar beside matrix
     plt.colorbar(PCM, ax=ax)
 
     return ax
@@ -139,7 +138,7 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, *
     interpolation = kwargs.pop('interpolation', 'none')
 
     ax = plt.subplot(111)
-    ax.imshow(z, interpolation=interpolation, **kwargs)
+    PCM = ax.imshow(z, interpolation=interpolation, **kwargs)
     plt.xlabel("Customer's Historical Frequency")
     plt.ylabel("Customer's Recency")
     plt.title('Probability Customer is Alive,\nby Frequency and Recency of a Customer')
@@ -147,8 +146,7 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, *
     # turn matrix into square
     forceAspect(ax)
 
-    # necessary for colorbar to show up
-    PCM = ax.get_children()[2]
+    # plot colorbar beside matrix
     plt.colorbar(PCM, ax=ax)
 
     return ax
@@ -158,10 +156,15 @@ def plot_expected_repeat_purchases(model, **kwargs):
     from matplotlib import pyplot as plt
 
     ax = kwargs.pop('ax', None) or plt.subplot(111)
-    color_cycle = ax._get_lines.color_cycle
-
     label = kwargs.pop('label', None)
-    color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
+
+    if plt.matplotlib.__version__ >= "1.5":
+        color_cycle = ax._get_lines.prop_cycler
+        color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle)['color'])
+    else:
+        color_cycle = ax._get_lines.color_cycle
+        color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
+
     max_T = model.data['T'].max()
 
     times = np.linspace(0, max_T, 100)
