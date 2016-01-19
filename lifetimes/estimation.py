@@ -32,7 +32,7 @@ class BaseFitter():
 
     def _print_params(self):
         s = ""
-        for p, value in self.params_.iteritems():
+        for p, value in self.params_.items():
             s += "%s: %.2f, " % (p, value)
         return s.strip(', ')
 
