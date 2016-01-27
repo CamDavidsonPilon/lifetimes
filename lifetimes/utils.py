@@ -109,11 +109,12 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
 
-    # reduce all events per customer during the period to a single event:
-    period_transactions = reduce_events_to_period(transactions, *select_columns).reset_index(level=select_columns[1:])
-
     # count all orders by customer.
-    customers = period_transactions[datetime_col].groupby(level=customer_id_col, sort=False).agg(['max', 'min', 'count'])
+    customers = transactions.groupby(customer_id_col).apply(
+        lambda x: pd.Series({'max': x[datetime_col].max(),
+                            'min': x[datetime_col].min(),
+                            'count': len(x[datetime_col].unique())
+                            }))
 
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
@@ -124,8 +125,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     summary_columns = ['frequency', 'recency', 'T']
 
     if monetary_value_col:
-        customers['monetary_value'] = period_transactions.groupby(level=customer_id_col)[
-            monetary_value_col].mean()
+        period_transaction = transactions.groupby([customer_id_col, datetime_col])[monetary_value_col].sum().reset_index()
+        customers['monetary_value'] = period_transaction.groupby(customer_id_col).mean()
         summary_columns.append('monetary_value')
 
     return customers[summary_columns].astype(float)
