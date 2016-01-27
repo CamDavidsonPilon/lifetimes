@@ -96,14 +96,17 @@ class GammaGammaFitter(BaseFitter):
         df['frequency'] = frequency
         df['recency'] = recency
         df['T'] = T
+        df['monetary_value'] = monetary_value
 
         d = discount_rate
-        m = self.conditional_expected_average_profit()
+
         discounted_monthly_cash_flows = []
 
         for i in range(30, (time*30)+1, 30):
             df['expected_revenues_period_'+str(i)] = df.apply(
-                lambda r: (m*transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])/(1+d)**(i/30)),
+                lambda r: (r['monetary_value']*
+                    (transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])
+                    - transaction_prediction_model.predict(i - 30, r['frequency'], r['recency'], r['T'])) /(1+d)**(i/30)),
                 axis=1
             )
             discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
@@ -136,7 +139,7 @@ class GammaGammaFitter(BaseFitter):
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
         self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
-        
+
         return self
 
 class ParetoNBDFitter(BaseFitter):
