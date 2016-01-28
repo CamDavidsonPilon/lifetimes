@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 pd.options.mode.chained_assignment = None
 
 __all__ = ['calibration_and_holdout_data',
-           'find_repeated_transactions',
+           'find_first_transactions',
            'summary_data_from_transaction_data',
            'calculate_alive_path']
 
@@ -71,8 +71,12 @@ def reduce_events_to_period(transactions, *aggregation_columns):
     return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
-def find_repeated_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                               observation_period_end=datetime.today(), freq='D'):
+def reduce_events_to_period(transactions, *aggregation_columns):
+    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
+
+
+def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
+                            observation_period_end=datetime.today(), freq='D'):
     """
     This takes a Dataframe of transaction data of the form:
         customer_id, datetime [, monetary_value]
@@ -105,26 +109,23 @@ def find_repeated_transactions(transactions, customer_id_col, datetime_col, mone
 
     transactions = transactions.ix[(transactions.index <= observation_period_end)].reset_index()
 
+    period_groupby = transactions.groupby([datetime_col, customer_id_col], sort=False, as_index=False)
+
     if monetary_value_col:
         # when we have a monetary column, make sure to sum together any values in the same period
-        period_transactions = transactions.groupby([customer_id_col, datetime_col], sort=False, as_index=False).sum()
+        period_transactions = period_groupby.sum()
     else:
-        period_transactions = reduce_events_to_period(transactions, *select_columns).reset_index()
+        # by calling head() on the groupby object, the datetime_col and customer_id_col columns
+        # will be reduced
+        period_transactions = period_groupby.head(1)
 
-    # find all of the initial transactions for every customer
-    first_transactions = period_transactions.groupby(customer_id_col, sort=True, as_index=False).first()
-    first_transactions['first'] = True
-
-    # join the first_transaction column to the transaction log
-    period_transactions = pd.merge(
-        period_transactions,
-        first_transactions[[customer_id_col, datetime_col, 'first']],
-        how="left",
-        on=[customer_id_col, datetime_col]
-    )
-    # boolean invert the 'first' column to give a column representing repeated transactions
-    period_transactions['repeated'] = ~(period_transactions['first'].fillna(False))
-    select_columns.append('repeated')
+    # initialize a new column where we will indicate which are the first transactions
+    period_transactions['first'] = False
+    # find all of the initial transactions and store as an index
+    first_transactions = period_transactions.groupby(customer_id_col, sort=True, as_index=False).head(1).index
+    # mark the initial transactions as True
+    period_transactions.loc[first_transactions, 'first'] = True
+    select_columns.append('first')
 
     return period_transactions[select_columns]
 
@@ -152,7 +153,7 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
 
     # label all of the repeated transactions
-    repeated_transactions = find_repeated_transactions(
+    repeated_transactions = find_first_transactions(
         transactions,
         customer_id_col,
         datetime_col,
@@ -161,30 +162,25 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         observation_period_end,
         freq
     )
-    # group together all transactions by customer_id and find each customers first and last transaction
-    customers = repeated_transactions.groupby(customer_id_col)[datetime_col].agg(['min', 'max'])
-    # count up all the repeated transactions for each customer
-    # by using a pivot_table, customers with zero repeated transactions are naturally accounted for
-    customers['frequency'] = pd.pivot_table(
-        repeated_transactions,
-        index=customer_id_col,
-        values='repeated',
-        aggfunc=np.sum
-    )
-    customers['recency'] = customers['max'] - customers['min']
+    # count all orders by customer.
+    customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(['min', 'max', 'count'])
+
+    # subtract 1 from count, as we ignore their first order.
+    customers['frequency'] = customers['count'] - 1
+
     customers['T'] = (observation_period_end - customers['min'])
+    customers['recency'] = (customers['max'] - customers['min'])
 
     summary_columns = ['frequency', 'recency', 'T']
 
     if monetary_value_col:
-        # use another pivot_table to find the mean of each customer's repeated transaction valeus
-        customers['monetary_value'] = pd.pivot_table(
-            repeated_transactions,
-            index=customer_id_col,
-            columns='repeated',
-            values=[monetary_value_col],
-            aggfunc=np.mean
-        )[monetary_value_col][True].fillna(0)
+        # create an index of all the first purchases
+        first_purchases = repeated_transactions[repeated_transactions['first']].index
+        # by setting the monetary_value cells of all the first purchases to NaN,
+        # those values will be excluded from the mean value calculation
+        repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
+
+        customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
         summary_columns.append('monetary_value')
 
     return customers[summary_columns].astype(float)
