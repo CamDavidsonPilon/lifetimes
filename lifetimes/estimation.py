@@ -12,7 +12,7 @@ from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 
-__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter']
+__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 
 class BaseFitter():
@@ -475,4 +475,167 @@ class BetaGeoFitter(BaseFitter):
             second_term = special.beta(a + 1, b + n - 1) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
+        return first_term + second_term
+
+
+class ModifiedBetaGeoFitter(BaseFitter):
+
+    """
+
+    Also known as the MBG/NBD model. Based on [1,2], this model has the following assumptions:
+    1) Each individual, i, has a hidden lambda_i and p_i parameter
+    2) These come from a population wide Gamma and a Beta distribution respectively.
+    3) Individuals purchases follow a Poisson process with rate lambda_i*t .
+    4) At the beginning of their lifetime and after each purchase, an individual has a
+       p_i probability of dieing (never buying again).
+
+    [1] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
+        "Empirical validation and comparison of models for customer base analysis,"
+        International Journal of Research in Marketing, 24 (3), 201–209.
+    [2] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model," International Journal
+        of Research in Marketing, 25 (3), 225-226.
+
+
+    """
+
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
+        """
+        This methods fits the data to the MBG/NBD model.
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates.
+            initial_params: set the initial parameters for the fitter.
+            verbose: set to true to print out convergence diagnostics.
+        Returns:
+            self, with additional properties and methods like params_ and predict
+        """
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
+        _check_inputs(frequency, recency, T)
+
+        self._scale = _scale_time(T)
+        scaled_recency = recency * self._scale
+        scaled_T = T * self._scale
+
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
+
+        self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
+        self.params_['alpha'] /= self._scale
+
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+
+        self.predict = self.conditional_expected_number_of_purchases_up_to_time
+        return self
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+        if npany(asarray(params) <= 0):
+            return np.inf
+
+        r, alpha, a, b = params
+
+        A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
+        A_2 = special.gammaln(a + b) + special.gammaln(b + freq + 1) - special.gammaln(b) - special.gammaln(a + b + freq + 1)
+        A_3 = -(r + freq) * log(alpha + T)
+        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
+
+        penalizer_term = penalizer_coef * log(params).sum()
+        return -(A_1 + A_2 + A_3 + log(exp(A_4) + 1.)).sum() + penalizer_term
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+        Parameters:
+            t: a scalar or array of times.
+        Returns: a scalar or array
+        """
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        hyp = special.hyp2f1(r, b + 1, a + b, t / (alpha + t))
+        return b / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
+
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population, given they have purchase history (frequency, recency, T)
+        See Wagner, U. and Hoppe D. (2008).
+        Parameters:
+            t: a scalar or array of times.
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
+            T: a scalar: age of the customer.
+        Returns: a scalar or array
+        """
+        x = frequency
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+
+        hyp_term = special.hyp2f1(r + x, b + x + 1, a + b + x, t / (alpha + T + t))
+        first_term = (a + b + x) / (a - 1)
+        second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
+        numerator = first_term * second_term
+
+        denominator = 1 + (a / (b + x)) * ((alpha + T) / (alpha + recency)) ** (r + x)
+
+        return numerator / denominator
+
+    def conditional_probability_alive(self, frequency, recency, T):
+        """
+        Compute the probability that a customer with history (frequency, recency, T) is currently
+        alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
+        Parameters:
+            frequency: a scalar: historical frequency of customer.
+            recency: a scalar: historical recency of customer.
+            T: a scalar: age of the customer.
+        Returns: a scalar
+        """
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        return 1. / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
+
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
+        """
+        Compute the probability alive matrix
+        Parameters:
+            max_frequency: the maximum frequency to plot. Default is max observed frequency.
+            max_recency: the maximum recency to plot. This also determines the age of the customer.
+                Default to max observed age.
+        Returns a matrix of the form [t_x: historical recency, x: historical frequency]
+        """
+
+        max_frequency = max_frequency or int(self.data['frequency'].max())
+        max_recency = max_recency or int(self.data['T'].max())
+
+        Z = np.zeros((max_recency + 1, max_frequency + 1))
+        for i, t_x in enumerate(np.arange(max_recency + 1)):
+            for j, x in enumerate(np.arange(max_frequency + 1)):
+                Z[i, j] = self.conditional_probability_alive(x, t_x, max_recency)
+
+        return Z
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        """
+        Compute the probability of
+        P( N(t) = n | model )
+        where N(t) is the number of repeat purchases a customer makes in t units of time.
+        """
+
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+
+        first_term = special.beta(a, b + n + 1) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+        second_term = special.beta(a + 1, b + n) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+
         return first_term + second_term
