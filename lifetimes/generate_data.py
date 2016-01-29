@@ -114,7 +114,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     (http://brucehardie.com/papers/bgnbd_2004-04-20.pdf)
     [2] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
         "Empirical validation and comparison of models for customer base analysis,"
-        International Journal of Research in Marketing, 24 (3), 201–209.
+        International Journal of Research in Marketing, 24 (3), 201-209.
     """
     if type(T) in [float, int]:
         T = T * np.ones(size)
