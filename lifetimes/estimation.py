@@ -491,7 +491,7 @@ class ModifiedBetaGeoFitter(BaseFitter):
 
     [1] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
         "Empirical validation and comparison of models for customer base analysis,"
-        International Journal of Research in Marketing, 24 (3), 201–209.
+        International Journal of Research in Marketing, 24 (3), 201-209.
     [2] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model," International Journal
         of Research in Marketing, 25 (3), 225-226.
 

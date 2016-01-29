@@ -245,7 +245,7 @@ class TestModifiedBetaGammaFitter():
         params_1 = np.array(list(mbfg_no_penalizer.params_.values()))
 
         mbfg_with_penalizer = estimation.ModifiedBetaGeoFitter(penalizer_coef=0.1)
-        mbfg_with_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        mbfg_with_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         params_2 = np.array(list(mbfg_with_penalizer.params_.values()))
         assert params_2.sum() < params_1.sum()
 
