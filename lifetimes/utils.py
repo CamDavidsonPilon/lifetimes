@@ -7,6 +7,7 @@ from scipy.optimize import minimize
 pd.options.mode.chained_assignment = None
 
 __all__ = ['calibration_and_holdout_data',
+           'find_first_transactions',
            'summary_data_from_transaction_data',
            'calculate_alive_path']
 
@@ -70,17 +71,17 @@ def reduce_events_to_period(transactions, *aggregation_columns):
     return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
-def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                                       observation_period_end=datetime.today(), freq='D'):
+def reduce_events_to_period(transactions, *aggregation_columns):
+    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
+
+
+def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
+                            observation_period_end=datetime.today(), freq='D'):
     """
-    This transforms a Dataframe of transaction data of the form:
-
+    This takes a Dataframe of transaction data of the form:
         customer_id, datetime [, monetary_value]
-
-    to a Dataframe of the form:
-
-        customer_id, frequency, recency, T [, monetary_value]
-
+    and appends a column named 'repeated' to the transaction log which indicates which rows
+    are repeated transactions for that customer_id.
     Parameters:
         transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
@@ -101,19 +102,68 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     transactions = transactions[select_columns].copy()
 
-    def to_period(d):
-        return d.to_period(freq)
+    # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
+    # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
+    transactions = transactions.set_index(datetime_col).to_period(freq)
 
-    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format).map(to_period)
-    observation_period_end = to_period(pd.to_datetime(observation_period_end, format=datetime_format))
+    transactions = transactions.ix[(transactions.index <= observation_period_end)].reset_index()
 
-    transactions = transactions.ix[transactions[datetime_col] <= observation_period_end]
+    period_groupby = transactions.groupby([datetime_col, customer_id_col], sort=False, as_index=False)
 
-    # reduce all events per customer during the period to a single event:
-    period_transactions = reduce_events_to_period(transactions, *select_columns).reset_index(level=select_columns[1:])
+    if monetary_value_col:
+        # when we have a monetary column, make sure to sum together any values in the same period
+        period_transactions = period_groupby.sum()
+    else:
+        # by calling head() on the groupby object, the datetime_col and customer_id_col columns
+        # will be reduced
+        period_transactions = period_groupby.head(1)
 
+    # initialize a new column where we will indicate which are the first transactions
+    period_transactions['first'] = False
+    # find all of the initial transactions and store as an index
+    first_transactions = period_transactions.groupby(customer_id_col, sort=True, as_index=False).head(1).index
+    # mark the initial transactions as True
+    period_transactions.loc[first_transactions, 'first'] = True
+    select_columns.append('first')
+
+    return period_transactions[select_columns]
+
+
+def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
+                                       observation_period_end=datetime.today(), freq='D'):
+    """
+    This transforms a Dataframe of transaction data of the form:
+        customer_id, datetime [, monetary_value]
+    to a Dataframe of the form:
+        customer_id, frequency, recency, T [, monetary_value]
+    Parameters:
+        transactions: a Pandas DataFrame.
+        customer_id_col: the column in transactions that denotes the customer_id
+        datetime_col: the column in transactions that denotes the datetime the purchase was made.
+        monetary_value_col: the columns in the transactions that denotes the monetary value of the transaction.
+            Optional, only needed for customer lifetime value estimation models.
+        observation_period_end: a string or datetime to denote the final date of the study. Events
+            after this date are truncated.
+        datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
+            the provided format.
+        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+    """
+    observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
+
+    # label all of the repeated transactions
+    repeated_transactions = find_first_transactions(
+        transactions,
+        customer_id_col,
+        datetime_col,
+        monetary_value_col,
+        datetime_format,
+        observation_period_end,
+        freq
+    )
     # count all orders by customer.
-    customers = period_transactions[datetime_col].groupby(level=customer_id_col, sort=False).agg(['max', 'min', 'count'])
+    customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(['min', 'max', 'count'])
 
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
@@ -124,8 +174,13 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     summary_columns = ['frequency', 'recency', 'T']
 
     if monetary_value_col:
-        customers['monetary_value'] = period_transactions.groupby(level=customer_id_col)[
-            monetary_value_col].mean()
+        # create an index of all the first purchases
+        first_purchases = repeated_transactions[repeated_transactions['first']].index
+        # by setting the monetary_value cells of all the first purchases to NaN,
+        # those values will be excluded from the mean value calculation
+        repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
+
+        customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
         summary_columns.append('monetary_value')
 
     return customers[summary_columns].astype(float)
@@ -179,7 +234,7 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
 
 def _scale_time(age):
     # create a scalar such that the maximum age is 10.
-    return 10./age.max()
+    return 10. / age.max()
 
 
 def _check_inputs(frequency, recency, T):

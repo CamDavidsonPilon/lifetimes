@@ -71,6 +71,76 @@ def large_transaction_level_data_with_monetary_value():
     return pd.DataFrame(d, columns=['id', 'date', 'monetary_value'])
 
 
+def test_find_first_transactions_returns_correct_results(large_transaction_level_data):
+    today = '2015-02-07'
+    actual = utils.find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today)
+    expected = pd.DataFrame([[1, pd.Period('2015-01-01', 'D'), True],
+                             [1, pd.Period('2015-02-06', 'D'), False],
+                             [2, pd.Period('2015-01-01', 'D'), True],
+                             [3, pd.Period('2015-01-01', 'D'), True],
+                             [3, pd.Period('2015-01-02', 'D'), False],
+                             [3, pd.Period('2015-01-05', 'D'), False],
+                             [4, pd.Period('2015-01-16', 'D'), True],
+                             [4, pd.Period('2015-02-02', 'D'), False],
+                             [4, pd.Period('2015-02-05', 'D'), False],
+                             [5, pd.Period('2015-01-16', 'D'), True],
+                             [5, pd.Period('2015-01-17', 'D'), False],
+                             [5, pd.Period('2015-01-18', 'D'), False],
+                             [6, pd.Period('2015-02-02', 'D'), True]], columns=['id','date','first'])
+    assert_frame_equal(actual, expected)
+
+
+def test_find_first_transactions_with_specific_non_daily_frequency(large_transaction_level_data):
+    today = '2015-02-07'
+    actual = utils.find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today, freq='W')
+    expected = pd.DataFrame([[1, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), True],
+                             [1, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), False],
+                             [2, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), True],
+                             [3, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), True],
+                             [3, pd.Period('2015-01-05/2015-01-11', 'W-SUN'), False],
+                             [4, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), True],
+                             [4, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), False],
+                             [5, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), True],
+                             [6, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), True]],
+                            columns=['id','date','first'],
+                            index=actual.index) #we shouldn't really care about row ordering or indexing, but assert_frame_equals is strict about it
+    assert_frame_equal(actual, expected)
+
+
+def test_find_first_transactions_with_monetary_values(large_transaction_level_data_with_monetary_value):
+    today = '2015-02-07'
+    actual = utils.find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today)
+    expected = pd.DataFrame([[1, pd.Period('2015-01-01', 'D'), 1, True],
+                             [1, pd.Period('2015-02-06', 'D'), 2, False],
+                             [2, pd.Period('2015-01-01', 'D'), 2, True],
+                             [3, pd.Period('2015-01-01', 'D'), 3, True],
+                             [3, pd.Period('2015-01-02', 'D'), 1, False],
+                             [3, pd.Period('2015-01-05', 'D'), 5, False],
+                             [4, pd.Period('2015-01-16', 'D'), 6, True],
+                             [4, pd.Period('2015-02-02', 'D'), 3, False],
+                             [4, pd.Period('2015-02-05', 'D'), 3, False],
+                             [5, pd.Period('2015-01-16', 'D'), 3, True],
+                             [5, pd.Period('2015-01-17', 'D'), 1, False],
+                             [5, pd.Period('2015-01-18', 'D'), 8, False],
+                             [6, pd.Period('2015-02-02', 'D'), 5, True]], columns=['id','date','monetary_value','first'])
+    assert_frame_equal(actual, expected)
+
+
+def test_find_first_transactions_with_monetary_values_with_specific_non_daily_frequency(large_transaction_level_data_with_monetary_value):
+    today = '2015-02-07'
+    actual = utils.find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today, freq='W')
+    expected = pd.DataFrame([[1, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), 1, True],
+                             [1, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 2, False],
+                             [2, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), 2, True],
+                             [3, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), 4, True],
+                             [3, pd.Period('2015-01-05/2015-01-11', 'W-SUN'), 5, False],
+                             [4, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), 6, True],
+                             [4, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 6, False],
+                             [5, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), 12, True],
+                             [6, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 5, True]], columns=['id','date','monetary_value','first'])
+    assert_frame_equal(actual, expected)
+
+
 def test_summary_data_from_transaction_data_returns_correct_results(transaction_level_data):
     today = '2015-02-07'
     actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today)
@@ -105,12 +175,12 @@ def test_summary_date_from_transaction_data_with_specific_non_daily_frequency(la
 def test_summary_date_from_transaction_with_monetary_values(large_transaction_level_data_with_monetary_value):
     today = '20150207'
     actual = utils.summary_data_from_transaction_data(large_transaction_level_data_with_monetary_value, 'id', 'date', monetary_value_col='monetary_value', observation_period_end=today)
-    expected = pd.DataFrame([[1, 1., 36., 37., 1.5],
-                             [2, 0.,  0., 37., 2],
+    expected = pd.DataFrame([[1, 1., 36., 37., 2],
+                             [2, 0.,  0., 37., 0],
                              [3, 2.,  4., 37., 3],
-                             [4, 2., 20., 22., 4],
-                             [5, 2.,  2., 22., 4],
-                             [6, 0.,  0.,  5., 5]], columns=['id', 'frequency', 'recency', 'T', 'monetary_value']).set_index('id')
+                             [4, 2., 20., 22., 3],
+                             [5, 2.,  2., 22., 4.5],
+                             [6, 0.,  0.,  5., 0]], columns=['id', 'frequency', 'recency', 'T', 'monetary_value']).set_index('id')
     assert_frame_equal(actual, expected)
 
 
