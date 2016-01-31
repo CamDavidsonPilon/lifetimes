@@ -51,7 +51,13 @@ For the following examples, we'll use a dataset from an ecommerce provider to an
     5    0            0.00       38.86
     """
 
-`frequency` represents the number of repeat purchases the customer has made. `T` represents the age of the customer. `recency` represents the age of the customer when they made their most recent purchases.
+#### What do these columns represent?
+
+- `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases.   
+- `T` represents the age of the customer in whatever time units chosen (weekly above). This is equal to the duration between a customer's first purchase and the end of the period under study. 
+- `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
+
+If your data is not in the format (very common), there are [utility functions](#Example using transactional datasets) in lifelines to transform your data to look like this. 
 
 #### Fitting models to our data
 
