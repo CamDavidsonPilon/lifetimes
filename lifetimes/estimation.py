@@ -15,7 +15,7 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 
-class BaseFitter():
+class BaseFitter(object):
 
     def __repr__(self):
         classname = self.__class__.__name__
