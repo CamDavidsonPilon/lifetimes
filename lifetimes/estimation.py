@@ -478,7 +478,7 @@ class BetaGeoFitter(BaseFitter):
         return first_term + second_term
 
 
-class ModifiedBetaGeoFitter(BaseFitter):
+class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     """
 
@@ -499,11 +499,12 @@ class ModifiedBetaGeoFitter(BaseFitter):
     """
 
     def __init__(self, penalizer_coef=0.):
-        self.penalizer_coef = penalizer_coef
+        super(self.__class__, self).__init__(penalizer_coef)
 
     def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
         """
         This methods fits the data to the MBG/NBD model.
+
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
@@ -513,32 +514,14 @@ class ModifiedBetaGeoFitter(BaseFitter):
                 hurt estimates.
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+
+
         Returns:
             self, with additional properties and methods like params_ and predict
+
         """
-        frequency = asarray(frequency)
-        recency = asarray(recency)
-        T = asarray(T)
-        _check_inputs(frequency, recency, T)
-
-        self._scale = _scale_time(T)
-        scaled_recency = recency * self._scale
-        scaled_T = T * self._scale
-
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                      [frequency, scaled_recency, scaled_T, self.penalizer_coef],
-                                                      iterative_fitting,
-                                                      initial_params,
-                                                      4,
-                                                      verbose)
-
-        self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
-        self.params_['alpha'] /= self._scale
-
-        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
-
-        self.predict = self.conditional_expected_number_of_purchases_up_to_time
+        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose) #although the partent method is called, this class's _negative_log_likelihood is referenced
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size) #this needs to be reassigned from the parent method
         return self
 
     @staticmethod
@@ -560,8 +543,10 @@ class ModifiedBetaGeoFitter(BaseFitter):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population.
+
         Parameters:
             t: a scalar or array of times.
+
         Returns: a scalar or array
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -573,11 +558,13 @@ class ModifiedBetaGeoFitter(BaseFitter):
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population, given they have purchase history (frequency, recency, T)
         See Wagner, U. and Hoppe D. (2008).
+
         Parameters:
             t: a scalar or array of times.
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
             T: a scalar: age of the customer.
+
         Returns: a scalar or array
         """
         x = frequency
@@ -596,11 +583,14 @@ class ModifiedBetaGeoFitter(BaseFitter):
         """
         Compute the probability that a customer with history (frequency, recency, T) is currently
         alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
+
         Parameters:
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
             T: a scalar: age of the customer.
+
         Returns: a scalar
+
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         return 1. / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
@@ -612,23 +602,17 @@ class ModifiedBetaGeoFitter(BaseFitter):
             max_frequency: the maximum frequency to plot. Default is max observed frequency.
             max_recency: the maximum recency to plot. This also determines the age of the customer.
                 Default to max observed age.
+
         Returns a matrix of the form [t_x: historical recency, x: historical frequency]
         """
-
-        max_frequency = max_frequency or int(self.data['frequency'].max())
-        max_recency = max_recency or int(self.data['T'].max())
-
-        Z = np.zeros((max_recency + 1, max_frequency + 1))
-        for i, t_x in enumerate(np.arange(max_recency + 1)):
-            for j, x in enumerate(np.arange(max_frequency + 1)):
-                Z[i, j] = self.conditional_probability_alive(x, t_x, max_recency)
-
-        return Z
+        return super(self.__class__, self).conditional_probability_alive_matrix(max_frequency, max_recency)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """
         Compute the probability of
+
         P( N(t) = n | model )
+
         where N(t) is the number of repeat purchases a customer makes in t units of time.
         """
 
