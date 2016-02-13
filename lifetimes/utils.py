@@ -71,10 +71,6 @@ def reduce_events_to_period(transactions, *aggregation_columns):
     return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
-def reduce_events_to_period(transactions, *aggregation_columns):
-    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
-
-
 def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
                             observation_period_end=datetime.today(), freq='D'):
     """
