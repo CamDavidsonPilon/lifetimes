@@ -52,3 +52,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# OS generated files
+.DS_Store
+.DS_Store?
