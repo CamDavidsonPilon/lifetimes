@@ -231,13 +231,13 @@ from transactional data also containing economic values for each transaction (i.
     
     returning_customers_summary.head()
     """
-    	frequency	recency	T	monetary_value
-    id				
-    2	1	        0	    262	44.500000
-    3	2	        90	    272	20.353333
-    4	2	        213	    273	24.673333
-    5	7	        257	    273	32.651250
-    8	3	        183	    273	26.447500
+                 frequency  recency      T  monetary_value
+    customer_id
+    1                    2    30.43  38.86           22.35
+    2                    1     1.71  38.86           11.77
+    6                    7    29.43  38.86           73.74
+    7                    1     5.00  38.86           11.77
+    9                    2    35.71  38.86           25.55
     """
 
 #### The Gamma-Gamma model and the independence assumption
@@ -248,45 +248,47 @@ the Pearson correlation between the two vectors is close to 0 in order to use th
 
     returning_customers_summary[['monetary_value', 'frequency']].corr()
     """
-                    monetary_value	frequency
-    monetary_value	1.000000	    0.070505
-    frequency	    0.070505	    1.000000
+                    monetary_value  frequency
+    monetary_value        1.000000   0.113884
+    frequency             0.113884   1.000000
     """
 
 At this point we can train our Gamma-Gamma submodel and predict the conditional, expected average lifetime value of our customers.
+
+    from lifetimes import GammaGammaFitter
 
     ggf = GammaGammaFitter(penalizer_coef = 0)
     ggf.fit(returning_customers_summary['frequency'], 
             returning_customers_summary['monetary_value'])
     print ggf    
     """
-    <lifetimes.GammaGammaFitter: fitted with 9591 subjects, p: 163.91, q: 7.36, v: 0.06>
+    <lifetimes.GammaGammaFitter: fitted with 946 subjects, p: 6.25, q: 3.74, v: 15.45>
     """
     
 We can now produce the average CLV figure for our dataset as follows:
-    
+
     print "Expected conditional average profit: %s, Average profit: %s" % (
         ggf.conditional_expected_average_profit(
-            returning_customers_summary['frequency'], 
-            returning_customers_summary['monetary_value']
+            summary_with_money_value['frequency'],
+            summary_with_money_value['monetary_value']
         ), 
         summary_with_money_value[summary_with_money_value['frequency']>0]['monetary_value'].mean()
     )
     """
-    Expected conditional average profit: 34.4038955386, Average profit: 35.1922197294
+    Expected conditional average profit: 35.2529588256, Average profit: 35.078551797
     """
 
 While for computing the total CLV using the DCF method (https://en.wikipedia.org/wiki/Discounted_cash_flow) adjusting for cost of capital:
  
     print ggf.customer_lifetime_value(
         bgf, #the model to use to predict the number of future transactions
-        returning_customers_summary['frequency'],
-        returning_customers_summary['recency'],
-        returning_customers_summary['T'], 
-        returning_customers_summary['monetary_value'], 
-        time=12, 
+        summary_with_money_value['frequency'],
+        summary_with_money_value['recency'],
+        summary_with_money_value['T'],
+        summary_with_money_value['monetary_value'],
+        time=12,
         discount_rate=0.7
-    ) #10689.30
+    ) #74942.63
 
 ## Questions? Comments? 
 
