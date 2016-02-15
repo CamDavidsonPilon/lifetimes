@@ -28,10 +28,10 @@ install:
   - source activate test-environment
   - python setup.py install
   - pip install coveralls
-  - pip install pytest-cov
+  - pip install pytest-cov pytest-mpl
 # command to run tests
 script: 
-  - py.test --cov lifetimes
+  - py.test --cov lifetimes --mpl --mpl-baseline-path tests/reference_plots/
 after_success:
   coveralls
 # Don't want notifications

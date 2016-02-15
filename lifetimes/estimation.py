@@ -10,7 +10,7 @@ from scipy import special
 from scipy import misc
 
 from lifetimes.utils import _fit, _scale_time, _check_inputs
-from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model
+from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
