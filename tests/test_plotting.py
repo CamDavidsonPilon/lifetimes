@@ -1,6 +1,9 @@
 import os
 import pandas as pd
 import pytest
+
+import matplotlib
+matplotlib.use('AGG') # use a non-interactive backend
 from matplotlib import pyplot as plt
 
 from lifetimes import plotting
