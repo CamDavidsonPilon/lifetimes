@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
-                  isinf, isnan, ones_like
+    isinf, isnan, ones_like
 from pandas import DataFrame
 
 from scipy import special
 from scipy import misc
 
-from lifetimes.utils import _fit, _scale_time, _check_inputs
+from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
@@ -38,6 +38,7 @@ class BaseFitter(object):
 
 
 class GammaGammaFitter(BaseFitter):
+
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
@@ -51,8 +52,8 @@ class GammaGammaFitter(BaseFitter):
         x = frequency
         m = avg_monetary_value
 
-        negative_log_likelihood_values = special.gammaln(p*x+q)-special.gammaln(p*x)-special.gammaln(q)\
-                                         +q*np.log(v)+(p*x-1)*np.log(m)+(p*x)*np.log(x)-(p*x+q)*np.log(x*m+v)
+        negative_log_likelihood_values = special.gammaln(p * x + q) - special.gammaln(p * x) - special.gammaln(q)\
+            + q * np.log(v) + (p * x - 1) * np.log(m) + (p * x) * np.log(x) - (p * x + q) * np.log(x * m + v)
 
         penalizer_term = penalizer_coef * log(params).sum()
         negative_log_likelihood = -np.sum(negative_log_likelihood_values) + penalizer_term
@@ -74,45 +75,7 @@ class GammaGammaFitter(BaseFitter):
         m = self.data['monetary_value'] if monetary_value is None else monetary_value
         x = self.data['frequency'] if frequency is None else frequency
         p, q, v = self._unload_params('p', 'q', 'v')
-        return np.mean((((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m)
-
-    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
-        """
-        This method computes the average lifetime value for a group of one or more customers.
-            transaction_prediction_model: the model to predict future transactions, literature uses
-                pareto/ndb but we can also use a different model like bg
-            frequency: the frequency vector of customers' purchases (denoted x in literature).
-            recency: the recency vector of customers' purchases (denoted t_x in literature).
-            T: the vector of customers' age (time since first purchase)
-            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
-            time: the lifetime expected for the user in months. Default: 12
-            discount_rate: the monthly adjusted discount rate. Default: 1
-
-        Returns:
-            the conditional expectation of the average profit per transaction.
-            Also creates a discounted_monthly_cash_flows attribute
-        """
-        df = DataFrame()
-        df['frequency'] = frequency
-        df['recency'] = recency
-        df['T'] = T
-        df['monetary_value'] = monetary_value
-
-        d = discount_rate
-
-        discounted_monthly_cash_flows = []
-
-        for i in range(30, (time*30)+1, 30):
-            df['expected_revenues_period_'+str(i)] = df.apply(
-                lambda r: (r['monetary_value']*
-                    (transaction_prediction_model.predict(i, r['frequency'], r['recency'], r['T'])
-                    - transaction_prediction_model.predict(i - 30, r['frequency'], r['recency'], r['T'])) /(1+d)**(i/30)),
-                axis=1
-            )
-            discounted_monthly_cash_flows.append(df['expected_revenues_period_'+str(i)].sum())
-
-        return sum(discounted_monthly_cash_flows)
-
+        return (((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m
 
     def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
         """
@@ -141,6 +104,25 @@ class GammaGammaFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
 
         return self
+
+    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+        """
+        This method computes the average lifetime value for a group of one or more customers.
+            transaction_prediction_model: the model to predict future transactions, literature uses
+                pareto/ndb but we can also use a different model like bg
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+            time: the lifetime expected for the user in months. Default: 12
+            discount_rate: the monthly adjusted discount rate. Default: 1
+
+        Returns:
+            Series object with customer ids as index and the estimated customer lifetime values as values
+        """
+        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value).values  # use the Gamma-Gamma estimates for the monetary_values
+        return customer_lifetime_value(transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate)
+
 
 class ParetoNBDFitter(BaseFitter):
 
@@ -203,7 +185,7 @@ class ParetoNBDFitter(BaseFitter):
             sign = 1
 
         return misc.logsumexp([log(p_1) + rsf * log(q_2), log(p_2) + rsf * log(q_1)], axis=0, b=[sign, -sign]) \
-                            - rsf * log(q_1 * q_2)
+            - rsf * log(q_1 * q_2)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -219,7 +201,7 @@ class ParetoNBDFitter(BaseFitter):
         A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
         log_A_0 = ParetoNBDFitter._log_A_0(params, freq, rec, T)
 
-        A_2 = logaddexp(-(r+x)*log(alpha+T) - s*log(beta+T), log(s) + log_A_0 - log(r_s_x))
+        A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
 
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2).sum() + penalizer_term
@@ -523,8 +505,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             self, with additional properties and methods like params_ and predict
 
         """
-        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose) #although the partent method is called, this class's _negative_log_likelihood is referenced
-        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size) #this needs to be reassigned from the parent method
+        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose)  # although the partent method is called, this class's _negative_log_likelihood is referenced
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)  # this needs to be reassigned from the parent method
         return self
 
     @staticmethod

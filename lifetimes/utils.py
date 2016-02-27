@@ -251,3 +251,28 @@ def _check_inputs(frequency, recency, T):
     check_recency_is_less_than_T(recency, T)
     check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
     check_all_frequency_values_are_integer_values(frequency)
+
+
+def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+    """
+    This method computes the average lifetime value for a group of one or more customers.
+        transaction_prediction_model: the model to predict future transactions, literature uses
+            pareto/ndb but we can also use a different model like bg
+        frequency: the frequency vector of customers' purchases (denoted x in literature).
+        recency: the recency vector of customers' purchases (denoted t_x in literature).
+        T: the vector of customers' age (time since first purchase)
+        monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
+        time: the lifetime expected for the user in months. Default: 12
+        discount_rate: the monthly adjusted discount rate. Default: 1
+
+    Returns:
+        Series object with customer ids as index and the estimated customer lifetime values as values
+    """
+    df = pd.DataFrame(index=frequency.index)
+    df['clv'] = 0
+
+    for i in range(30, (time * 30) + 1, 30):
+        df['clv'] = df['clv'] + monetary_value * (transaction_prediction_model.predict(i, frequency, recency, T)
+                                                  - transaction_prediction_model.predict(i - 30, frequency, recency, T)) / (1 + discount_rate)**(i / 30)
+
+    return df['clv']
