@@ -5,6 +5,7 @@ import pandas as pd
 import numpy.testing as npt
 
 import lifetimes.estimation as estimation
+import lifetimes.utils as utils
 from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value
 
 cdnow_customers = load_cdnow()
@@ -21,6 +22,44 @@ class TestGammaGammaFitter():
         )
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
+
+    def test_conditional_expected_average_profit(self):
+        from collections import OrderedDict
+
+        ggf = estimation.GammaGammaFitter()
+        ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
+
+        summary = cdnow_customers_with_monetary_value.head(10)
+        estimates = ggf.conditional_expected_average_profit(summary['frequency'], summary['monetary_value'])
+        expected = np.array([24.65, 18.91, 35.17, 35.17, 35.17, 71.46, 18.91, 35.17, 27.28, 35.17]) # from Hardie spreadsheet http://brucehardie.com/notes/025/
+
+        npt.assert_allclose(estimates.values, expected, atol=0.1)
+
+    def test_customer_lifetime_value_with_bgf(self):
+        from collections import OrderedDict
+
+        ggf = estimation.GammaGammaFitter()
+        ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
+
+        bgf = estimation.BetaGeoFitter()
+        bgf.fit(cdnow_customers_with_monetary_value['frequency'], cdnow_customers_with_monetary_value['recency'], cdnow_customers_with_monetary_value['T'], iterative_fitting=3)
+
+        ggf_clv = ggf.customer_lifetime_value(
+                bgf,
+                cdnow_customers_with_monetary_value['frequency'],
+                cdnow_customers_with_monetary_value['recency'],
+                cdnow_customers_with_monetary_value['T'],
+                cdnow_customers_with_monetary_value['monetary_value']
+        )
+
+        utils_clv = utils.customer_lifetime_value(
+                bgf,
+                cdnow_customers_with_monetary_value['frequency'],
+                cdnow_customers_with_monetary_value['recency'],
+                cdnow_customers_with_monetary_value['T'],
+                ggf.conditional_expected_average_profit(cdnow_customers_with_monetary_value['frequency'],cdnow_customers_with_monetary_value['monetary_value'])
+        )
+        npt.assert_equal(ggf_clv.values, utils_clv.values)
 
 
 class TestParetoNBDFitter():
@@ -52,6 +91,27 @@ class TestParetoNBDFitter():
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
 
+    def test_expectation_returns_same_value_as_R_BTYD(self):
+        """ From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        expected = np.array([0.00000000, 0.05077821, 0.09916088, 0.14542507, 0.18979930,
+            0.23247466, 0.27361274, 0.31335159, 0.35181024, 0.38909211])
+        actual = ptf.expected_number_of_purchases_up_to_time(range(10))
+        npt.assert_allclose(expected, actual, atol=0.01)
+
+    def test_conditional_expectation_returns_same_value_as_R_BTYD(self):
+        """ From https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        x = 26.00
+        t_x = 30.86
+        T = 31
+        t = 52
+        expected =  25.46
+        actual = ptf.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
+        assert abs(expected - actual) < 0.01
 
     def test_conditional_probability_alive_is_between_0_and_1(self):
         ptf = estimation.ParetoNBDFitter()
@@ -61,6 +121,16 @@ class TestParetoNBDFitter():
             for recency in np.arange(0, 100, 10.):
                 for t in np.arange(recency, 100, 10.):
                     assert 0.0 <= ptf.conditional_probability_alive(freq, recency, t) <= 1.0
+
+    def test_conditional_probability_alive_matrix(self):
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        Z = ptf.conditional_probability_alive_matrix()
+        max_t = int(ptf.data['T'].max())
+
+        for t_x in range(Z.shape[0]):
+            for x in range(Z.shape[1]):
+                assert Z[t_x][x] == ptf.conditional_probability_alive(x, t_x, max_t)
 
 
 class TestBetaGammaFitter():
@@ -156,6 +226,28 @@ class TestBetaGammaFitter():
         for t_x in range(Z.shape[0]):
             for x in range(Z.shape[1]):
                 assert Z[t_x][x] == bfg.conditional_probability_alive(x, t_x, max_t)
+
+
+    def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
+        """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        from collections import OrderedDict
+        bgf = estimation.BetaGeoFitter()
+        bgf.params_ = OrderedDict({'r':0.243, 'alpha':4.414, 'a':0.793, 'b':2.426})
+        # probability that a customer will make 10 repeat transactions in the
+        # time interval (0,2]
+        expected = 1.07869e-07
+        actual = bgf.probability_of_n_purchases_up_to_time(2,10)
+        assert abs(expected - actual) < 10e-5
+        # probability that a customer will make no repeat transactions in the
+        # time interval (0,39]
+        expected = 0.5737864
+        actual = bgf.probability_of_n_purchases_up_to_time(39,0)
+        assert abs(expected - actual) < 10e-5
+        # PMF
+        expected = np.array([0.0019995214, 0.0015170236, 0.0011633150, 0.0009003148, 0.0007023638,
+                             0.0005517902, 0.0004361913, 0.0003467171, 0.0002769613, 0.0002222260])
+        actual = np.array([bgf.probability_of_n_purchases_up_to_time(30,n) for n in range(11,21)])
+        npt.assert_array_almost_equal(expected, actual, decimal=5)
 
 
     def test_scaling_inputs_gives_same_or_similar_results(self):
@@ -264,6 +356,23 @@ class TestModifiedBetaGammaFitter():
         for t_x in range(Z.shape[0]):
             for x in range(Z.shape[1]):
                 assert Z[t_x][x] == mbfg.conditional_probability_alive(x, t_x, max_t)
+
+
+    def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
+        """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        from collections import OrderedDict
+        mbgf = estimation.ModifiedBetaGeoFitter()
+        mbgf.params_ = OrderedDict({'r':0.243, 'alpha':4.414, 'a':0.793, 'b':2.426})
+        # probability that a customer will make 10 repeat transactions in the
+        # time interval (0,2]
+        expected = 1.07869e-07
+        actual = mbgf.probability_of_n_purchases_up_to_time(2,10)
+        assert abs(expected - actual) < 10e-5
+        # PMF
+        expected = np.array([0.0019995214, 0.0015170236, 0.0011633150, 0.0009003148, 0.0007023638,
+                             0.0005517902, 0.0004361913, 0.0003467171, 0.0002769613, 0.0002222260])
+        actual = np.array([mbgf.probability_of_n_purchases_up_to_time(30,n) for n in range(11,21)])
+        npt.assert_allclose(expected, actual, rtol=0.5)
 
 
     def test_scaling_inputs_gives_same_or_similar_results(self):

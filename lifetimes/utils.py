@@ -269,10 +269,10 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         Series object with customer ids as index and the estimated customer lifetime values as values
     """
     df = pd.DataFrame(index=frequency.index)
-    df['clv'] = 0
+    df['clv'] = 0 # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
-        df['clv'] = df['clv'] + monetary_value * (transaction_prediction_model.predict(i, frequency, recency, T)
-                                                  - transaction_prediction_model.predict(i - 30, frequency, recency, T)) / (1 + discount_rate)**(i / 30)
+        df['clv'] += monetary_value * (transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)) 
+        df['clv'] /= (1 + discount_rate)**(i / 30)
 
     return df['clv']
