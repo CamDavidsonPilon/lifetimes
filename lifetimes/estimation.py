@@ -120,7 +120,7 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             Series object with customer ids as index and the estimated customer lifetime values as values
         """
-        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value).values  # use the Gamma-Gamma estimates for the monetary_values
+        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)  # use the Gamma-Gamma estimates for the monetary_values
         return customer_lifetime_value(transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate)
 
 

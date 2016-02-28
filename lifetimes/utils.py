@@ -268,11 +268,17 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
     Returns:
         Series object with customer ids as index and the estimated customer lifetime values as values
     """
-    df = pd.DataFrame(index=frequency.index)
+    try:
+        df = pd.DataFrame(index=frequency.index)
+    except AttributeError: # the case when we're passing floats or ints instead of pd.Series
+        df = pd.DataFrame(index=[0])
+
     df['clv'] = 0 # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
-        df['clv'] += monetary_value * (transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)) 
-        df['clv'] /= (1 + discount_rate)**(i / 30)
+        # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
+        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
+        # sum up the CLV estimates of all of the periods
+        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate)**(i / 30) 
 
-    return df['clv']
+    return df['clv'] # return as a series
