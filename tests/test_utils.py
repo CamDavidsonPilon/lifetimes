@@ -2,6 +2,7 @@ import pytest
 import pandas as pd 
 import numpy as np
 from pandas.util.testing import assert_frame_equal
+from numpy.testing import assert_almost_equal, assert_allclose
 
 from lifetimes import utils, BetaGeoFitter
 
@@ -242,6 +243,7 @@ def test_calculate_alive_path(example_transaction_data, example_summary_data, fi
     assert alive_path[0] == 1
     assert alive_path[T] == fitted_bg.conditional_probability_alive(frequency, recency, T)
 
+
 def test_check_inputs():
     freq, recency, T = np.array([0,1,2]), np.array([0, 1, 10]), np.array([5, 6, 15])
     assert utils._check_inputs(freq, recency, T) is None
@@ -263,10 +265,44 @@ def test_check_inputs():
 def test_summary_data_from_transaction_data_obeys_data_contraints(example_summary_data):
     assert utils._check_inputs(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T']) is None
 
+
 def test_scale_time():
     max_T = 200.
     T = np.arange(max_T)
     assert utils._scale_time(T) == 10. / (max_T-1)
 
 
-
+def test_customer_lifetime_value_with_known_values(fitted_bg):
+    """
+    >>> print fitted_bg
+    <lifetimes.BetaGeoFitter: fitted with 5000 subjects, r: 0.16, alpha: 1.86, a: 1.85, b: 3.18>
+    >>> t = fitted_bg.data.head()
+    >>> t
+       frequency  recency    T
+       0          0        0  298
+       1          0        0  224
+       2          6      142  292
+       3          0        0  147
+       4          2        9  183
+    >>> print fitted_bg.predict(30, t['frequency'], t['recency'], t['T'])
+    0    0.016053
+    1    0.021171
+    2    0.030461
+    3    0.031686
+    4    0.001607
+    dtype: float64
+    """
+    t = fitted_bg.data.head()
+    expected = np.array([0.016053, 0.021171, 0.030461, 0.031686, 0.001607])
+    # discount_rate=0 means the clv will be the same as the predicted
+    clv_d0 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=1, discount_rate=0.)
+    assert_almost_equal(clv_d0.values, expected, decimal=5)
+    # discount_rate=1 means the clv will halve over a period
+    clv_d1 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=1, discount_rate=1.)
+    assert_almost_equal(clv_d1.values, expected/2., decimal=5)
+    # time=2, discount_rate=0 means the clv will be twice the initial
+    clv_t2_d0 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=0)
+    assert_allclose(clv_t2_d0.values, expected*2., rtol=0.1)
+    # time=2, discount_rate=1 means the clv will be twice the initial
+    clv_t2_d1 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=1.)
+    assert_allclose(clv_t2_d1.values, expected/2. + expected/4., rtol=0.1)

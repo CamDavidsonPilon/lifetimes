@@ -265,13 +265,32 @@ At this point we can train our Gamma-Gamma submodel and predict the conditional,
     <lifetimes.GammaGammaFitter: fitted with 946 subjects, p: 6.25, q: 3.74, v: 15.45>
     """
     
-We can now produce the average CLV figure for our dataset as follows:
+We can now estimate the average transaction value:
+
+    print ggf.conditional_expected_average_profit(
+            summary_with_money_value['frequency'],
+            summary_with_money_value['monetary_value']
+        ).head()
+    """
+    customer_id
+    1     24.658616
+    2     18.911480
+    3     35.171003
+    4     35.171003
+    5     35.171003
+    6     71.462851
+    7     18.911480
+    8     35.171003
+    9     27.282408
+    10    35.171003
+    dtype: float64
+    """
 
     print "Expected conditional average profit: %s, Average profit: %s" % (
         ggf.conditional_expected_average_profit(
             summary_with_money_value['frequency'],
             summary_with_money_value['monetary_value']
-        ), 
+        ).mean(),
         summary_with_money_value[summary_with_money_value['frequency']>0]['monetary_value'].mean()
     )
     """
@@ -280,15 +299,32 @@ We can now produce the average CLV figure for our dataset as follows:
 
 While for computing the total CLV using the DCF method (https://en.wikipedia.org/wiki/Discounted_cash_flow) adjusting for cost of capital:
  
+    # refit the BG model to the summary_with_money_value dataset
+    bgf.fit(summary_with_money_value['frequency'], summary_with_money_value['recency'], summary_with_money_value['T'])
+
     print ggf.customer_lifetime_value(
         bgf, #the model to use to predict the number of future transactions
         summary_with_money_value['frequency'],
         summary_with_money_value['recency'],
         summary_with_money_value['T'],
         summary_with_money_value['monetary_value'],
-        time=12,
+        time=12, # months
         discount_rate=0.7
-    ) #74942.63
+    ).head(10)
+    """
+    customer_id
+    1      27.535074
+    2       3.568358
+    3       6.598023
+    4       6.598023
+    5       6.598023
+    6     210.596327
+    7       5.294988
+    8       6.598023
+    9      32.905051
+    10      6.598023
+    Name: clv, dtype: float64
+    """
 
 ## Questions? Comments? 
 
