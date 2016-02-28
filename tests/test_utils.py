@@ -306,7 +306,3 @@ def test_customer_lifetime_value_with_known_values(fitted_bg):
     # time=2, discount_rate=1 means the clv will be twice the initial
     clv_t2_d1 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=1.)
     assert_allclose(clv_t2_d1.values, expected/2. + expected/4., rtol=0.1)
-    # pass in floats instead of series
-    clv_floats = utils.customer_lifetime_value(fitted_bg, 0, 0, 298, 1, time=1, discount_rate=0.)
-    expected = np.array([0.016053])
-    assert_almost_equal(clv_floats.values, expected, decimal=5)

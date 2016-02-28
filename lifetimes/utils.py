@@ -268,11 +268,7 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
     Returns:
         Series object with customer ids as index and the estimated customer lifetime values as values
     """
-    try:
-        df = pd.DataFrame(index=frequency.index)
-    except AttributeError: # the case when we're passing floats or ints instead of pd.Series
-        df = pd.DataFrame(index=[0])
-
+    df = pd.DataFrame(index=frequency.index)
     df['clv'] = 0 # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
