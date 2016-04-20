@@ -1,7 +1,10 @@
-
 import numpy as np
 from scipy import stats
 import pandas as pd
+
+
+def hello():
+    print "hello from MM! ;)"
 
 
 def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
@@ -50,6 +53,57 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
+
+
+# def beta_geometric_nbd_model_with_transactions(T, r, alpha, a, b, size=1):
+#     """
+#     Generate artificial data according to the BG/NBD model. See [1] for model details
+#
+#
+#     Parameters:
+#         T: scalar or array, the length of time observing new customers.
+#         r, alpha, a, b: scalars, represening parameters in the model. See [1]
+#         size: the number of customers to generate
+#
+#     Returns:
+#         DataFrame, with index as customer_ids and the following columns:
+#         'frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id'
+#         and a dictionary containing the time of transactions
+#
+#     [1]: '"Counting Your Customers" the Easy Way: An Alternative to the Pareto/NBD Model'
+#     (http://brucehardie.com/papers/bgnbd_2004-04-20.pdf)
+#
+#     """
+#     if type(T) in [float, int]:
+#         T = T * np.ones(size)
+#     else:
+#         T = np.asarray(T)
+#
+#     probability_of_post_purchase_death = stats.beta.rvs(a, b, size=size)
+#     lambda_ = stats.gamma.rvs(r, scale=1. / alpha, size=size)
+#
+#     columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
+#     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+#     transaction_times = {}  # dictionary containing the single transaction times
+#
+#     for i in range(size):
+#         p = probability_of_post_purchase_death[i]
+#         l = lambda_[i]
+#
+#         # hacky until I can find something better
+#         times = []
+#         next_purchase_in = stats.expon.rvs(scale=1. / l)
+#         alive = True
+#         while (np.sum(times) + next_purchase_in < T[i]) and alive:
+#             times.append(next_purchase_in)
+#             next_purchase_in = stats.expon.rvs(scale=1. / l)
+#             alive = np.random.random() > p
+#
+#         times = np.array(times).cumsum()
+#         df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
+#         transaction_times[i] = times
+#
+#     return df.set_index('customer_id'), transaction_times
 
 
 def pareto_nbd_model(T, r, alpha, s, beta, size=1):
@@ -138,7 +192,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         while (np.sum(times) + next_purchase_in < T[i]) and alive:
             times.append(next_purchase_in)
             next_purchase_in = stats.expon.rvs(scale=1. / l)
-            alive = np.random.random() > p
+            alive = np.random.random> p()
 
         times = np.array(times).cumsum()
         df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
