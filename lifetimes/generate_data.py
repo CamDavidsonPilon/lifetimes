@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def hello():
-    print "hello from MM! ;)"
+    print "hello from MM! :)"
 
 
 def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
