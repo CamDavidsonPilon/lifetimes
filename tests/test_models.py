@@ -46,26 +46,29 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
 
     data = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=1000)
 
-    model = models.BetaGeoModel(N, t)
+    fitter = estimation.BetaGeoFitter()
+    par_names = ['r', 'alpha', 'a', 'b']
+
+    model = models.BetaGeoModel(fitter, par_names)
     model.fit(data['frequency'], data['recency'], data['T'])
 
     ref_model = estimation.BetaGeoFitter()
     ref_model.fit(data['frequency'], data['recency'], data['T'])
 
     print "After fitting"
-    print model.fitted_model
+    print model.fitter
+    print model.param_names
     print model.params
     print model.params_C
-    print model.numerical_metrics
 
-    model.simulate()
+    Xt = model.evaluate_metrics_with_simulation(N, t, 10, 10)
 
     print "After simulating"
-    model.numerical_metrics.dump()
+    Xt.dump()
 
     print "Reference probabilities"
     ref_p = []
-    for x in range(model.numerical_metrics.length()):
+    for x in range(Xt.length()):
         ref_p.append(ref_model.probability_of_n_purchases_up_to_time(t, x))
     print ref_p
 
@@ -73,7 +76,7 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
 
     print "Compare expected values E[x]:"
     print "expected : " + str(ref_model.expected_number_of_purchases_up_to_time(t))
-    Ex, Ex_err = model.numerical_metrics.expected_x()
+    Ex, Ex_err = Xt.expected_x()
     print "MC value : " + str(Ex) + " +/- " + str(Ex_err)
 
     # divide data in calibration/test and compare results
