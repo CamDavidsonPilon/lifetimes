@@ -192,7 +192,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         while (np.sum(times) + next_purchase_in < T[i]) and alive:
             times.append(next_purchase_in)
             next_purchase_in = stats.expon.rvs(scale=1. / l)
-            alive = np.random.random> p()
+            alive = np.random.random > p
 
         times = np.array(times).cumsum()
         df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i

@@ -3,7 +3,6 @@ import math
 import pytest
 
 import lifetimes.generate_data as gen
-from lifetimes import estimation
 from lifetimes import models
 from lifetimes.models import extract_frequencies
 
@@ -18,19 +17,19 @@ def test_model_fitting_and_simulation():
 
     data = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=1000)
 
-    model = models.BetaGeoModel(100, 10)
+    model = models.BetaGeoModel()
+    data = model.generateData(T,{'r':r,'alpha':alpha,'a':a,'b':b},1000)
     model.fit(data['frequency'], data['recency'], data['T'])
 
     print "After fitting"
-    print model.fitted_model
     print model.params
     print model.params_C
     print model.sampled_parameters
 
-    model.simulate()
+    numerical_metrics = model.evaluate_metrics_with_simulation(N = 100,t = 100)
 
     print "After simulating"
-    model.numerical_metrics.dump()
+    numerical_metrics.dump()
 
 
 @pytest.mark.models
@@ -44,12 +43,9 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
     t = 100
     N = 1000
 
-    data = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=1000)
-
-    fitter = estimation.BetaGeoFitter()
-    par_names = ['r', 'alpha', 'a', 'b']
-
-    model = models.BetaGeoModel(fitter, par_names)
+    model = models.ParetoNBDModel()
+    par_gen = {'r': r, 'alpha': alpha, 's': a, 'beta': b}
+    data = model.generateData(t,par_gen,size = 1000)
     model.fit(data['frequency'], data['recency'], data['T'])
 
     print "After fitting"
@@ -65,8 +61,8 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
 
     print "Reference probabilities"
     ref_p = []
-    for x in range(Xt.length()):
-        ref_p.append(model.fitter.probability_of_n_purchases_up_to_time(t, x))
+    #for x in range(Xt.length()):
+        #ref_p.append(model.fitter.probability_of_n_purchases_up_to_time(t, x))
     print ref_p
 
     # compare with analytical formulas
@@ -77,7 +73,7 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
     print "MC value : " + str(Ex) + " +/- " + str(Ex_err)
 
     # divide data in calibration/test and compare results
-    test_data = gen.beta_geometric_nbd_model(t, r, alpha, a, b, size=N)
+    test_data = model.generateData(t,par_gen,size = N)
     test_fx = extract_frequencies(test_data)
 
     print "Empirical frequencies: " + str(test_fx)
@@ -91,8 +87,8 @@ def test_model_fitting_compare_simple_frequencies():
     a = 0.79
     b = 2.43
 
-    data1 = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=1000)
-    data2 = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=1000)
+    data1 = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=10000)
+    data2 = gen.beta_geometric_nbd_model(T, r, alpha, a, b, size=10000)
 
     fx1 = extract_frequencies(data1)
     fx2 = extract_frequencies(data2)

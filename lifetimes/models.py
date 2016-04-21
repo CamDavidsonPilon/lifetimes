@@ -1,5 +1,5 @@
 import math
-from estimation import BetaGeoFitter, BaseFitter
+from estimation import BetaGeoFitter,ModifiedBetaGeoFitter,ParetoNBDFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
@@ -21,7 +21,7 @@ class Model(object):
         self.param_names = param_names
         self.fitter = fitter
         self.params, self.params_C = None, None
-        self.sampled_parameters = None  # result of a bootstrap
+        self.sampled_parameters = None # result of a bootstrap
 
     def fit(self, frequency, recency, T, bootstrap_size=10):
         """
@@ -39,6 +39,17 @@ class Model(object):
 
         data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
         self.estimate_uncertainties_with_bootstrap(data, bootstrap_size)
+
+    def generateData(self,t,parameters,size):
+        """
+        Generate a dataset with from the current model
+        Args:
+            t: purchase time horizon
+            parameters: dictionary with keys r,alpha,a,b and parameter values
+            size: number of samples to generate
+        Returns:    dataframe with keys 'recency','frequency','T'
+        """
+        raise  NotImplementedError
 
     def estimate_uncertainties_with_bootstrap(self, data, size=10):
         """
@@ -73,17 +84,6 @@ class Model(object):
         self.params_C = cov
         self.sampled_parameters = par_estimates
 
-
-class BetaGeoModel(Model):
-    """
-    Fits a BetaGeoModel to the data, and computes relevant metrics by mean of a simulation.
-    """
-
-    def __init__(self, fitter, param_names):
-        super(BetaGeoModel, self).__init__(fitter, param_names)
-        if not all(par_name in self.param_names for par_name in ['r', 'alpha', 'a', 'b']):
-            raise ValueError("Incorrect parameters.")
-
     def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10):  # TODO: test it
         """
         Args:
@@ -108,12 +108,7 @@ class BetaGeoModel(Model):
         for sim_i in range(N_sim):
             par_s = self.sampled_parameters[
                 random.randint(0, len(self.sampled_parameters) - 1)]  # pick up a random outcome of the fit
-            r_s = par_s['r']
-            alpha_s = par_s['alpha']
-            a_s = par_s['a']
-            b_s = par_s['b']
-
-            data = gen.beta_geometric_nbd_model(t, r_s, alpha_s, a_s, b_s, size=N)
+            data = self.generateData(t,par_s,N)
             n = len(data)
             for x in xs:
                 if x == max_x - 1:
@@ -127,6 +122,50 @@ class BetaGeoModel(Model):
             p_x[x] = np.mean(frequencies[x])
 
         return NumericalMetrics(p_x, p_x_err)
+
+
+class BetaGeoModel(Model):
+    """
+    Fits a BetaGeoModel to the data, and computes relevant metrics by mean of a simulation.
+    """
+
+    def __init__(self):
+        super(BetaGeoModel, self)
+        self.fitter = BetaGeoFitter()
+        self.param_names = ['r', 'alpha', 'a', 'b']
+
+    def generateData(self,t,parameters,size):
+        return gen.beta_geometric_nbd_model(t,parameters['r'],parameters['alpha'],parameters['a'],parameters['b'], size)
+
+class ModifiedBetaGeoModel(Model):
+    """
+    Fits a ModifiedBetaGeoModel to the data, and computes relevant metrics by mean of a simulation.
+    """
+
+    def __init__(self):
+        super(ModifiedBetaGeoModel, self)
+        self.fitter = ModifiedBetaGeoFitter()
+        self.param_names = ['r', 'alpha', 'a', 'b']
+
+    def generateData(self, t, parameters, size):
+        return gen.modified_beta_geometric_nbd_model(t, parameters['r'], parameters['alpha'], parameters['a'], parameters['b'],
+                                            size)
+
+class ParetoNBDModel(Model):
+    """
+    Fits a ParetoNBDModel to the data, and computes relevant metrics by mean of a simulation.
+    """
+
+    def __init__(self):
+        super(ParetoNBDModel, self)
+        self.fitter = ParetoNBDFitter()
+        self.param_names = ['r', 'alpha', 's', 'beta']
+
+    def generateData(self, t, parameters, size):
+        return gen.pareto_nbd_model(t, parameters['r'], parameters['alpha'], parameters['s'],
+                                                     parameters['beta'],
+                                                     size)
+
 
 
 class NumericalMetrics(object):

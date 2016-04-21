@@ -466,21 +466,17 @@ class BetaGeoFitter(BaseFitter):
 class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     """
-
     Also known as the MBG/NBD model. Based on [1,2], this model has the following assumptions:
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution respectively.
     3) Individuals purchases follow a Poisson process with rate lambda_i*t .
     4) At the beginning of their lifetime and after each purchase, an individual has a
        p_i probability of dieing (never buying again).
-
     [1] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
         "Empirical validation and comparison of models for customer base analysis,"
         International Journal of Research in Marketing, 24 (3), 201-209.
     [2] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model," International Journal
         of Research in Marketing, 25 (3), 225-226.
-
-
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -489,7 +485,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
         """
         This methods fits the data to the MBG/NBD model.
-
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
@@ -499,11 +494,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
                 hurt estimates.
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
-
-
         Returns:
             self, with additional properties and methods like params_ and predict
-
         """
         super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose)  # although the partent method is called, this class's _negative_log_likelihood is referenced
         self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)  # this needs to be reassigned from the parent method
@@ -528,10 +520,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population.
-
         Parameters:
             t: a scalar or array of times.
-
         Returns: a scalar or array
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -543,13 +533,11 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
         the population, given they have purchase history (frequency, recency, T)
         See Wagner, U. and Hoppe D. (2008).
-
         Parameters:
             t: a scalar or array of times.
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
             T: a scalar: age of the customer.
-
         Returns: a scalar or array
         """
         x = frequency
@@ -568,14 +556,11 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         Compute the probability that a customer with history (frequency, recency, T) is currently
         alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
-
         Parameters:
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
             T: a scalar: age of the customer.
-
         Returns: a scalar
-
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         return 1. / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
@@ -587,7 +572,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             max_frequency: the maximum frequency to plot. Default is max observed frequency.
             max_recency: the maximum recency to plot. This also determines the age of the customer.
                 Default to max observed age.
-
         Returns a matrix of the form [t_x: historical recency, x: historical frequency]
         """
         return super(self.__class__, self).conditional_probability_alive_matrix(max_frequency, max_recency)
@@ -595,9 +579,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def probability_of_n_purchases_up_to_time(self, t, n):
         """
         Compute the probability of
-
         P( N(t) = n | model )
-
         where N(t) is the number of repeat purchases a customer makes in t units of time.
         """
 
