@@ -56,13 +56,13 @@ class Model(object):
 
         par_estimates = []
 
+        tmp_fitter = copy.deepcopy(self.fitter)
         for i in range(size):
             N = len(data)
             sampled_data = data.sample(N, replace=True)
 
-            fitter = copy.deepcopy(self.fitter)
-            fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'])
-            par_estimates.append(fitter.params_)
+            tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'])
+            par_estimates.append(tmp_fitter.params_)
 
         par_lists = []
         for par_name in self.param_names:

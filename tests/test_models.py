@@ -52,16 +52,13 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
     model = models.BetaGeoModel(fitter, par_names)
     model.fit(data['frequency'], data['recency'], data['T'])
 
-    ref_model = estimation.BetaGeoFitter()
-    ref_model.fit(data['frequency'], data['recency'], data['T'])
-
     print "After fitting"
     print model.fitter
     print model.param_names
     print model.params
     print model.params_C
 
-    Xt = model.evaluate_metrics_with_simulation(N, t, 10, 10)
+    Xt = model.evaluate_metrics_with_simulation(N, t, N_sim=10, max_x=10)
 
     print "After simulating"
     Xt.dump()
@@ -69,13 +66,13 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
     print "Reference probabilities"
     ref_p = []
     for x in range(Xt.length()):
-        ref_p.append(ref_model.probability_of_n_purchases_up_to_time(t, x))
+        ref_p.append(model.fitter.probability_of_n_purchases_up_to_time(t, x))
     print ref_p
 
     # compare with analytical formulas
 
     print "Compare expected values E[x]:"
-    print "expected : " + str(ref_model.expected_number_of_purchases_up_to_time(t))
+    print "expected : " + str(model.fitter.expected_number_of_purchases_up_to_time(t))
     Ex, Ex_err = Xt.expected_x()
     print "MC value : " + str(Ex) + " +/- " + str(Ex_err)
 
