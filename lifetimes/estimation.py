@@ -2,6 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 import numpy as np
+import pandas as pd
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
     isinf, isnan, ones_like
 from pandas import DataFrame
@@ -12,7 +13,7 @@ from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
 
-__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
+__all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter', 'BetaGeoBetaBinomFitter']
 
 
 class BaseFitter(object):
@@ -35,6 +36,185 @@ class BaseFitter(object):
         for p, value in self.params_.items():
             s += "%s: %.2f, " % (p, value)
         return s.strip(', ')
+
+class BetaGeoBetaBinomFitter(BaseFitter):
+    """
+    Also known as the Beta-Geometric/Beta-Binomial Model Model [1].
+
+    Future purchases opportunities are treated as discrete points in time. In the literature,
+    the model provides a better fit than the Pareto/NBD model for a nonprofit organization
+    with regular giving patterns.
+
+    The model is estimated with a recency-frequency matrix with n transaction opportunities.
+
+    [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
+        "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
+        Marketing Science, 29 (6), 1086-1108.
+
+    """
+    
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _loglikelihood(params, x, tx, T):
+
+        N = len(x)
+
+        alpha, beta, gamma, delta = params
+
+        beta_ab = special.betaln(alpha, beta)
+        beta_gd = special.betaln(gamma, delta)
+
+        indiv_loglike = (special.betaln(alpha + x, beta + T - x) - beta_ab +
+                        special.betaln(gamma, delta + T) - beta_gd)
+
+        recency_T = T - tx - 1
+
+        def _sum(x, tx, recency_T):
+
+            j = np.arange(recency_T+1)
+            return log(
+                np.sum(exp(special.betaln(alpha + x, beta + tx - x + j) - beta_ab +
+                              special.betaln(gamma + 1, delta + tx + j) - beta_gd)))
+
+        for i in np.arange(N):
+            indiv_loglike[i] = logaddexp(indiv_loglike[i],_sum(x[i], tx[i], recency_T[i]))
+
+        return indiv_loglike
+
+    @staticmethod
+    def _negative_log_likelihood(params, frequency, recency, n, n_custs, penalizer_coef=0):
+
+        return -np.sum(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_coef
+
+    def fit(self, frequency, recency, n, n_custs, verbose=False):
+        """
+        Fit the BG/BB model.
+
+        Parameters:
+            frequency: Total periods with observed transaction
+            recency: Period of most recent transaction
+            n: Number of transaction opportunities
+            n_custs: Number of customers with frequency/recency/n pattern
+
+        Returns: self
+
+        """
+
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        n = asarray(n)
+        n_custs= asarray(n_custs)
+        _check_inputs(frequency, recency, n)
+
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, recency, n, n_custs, self.penalizer_coef],
+                                                      0,
+                                                      np.ones(4),
+                                                      4,
+                                                      verbose)
+        self.params_ = OrderedDict(zip(['alpha','beta','gamma','delta'], params))
+        self.data = DataFrame(vconcat[frequency, recency, n, n_custs],
+                              columns=['frequency','recency','n','n_custs'])
+
+        return self
+
+    def conditional_expected_number_of_purchases_up_to_time(self, n_star):
+        """
+        Conditional expected purchases in future time period.
+
+        The  expected  number  of  future  transactions across the next n* transaction
+        opportunities by a customer with purchase history (x, tx, n).
+
+        E(X(n, n+n*)|alpha, beta, gamma, delta, frequency, recency, n)
+
+        See (13) in Fader & Hardie 2010.
+
+        Parameters:
+            n_star: scalar or array of times
+
+        Returns: scalar or array of predicted transactions
+
+        """
+
+        x = self.data['frequency']
+        tx = self.data['recency']
+        n = self.data['n']
+
+        params = self._unload_params('alpha','beta','gamma','delta')
+        alpha, beta, gamma, delta = params
+
+        p1 = 1 / exp(BetaGeoBetaBinomFitter._loglikelihood(params, x, tx, n))
+        p2 = exp(special.betaln(alpha + x + 1, beta + n - x) - special.betaln(alpha, beta))
+        p3 = delta / (gamma - 1) * exp(special.gammaln(gamma + delta) - special.gammaln(1 + delta))
+        p4 = exp(special.gammaln(1 + delta + n) - special.gammaln(gamma + delta + n))
+        p5 = exp(special.gammaln(1 + delta + n + n_star) - special.gammaln(gamma + delta + n + n_star))
+
+        return p1 * p2 * p3 * (p4 - p5)
+
+    def conditional_probability_alive(self, m):
+        """
+        Conditional probability customer is alive at transaction opportunity n + m.
+
+        P(alive at n + m|alpha, beta, gamma, delta, frequency, recency, n)
+
+        See (A10) in Fader and Hardie 2010.
+
+        Parameters:
+            m: scalar or array of transaction opportunities
+
+        Returns: scalar or array of alive probabilities
+
+        """
+
+        params = self._unload_params('alpha','beta','gamma','delta')
+        alpha, beta, gamma, delta = params
+
+        x = self.data['frequency']
+        tx = self.data['recency']
+        n = self.data['n']
+
+        p1 = special.betaln(alpha + x, beta + n - x) - special.betaln(alpha, beta)
+        p2 = special.betaln(gamma, delta + n + m) - special.betaln(gamma, delta)
+        p3 = BetaGeoBetaBinomFitter._loglikelihood(params, x, tx, n)
+
+        return exp(p1 + p2) / exp(p3)
+
+    def expected_number_of_transactions_in_first_n_periods(self, n):
+        """
+        Expected number of transactions occurring across first n transaction opportunities. Used by Fader
+        and Hardie to assess in-sample fit.
+
+        Pr(X(n) = x|alpha, beta, gamma, delta)
+
+        See (7) in Fader & Hardie 2010.
+
+        Parameters:
+            n: scalar, number of transaction opportunities
+
+        Returns: DataFrame of predicted values, indexed by x
+
+        """
+
+        params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        alpha, beta, gamma, delta = params
+
+        x_counts = self.data.groupby('frequency')['n_custs'].sum()
+        x = asarray(x_counts.index)
+
+        p1 = special.binom(n, x) * exp(special.betaln(alpha + x, beta + n - x) - special.betaln(alpha, beta) +
+         special.betaln(gamma, delta + n) - special.betaln(gamma, delta))
+
+        for j in np.arange(len(x)):
+            i = np.arange(x[j], n)
+            p2 = np.sum(special.binom(i, x[j]) *
+                        exp(special.betaln(alpha + x[j], beta + i - x[j]) - special.betaln(alpha, beta) +
+                            special.betaln(gamma +1, delta + i) - special.betaln(gamma, delta)))
+            p1[j] += p2
+
+        idx = pd.Index(x, name='frequency')
+        return DataFrame(p1 * x_counts.sum(), index=idx, columns=['model'])
 
 
 class GammaGammaFitter(BaseFitter):

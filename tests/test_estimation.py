@@ -6,10 +6,82 @@ import numpy.testing as npt
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
-from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value
+from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value, load_donations
 
 cdnow_customers = load_cdnow()
 cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
+donations = load_donations()
+
+class TestBetaGeoBetaBinomFitter():
+
+    def test_params_out_is_close_to_Hardie_paper(self):
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+        )
+        expected = np.array([1.204, 0.750, 0.657, 2.783])
+        npt.assert_array_almost_equal(expected, np.array(bbtf._unload_params('alpha','beta','gamma','delta')),
+                                      decimal=2)
+
+    def test_prob_alive_is_close_to_Hardie_paper_table_6(self):
+        """Table 6: P(Alive in 2002) as a Function of Recency and Frequency"""
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+        )
+
+        bbtf.data['prob_alive'] = bbtf.conditional_probability_alive(1)
+
+        # Expected probabilities for last year 1995-0 repeat, 1999-2 repeat, 2001-6 repeat
+        expected = np.array([0.11, 0.59, 0.93])
+
+        prob_list = np.zeros(3)
+        prob_list[0] = (bbtf.data[(bbtf.data['frequency'] == 0) & (bbtf.data['recency'] == 0)]['prob_alive'])
+        prob_list[1] = (bbtf.data[(bbtf.data['frequency'] == 2) & (bbtf.data['recency'] == 4)]['prob_alive'])
+        prob_list[2] = (bbtf.data[(bbtf.data['frequency'] == 6) & (bbtf.data['recency'] == 6)]['prob_alive'])
+        npt.assert_array_almost_equal(expected, prob_list, decimal=2)
+
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
+        """
+        Total from Hardie's Conditional Expectations (II) sheet.
+
+        http://brucehardie.com/notes/010/BGBB_2011-01-20_XLSX.zip
+
+        """
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+        )
+        pred_purchases = bbtf.conditional_expected_number_of_purchases_up_to_time(5) * donations['n_custs']
+        expected = 12884.2 # Sum of column F Exp Tot
+        npt.assert_almost_equal(expected, pred_purchases.sum(), decimal=0)
+
+    def test_expected_purchases_in_n_periods_returns_same_value_as_Hardie_excel_sheet(selfself):
+        """Total expected from Hardie's In-Sample Fit sheet."""
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+        )
+        expected = np.array([3454.9, 1253.1]) # Cells C18 and C24
+        estimated = bbtf.expected_number_of_transactions_in_first_n_periods(6).loc[[0,6]].values.flatten()
+        npt.assert_almost_equal(expected, estimated, decimal=0)
+
 
 class TestGammaGammaFitter():
 
