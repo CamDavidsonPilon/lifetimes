@@ -59,7 +59,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     @staticmethod
     def _loglikelihood(params, x, tx, T):
 
-        N = len(x)
+        N = x.shape[0]
 
         alpha, beta, gamma, delta = params
 
@@ -93,10 +93,14 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         Fit the BG/BB model.
 
         Parameters:
-            frequency: Total periods with observed transaction
+            frequency: Total periods with observed transactions
             recency: Period of most recent transaction
             n: Number of transaction opportunities
-            n_custs: Number of customers with frequency/recency/n pattern
+            n_custs: Number of customers with given frequency/recency/T. Fader and Hardie condense
+                    the individual RFM matrix into all observed combinations of frequency/recency/T. This
+                    parameter represents the count of customers with a given purchase pattern. Instead of
+                    calculating individual loglikelihood, the loglikelihood is calculated for each pattern and
+                    multiplied by the number of customers with that pattern.
 
         Returns: self
 
@@ -120,11 +124,11 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         return self
 
-    def conditional_expected_number_of_purchases_up_to_time(self, n_star):
+    def conditional_expected_number_of_purchases_up_to_time(self, t):
         """
         Conditional expected purchases in future time period.
 
-        The  expected  number  of  future  transactions across the next n* transaction
+        The  expected  number  of  future  transactions across the next t transaction
         opportunities by a customer with purchase history (x, tx, n).
 
         E(X(n, n+n*)|alpha, beta, gamma, delta, frequency, recency, n)
@@ -132,7 +136,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         See (13) in Fader & Hardie 2010.
 
         Parameters:
-            n_star: scalar or array of times
+            t: scalar or array of time periods (n+t)
 
         Returns: scalar or array of predicted transactions
 
@@ -149,7 +153,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         p2 = exp(special.betaln(alpha + x + 1, beta + n - x) - special.betaln(alpha, beta))
         p3 = delta / (gamma - 1) * exp(special.gammaln(gamma + delta) - special.gammaln(1 + delta))
         p4 = exp(special.gammaln(1 + delta + n) - special.gammaln(gamma + delta + n))
-        p5 = exp(special.gammaln(1 + delta + n + n_star) - special.gammaln(gamma + delta + n + n_star))
+        p5 = exp(special.gammaln(1 + delta + n + t) - special.gammaln(gamma + delta + n + t))
 
         return p1 * p2 * p3 * (p4 - p5)
 
@@ -206,7 +210,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         p1 = special.binom(n, x) * exp(special.betaln(alpha + x, beta + n - x) - special.betaln(alpha, beta) +
          special.betaln(gamma, delta + n) - special.betaln(gamma, delta))
 
-        for j in np.arange(len(x)):
+        for j in np.arange(x.shape[0]):
             i = np.arange(x[j], n)
             p2 = np.sum(special.binom(i, x[j]) *
                         exp(special.betaln(alpha + x[j], beta + i - x[j]) - special.betaln(alpha, beta) +
