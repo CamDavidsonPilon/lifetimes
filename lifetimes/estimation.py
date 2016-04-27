@@ -1,14 +1,12 @@
 from __future__ import print_function
 from collections import OrderedDict
-
+import math
 import numpy as np
-from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
+from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat, \
     isinf, isnan, ones_like
 from pandas import DataFrame
-
 from scipy import special
 from scipy import misc
-
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
 
@@ -16,11 +14,11 @@ __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBeta
 
 
 class BaseFitter(object):
-
     def __repr__(self):
         classname = self.__class__.__name__
         try:
-            s = """<lifetimes.%s: fitted with %d subjects, %s>""" % (classname, self.data.shape[0], self._print_params())
+            s = """<lifetimes.%s: fitted with %d subjects, %s>""" % (
+                classname, self.data.shape[0], self._print_params())
         except AttributeError:
             s = """<lifetimes.%s>""" % classname
         return s
@@ -38,7 +36,6 @@ class BaseFitter(object):
 
 
 class GammaGammaFitter(BaseFitter):
-
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
@@ -52,8 +49,10 @@ class GammaGammaFitter(BaseFitter):
         x = frequency
         m = avg_monetary_value
 
-        negative_log_likelihood_values = special.gammaln(p * x + q) - special.gammaln(p * x) - special.gammaln(q)\
-            + q * np.log(v) + (p * x - 1) * np.log(m) + (p * x) * np.log(x) - (p * x + q) * np.log(x * m + v)
+        negative_log_likelihood_values = special.gammaln(p * x + q) - special.gammaln(p * x) - special.gammaln(q) \
+                                         + q * np.log(v) + (p * x - 1) * np.log(m) + (p * x) * np.log(x) - (
+                                                                                                               p * x + q) * np.log(
+            x * m + v)
 
         penalizer_term = penalizer_coef * log(params).sum()
         negative_log_likelihood = -np.sum(negative_log_likelihood_values) + penalizer_term
@@ -105,7 +104,8 @@ class GammaGammaFitter(BaseFitter):
 
         return self
 
-    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12,
+                                discount_rate=1):
         """
         This method computes the average lifetime value for a group of one or more customers.
             transaction_prediction_model: the model to predict future transactions, literature uses
@@ -120,12 +120,13 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             Series object with customer ids as index and the estimated customer lifetime values as values
         """
-        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)  # use the Gamma-Gamma estimates for the monetary_values
-        return customer_lifetime_value(transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate)
+        adjusted_monetary_value = self.conditional_expected_average_profit(frequency,
+                                                                           monetary_value)  # use the Gamma-Gamma estimates for the monetary_values
+        return customer_lifetime_value(transaction_prediction_model, frequency, recency, T, adjusted_monetary_value,
+                                       time, discount_rate)
 
 
 class ParetoNBDFitter(BaseFitter):
-
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
@@ -175,8 +176,10 @@ class ParetoNBDFitter(BaseFitter):
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
         rsf = r + s + freq
-        p_1, q_1 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (max_of_alpha_beta + recency)
-        p_2, q_2 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (max_of_alpha_beta + age)
+        p_1, q_1 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (
+            max_of_alpha_beta + recency)
+        p_2, q_2 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (
+            max_of_alpha_beta + age)
 
         try:
             size = len(freq)
@@ -185,7 +188,7 @@ class ParetoNBDFitter(BaseFitter):
             sign = 1
 
         return misc.logsumexp([log(p_1) + rsf * log(q_2), log(p_2) + rsf * log(q_1)], axis=0, b=[sign, -sign]) \
-            - rsf * log(q_1 * q_2)
+               - rsf * log(q_1 * q_2)
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
@@ -264,7 +267,8 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         likelihood = exp(-self._negative_log_likelihood(params, x, t_x, T, 0))
-        first_term = (special.gamma(r + x) / special.gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (beta + T) ** s
+        first_term = (special.gamma(r + x) / special.gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (
+                                                                                                                         beta + T) ** s
         second_term = (r + x) * (beta + T) / (alpha + T) / (s - 1)
         third_term = 1 - ((beta + T) / (beta + T + t)) ** (s - 1)
         return first_term * second_term * third_term / likelihood
@@ -284,9 +288,36 @@ class ParetoNBDFitter(BaseFitter):
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term
 
+    def expected_number_of_purchases_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'r', 'alpha', 's', 'beta'
+
+        Returns: a scalar
+        """
+        if len(C) != 4 or len(C[0]) != 4:
+            raise ValueError("Covariance matrix: wrong dimensions. Must be 4x4 symmetric.")
+
+        r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
+        E = self.expected_number_of_purchases_up_to_time(t)
+        dEdr = E / r
+        dEdalpha = E * (-1.0 / alpha)
+        dEds = -E / (s - 1) + (r * beta) / (alpha * (s - 1)) * (
+            -math.log(beta / (beta + t)) * (beta / (beta + t)) ** (s - 1))
+        dEdbeta = E / beta + (r * beta) / (alpha * (s - 1)) * (
+            (1 - s) * (beta / (beta + t)) ** (s - 2) * t / (beta + t) ** 2)
+
+        Cov = np.matrix(C)
+        dE = np.array([[dEdr], [dEdalpha], [dEds], [dEdbeta]])
+
+        return math.sqrt(float(dE.transpose() * Cov * dE))
+
 
 class BetaGeoFitter(BaseFitter):
-
     """
 
     Also known as the BG/NBD model. Based on [1], this model has the following assumptions:
@@ -344,7 +375,9 @@ class BetaGeoFitter(BaseFitter):
         self.params_['alpha'] /= self._scale
 
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+        self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T,
+                                                                         *self._unload_params('r', 'alpha', 'a', 'b'),
+                                                                         size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
         return self
@@ -419,7 +452,8 @@ class BetaGeoFitter(BaseFitter):
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
+        return 1. / (
+            1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
@@ -454,17 +488,20 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        first_term = special.beta(a, b + n) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        first_term = special.beta(a, b + n) / special.beta(a, b) * special.gamma(r + n) / special.gamma(
+            r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
         if n > 0:
-            finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
-            second_term = special.beta(a + 1, b + n - 1) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+            finite_sum = np.sum(
+                [special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in
+                 range(0, n)])
+            second_term = special.beta(a + 1, b + n - 1) / special.beta(a, b) * (
+                1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
         return first_term + second_term
 
 
 class ModifiedBetaGeoFitter(BetaGeoFitter):
-
     """
     Also known as the MBG/NBD model. Based on [1,2], this model has the following assumptions:
     1) Each individual, i, has a hidden lambda_i and p_i parameter
@@ -497,8 +534,11 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Returns:
             self, with additional properties and methods like params_ and predict
         """
-        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose)  # although the partent method is called, this class's _negative_log_likelihood is referenced
-        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)  # this needs to be reassigned from the parent method
+        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params,
+                                        verbose)  # although the partent method is called, this class's _negative_log_likelihood is referenced
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha',
+                                                                                                          'a', 'b'),
+                                                                                  size=size)  # this needs to be reassigned from the parent method
         return self
 
     @staticmethod
@@ -509,7 +549,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         r, alpha, a, b = params
 
         A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + freq + 1) - special.gammaln(b) - special.gammaln(a + b + freq + 1)
+        A_2 = special.gammaln(a + b) + special.gammaln(b + freq + 1) - special.gammaln(b) - special.gammaln(
+            a + b + freq + 1)
         A_3 = -(r + freq) * log(alpha + T)
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
@@ -585,8 +626,11 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        first_term = special.beta(a, b + n + 1) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
-        finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+        first_term = special.beta(a, b + n + 1) / special.beta(a, b) * special.gamma(r + n) / special.gamma(
+            r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        finite_sum = np.sum(
+            [special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in
+             range(0, n)])
         second_term = special.beta(a + 1, b + n) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term

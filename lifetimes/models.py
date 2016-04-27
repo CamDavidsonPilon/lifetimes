@@ -1,27 +1,23 @@
 import math
-from estimation import BetaGeoFitter,ModifiedBetaGeoFitter,ParetoNBDFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
 import random
 import copy
+from abc import ABCMeta, abstractmethod
 
 
-class Model(object):
+class Model(object): # , metaclass=ABCMeta):
     """
     Base class to handle fitting of a model to data and bootstrap of the parameters.
     """
 
-    def __init__(self, fitter, param_names):
-        """
-        Args:
-            fitter:    BaseFitter instance, to work properly must be a concrete fitter, like BetaGeoFitter
-            param_names:    list of strings (parameter names)
-        """
-        self.param_names = param_names
-        self.fitter = fitter
+    def __init__(self):
+        self.fitter = None
+        self.param_names = None
         self.params, self.params_C = None, None
-        self.sampled_parameters = None # result of a bootstrap
+        self.sampled_parameters = None  # result of a bootstrap
 
     def fit(self, frequency, recency, T, bootstrap_size=10):
         """
@@ -40,7 +36,8 @@ class Model(object):
         data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
         self.estimate_uncertainties_with_bootstrap(data, bootstrap_size)
 
-    def generateData(self,t,parameters,size):
+    @abstractmethod
+    def generateData(self, t, parameters, size):
         """
         Generate a dataset with from the current model
         Args:
@@ -49,7 +46,7 @@ class Model(object):
             size: number of samples to generate
         Returns:    dataframe with keys 'recency','frequency','T'
         """
-        raise  NotImplementedError
+        pass
 
     def estimate_uncertainties_with_bootstrap(self, data, size=10):
         """
@@ -108,7 +105,7 @@ class Model(object):
         for sim_i in range(N_sim):
             par_s = self.sampled_parameters[
                 random.randint(0, len(self.sampled_parameters) - 1)]  # pick up a random outcome of the fit
-            data = self.generateData(t,par_s,N)
+            data = self.generateData(t, par_s, N)
             n = len(data)
             for x in xs:
                 if x == max_x - 1:
@@ -130,12 +127,14 @@ class BetaGeoModel(Model):
     """
 
     def __init__(self):
-        super(BetaGeoModel, self)
+        super(BetaGeoModel, self).__init__()
         self.fitter = BetaGeoFitter()
         self.param_names = ['r', 'alpha', 'a', 'b']
 
-    def generateData(self,t,parameters,size):
-        return gen.beta_geometric_nbd_model(t,parameters['r'],parameters['alpha'],parameters['a'],parameters['b'], size)
+    def generateData(self, t, parameters, size):
+        return gen.beta_geometric_nbd_model(t, parameters['r'], parameters['alpha'], parameters['a'], parameters['b'],
+                                            size)
+
 
 class ModifiedBetaGeoModel(Model):
     """
@@ -143,13 +142,16 @@ class ModifiedBetaGeoModel(Model):
     """
 
     def __init__(self):
-        super(ModifiedBetaGeoModel, self)
+
+        super(ModifiedBetaGeoModel, self).__init__()
         self.fitter = ModifiedBetaGeoFitter()
         self.param_names = ['r', 'alpha', 'a', 'b']
 
     def generateData(self, t, parameters, size):
-        return gen.modified_beta_geometric_nbd_model(t, parameters['r'], parameters['alpha'], parameters['a'], parameters['b'],
-                                            size)
+        return gen.modified_beta_geometric_nbd_model(t, parameters['r'], parameters['alpha'], parameters['a'],
+                                                     parameters['b'],
+                                                     size)
+
 
 class ParetoNBDModel(Model):
     """
@@ -157,15 +159,14 @@ class ParetoNBDModel(Model):
     """
 
     def __init__(self):
-        super(ParetoNBDModel, self)
+        super(ParetoNBDModel, self).__init__()
         self.fitter = ParetoNBDFitter()
         self.param_names = ['r', 'alpha', 's', 'beta']
 
     def generateData(self, t, parameters, size):
         return gen.pareto_nbd_model(t, parameters['r'], parameters['alpha'], parameters['s'],
-                                                     parameters['beta'],
-                                                     size)
-
+                                    parameters['beta'],
+                                    size)
 
 
 class NumericalMetrics(object):

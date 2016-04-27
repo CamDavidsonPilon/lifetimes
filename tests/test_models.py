@@ -43,8 +43,8 @@ def test_model_fitting_simulation_comparison_with_analytical_numbers():
     t = 100
     N = 1000
 
-    model = models.ParetoNBDModel()
-    par_gen = {'r': r, 'alpha': alpha, 's': a, 'beta': b}
+    model = models.ModifiedBetaGeoModel()
+    par_gen = {'r': r, 'alpha': alpha, 'a': a, 'b': b}
     data = model.generateData(t,par_gen,size = 1000)
     model.fit(data['frequency'], data['recency'], data['T'])
 
