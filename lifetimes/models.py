@@ -19,7 +19,7 @@ class Model(object): # , metaclass=ABCMeta):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, bootstrap_size=10):
+    def fit(self, frequency, recency, T, N = None, bootstrap_size=10):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -29,12 +29,17 @@ class Model(object): # , metaclass=ABCMeta):
             bootstrap_size: number of data-samplings used to address parameter uncertainty
         """
         pass
-        self.fitter.fit(frequency, recency, T)
+        self.fitter.fit(frequency, recency, T, N)
 
         self.params = self.fitter.params_
 
-        data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
-        self.estimate_uncertainties_with_bootstrap(data, bootstrap_size)
+        if N is None:
+            data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
+            self.estimate_uncertainties_with_bootstrap(data, bootstrap_size)
+        else:
+            data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T, 'N': N})
+            self.estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
+
 
     @abstractmethod
     def generateData(self, t, parameters, size):
@@ -48,7 +53,7 @@ class Model(object): # , metaclass=ABCMeta):
         """
         pass
 
-    def estimate_uncertainties_with_bootstrap(self, data, size=10):
+    def estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data = False):
         """
         Calculate parameter covariance Matrix by bootstrapping trainig data.
 
@@ -67,9 +72,16 @@ class Model(object): # , metaclass=ABCMeta):
         tmp_fitter = copy.deepcopy(self.fitter)
         for i in range(size):
             N = len(data)
-            sampled_data = data.sample(N, replace=True)
-
-            tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'])
+            if compressed_data is False:
+                sampled_data = data.sample(N, replace=True)
+                tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'])
+            else:
+                # in case of compressed data you've gotta sample a multinomial distribution # TODO: test
+                N = data['N']
+                N_sum = sum(N)
+                prob = [float(n)/N_sum for n in N]
+                sampled_N = np.random.multinomial(N_sum, prob, size=1)
+                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], sampled_N)
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []

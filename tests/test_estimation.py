@@ -133,19 +133,38 @@ class TestParetoNBDFitter():
 
     def test_Ex_estimation_and_error(self):
         ptf = estimation.ParetoNBDFitter()
-        frequency = [0, 0, 0, 1, 1, 0, 2, 5, 6, 0, 10]
-        recency = [0, 0, 0, 1, 10, 0, 8, 8, 9, 0, 10]
+
+        frequency = [0, 0, 0, 1, 1, 0, 2, 5, 6, 6, 0, 10]
+        recency = [0, 0, 0, 1, 10, 0, 8, 8, 9, 9, 0, 10]
         T = [10] * len(frequency)
 
         ptf.fit(frequency, recency, T, initial_params=[0.5, 2, 0.5, 0.5])
 
         t = 100
-        C = [[0.02, 0,0,0],
-             [0, 1.0, 0,0],
+        C = [[0.02, 0, 0, 0],
+             [0, 1.0, 0, 0],
              [0, 0, 0.03, 0.0],
-             [0,0,0, 2.0]]
+             [0, 0, 0, 2.0]]
         Ex = ptf.expected_number_of_purchases_up_to_time(t)
         Ex_err = ptf.expected_number_of_purchases_up_to_time_error(t, C)
+
+        assert 25 > Ex > 15
+        assert Ex_err > 0
+
+        compressed_frequency = [0, 1, 1, 2, 5, 6, 10]
+        compressed_recency = [0, 1, 10, 8, 8, 9, 10]
+        compressed_T = [10, 10, 10, 10, 10, 10, 10]
+        compressed_N = [5, 1, 1, 1, 1, 2, 1]
+
+        ptf.fit(compressed_frequency, compressed_recency, compressed_T, N=compressed_N, initial_params=[0.5, 2, 0.5, 0.5])
+
+        t = 100
+        C = [[0.02, 0, 0, 0],
+             [0, 1.0, 0, 0],
+             [0, 0, 0.03, 0.0],
+             [0, 0, 0, 2.0]]
+        Ex2 = ptf.expected_number_of_purchases_up_to_time(t)
+        Ex2_err = ptf.expected_number_of_purchases_up_to_time_error(t, C)
 
         assert 25 > Ex > 15
         assert Ex_err > 0
