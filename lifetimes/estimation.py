@@ -76,11 +76,12 @@ class GammaGammaFitter(BaseFitter):
         p, q, v = self._unload_params('p', 'q', 'v')
         return (((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m
 
-    def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
+    def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the Gamma/Gamma model.
 
         Parameters:
+            N:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
@@ -130,7 +131,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, N=None, iterative_fitting=1, initial_params=None, verbose=False):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -143,6 +144,7 @@ class ParetoNBDFitter(BaseFitter):
                 hurt estimates.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -348,7 +350,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -531,7 +533,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def __init__(self, penalizer_coef=0.):
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None):
         """
         This methods fits the data to the MBG/NBD model.
         Parameters:

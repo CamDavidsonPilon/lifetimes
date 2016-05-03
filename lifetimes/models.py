@@ -19,7 +19,7 @@ class Model(object): # , metaclass=ABCMeta):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, N = None, bootstrap_size=10):
+    def fit(self, frequency, recency, T, bootstrap_size=10, N = None):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -29,16 +29,16 @@ class Model(object): # , metaclass=ABCMeta):
             bootstrap_size: number of data-samplings used to address parameter uncertainty
         """
         pass
-        self.fitter.fit(frequency, recency, T, N)
+        self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N)
 
         self.params = self.fitter.params_
 
         if N is None:
             data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
-            self.estimate_uncertainties_with_bootstrap(data, bootstrap_size)
+            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
         else:
             data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T, 'N': N})
-            self.estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
+            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
 
 
     @abstractmethod
@@ -53,7 +53,7 @@ class Model(object): # , metaclass=ABCMeta):
         """
         pass
 
-    def estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data = False):
+    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data = False):
         """
         Calculate parameter covariance Matrix by bootstrapping trainig data.
 
@@ -132,6 +132,23 @@ class Model(object): # , metaclass=ABCMeta):
 
         return NumericalMetrics(p_x, p_x_err)
 
+    def parameters_dictionary_from_list(self,parameters):
+        """
+
+        Args:
+            parameters: a plain list containing the parameters
+
+        Returns:
+            a dictionary containing the parameters to be used by the model
+        """
+        if len(self.param_names) != len(parameters):
+            raise ValueError("wrong number of parameter passed")
+
+        param_dictionary = {}
+        for parameter,name in zip(parameters,self.param_names):
+            param_dictionary[name] = parameter
+        return param_dictionary
+
 
 class BetaGeoModel(Model):
     """
@@ -179,6 +196,22 @@ class ParetoNBDModel(Model):
         return gen.pareto_nbd_model(t, parameters['r'], parameters['alpha'], parameters['s'],
                                     parameters['beta'],
                                     size)
+
+    def expected_number_of_purchases_up_to_time_with_errors(self,t):
+        """
+
+        Args:
+            t: a scalar or array of times
+
+        Returns:
+            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
+            associated to it (or an array of them)
+        """
+        if self.params is None or self.params_C is None:
+            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
+
+        return self.fitter.expected_number_of_purchases_up_to_time(t),\
+               self.fitter.expected_number_of_purchases_up_to_time_error(t,self.params_C)
 
 
 class NumericalMetrics(object):
