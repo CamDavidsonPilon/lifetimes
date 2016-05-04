@@ -81,7 +81,7 @@ class Model(object): # , metaclass=ABCMeta):
                 N_sum = sum(N)
                 prob = [float(n)/N_sum for n in N]
                 sampled_N = np.random.multinomial(N_sum, prob, size=1)
-                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], sampled_N)
+                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], N = sampled_N)
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []
