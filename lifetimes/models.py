@@ -19,7 +19,7 @@ class Model(object): # , metaclass=ABCMeta):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, bootstrap_size=10, N = None):
+    def fit(self, frequency, recency, T, bootstrap_size=10, N = None,initial_params = None, iterative_fitting = 1):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -28,8 +28,7 @@ class Model(object): # , metaclass=ABCMeta):
             T: the vector of customers' age (time since first purchase)
             bootstrap_size: number of data-samplings used to address parameter uncertainty
         """
-        pass
-        self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N)
+        self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N, initial_params=initial_params,iterative_fitting = iterative_fitting)
 
         self.params = self.fitter.params_
 
