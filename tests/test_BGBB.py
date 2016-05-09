@@ -6,6 +6,7 @@ import lifetimes.estimation as est
 from lifetimes.data_compression import compress_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
+from scipy import special
 
 
 @pytest.mark.BGBB
@@ -113,7 +114,7 @@ def test_BGBB_additional_functions():
     print fitter.params_
 
     print "E[X(t)] as a function of t"
-    for t in [0,1,10,100,1000,10000]:
+    for t in [0, 1, 10, 100, 1000, 10000]:
         Ex = fitter.expected_number_of_purchases_up_to_time(t)
         print t, Ex
         assert Ex >= 0
@@ -176,7 +177,7 @@ def test_BGBB_fitting_with_different_T_windows():
 @pytest.mark.BGBB
 def test_BGBB_fitting_time():
     T = 100
-    sizes = [10,100,1000]
+    sizes = [10, 100, 1000]
     params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
 
     compressed_data = {}
@@ -189,8 +190,36 @@ def test_BGBB_fitting_time():
         fitter = est.BGBBFitter()
         start_time = timeit.default_timer()
         fitter.fit(compressed_data[size]['frequency'], compressed_data[size]['recency'], compressed_data[size]['T'],
-                              N=compressed_data[size]['N'], initial_params=params.values())
+                   N=compressed_data[size]['N'], initial_params=params.values())
         t1 = timeit.default_timer() - start_time
         times[size] = t1
 
     print times
+
+
+@pytest.mark.BGBB
+def test_BGBB_fitting_time_with_different_likelyhood():
+    a, b, g, d = 1.2, 0.7, 0.6, 2.7
+
+    x = np.array([0, 1, 2, 3, 4, 5])
+    tx = np.array([0, 1, 1, 1, 3, 5])
+    T = np.array([5, 5, 5, 5, 5, 5])
+
+    numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+    max_i = (T - tx - 1).astype(int)
+    for j in range(len(max_i)):
+        xj = x[j]
+        txj = tx[j]
+        i = np.arange(max_i[j] + 1)
+        numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
+
+    first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+    second_term = np.array([np.sum(
+        [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
+         range(int(T[j] - tx[j] - 1 + 1))])
+                            for j in range(len(x))])
+
+    for ii in range(len(numerator)):
+        assert numerator[ii] == first_term[ii] + second_term[ii]

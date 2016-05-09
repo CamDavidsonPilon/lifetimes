@@ -666,11 +666,12 @@ class BGBBFitter(BaseFitter):
         x = freq
         tx = rec
 
-        common_factor = 1.0 / special.beta(a, b) * 1.0 / special.beta(g, d)
+        denominator = special.beta(a, b) * special.beta(g, d)
+
         if isinstance(x, float) or isinstance(x, int):
             # x is a single number
-            first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
-            second_term = np.sum(
+            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+            numerator += np.sum(
                 [special.beta(a + x, b + tx - x + i) * special.beta(g + 1, d + tx + i) for i in
                  range(int(T - tx - 1 + 1))])
         else:
@@ -678,14 +679,16 @@ class BGBBFitter(BaseFitter):
             x = np.array(x)
             tx = np.array(tx)
             T = np.array(T)
-            first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
-            second_term = np.array([np.sum(
-                [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
-                 range(int(T[j] - tx[j] - 1 + 1))])
-                                    for j in range(len(x))])
+            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
 
-        ll = np.log(common_factor * (
-        first_term + second_term))  # this converts the terms in a no object on which you can call sum()
+            max_i = (T - tx - 1).astype(int)
+            for j in range(len(max_i)):
+                xj = x[j]
+                txj = tx[j]
+                i = np.arange(max_i[j] + 1)
+                numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
+
+        ll = np.log(numerator / denominator)  # this converts the terms in a no object on which you can call sum()
 
         if N is not None:
             return -(ll * N).sum()
