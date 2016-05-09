@@ -198,3 +198,80 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         df.ix[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
+
+
+def bgbb_model(T, alpha, beta, gamma, delta, size=1):
+    """
+    Generate artificial data according to the discrete BG/BB model.
+
+    Parameters:
+        T: scalar, the length of time observing new customers.
+        alpha, beta, gamma, delta: scalars, representing parameters in the model. See [2]
+        size: the number of customers to generate, equal to size of T if T is
+           an array.
+
+    Returns:
+        DataFrame, with index as customer_ids and the following columns:
+        'frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id'
+    """
+    if size < 1:
+        raise ValueError("size must be positive")
+
+    if alpha <= 0 or beta <= 0 or gamma <= 0 or delta <= 0:
+        raise ValueError("Parameters of beta distribution must all be positive")
+
+    if type(T) in [int]:
+        T = T * np.ones(size)
+    else:
+        raise ValueError("Provide a integer T")
+
+    # Generate hidden parameters fo all costumers
+    ps = stats.beta.rvs(alpha, beta, size=size)  # probability of purchasing while alive
+    thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
+
+    columns = ['frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id']
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+
+    for i in range(size):
+        p = ps[i]           # probability of purchasing, if alive
+        theta = thetas[i]   # probability of dying
+
+        # initial conditions (buys at 0)
+        x = 0
+        tx = 0
+        alive = True
+
+        # start testing from t = 1
+        t = 1
+        while t <= T[i]:
+            alive = np.random.random() > theta
+            if alive:
+                purchases = np.random.random() <= p
+                if purchases:
+                    x += 1
+                    tx = t
+                t += 1
+            else:
+                break
+
+        df.ix[i] = x, tx, T[i], p, theta, alive, i
+
+    return df.set_index('customer_id')
+
+
+def generate_pareto_data_for_T_N(T, N, params):
+    """
+    Quick data generator over time
+    :param T:       Max T to generate
+    :param N:       How many users per T
+    :param params:  The pareto params
+    :type params:   dict
+    :return:        Generated data
+    """
+    from lifetimes import models
+    pareto = models.ParetoNBDModel()
+    data = pd.DataFrame()
+    for t in range(T + 1):
+        new_data = pareto.generateData(t, params, N)
+        data = pd.concat([data, new_data])
+    return data

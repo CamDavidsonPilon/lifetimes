@@ -1,14 +1,14 @@
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
 import random
 import copy
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 
-class Model(object): # , metaclass=ABCMeta):
+class Model(object):
     """
     Base class to handle fitting of a model to data and bootstrap of the parameters.
     """
@@ -19,7 +19,7 @@ class Model(object): # , metaclass=ABCMeta):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, bootstrap_size=10, N = None,initial_params = None, iterative_fitting = 1):
+    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=1):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -27,8 +27,10 @@ class Model(object): # , metaclass=ABCMeta):
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             bootstrap_size: number of data-samplings used to address parameter uncertainty
+            N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
         """
-        self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N, initial_params=initial_params,iterative_fitting = iterative_fitting)
+        self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N, initial_params=initial_params,
+                        iterative_fitting=iterative_fitting)
 
         self.params = self.fitter.params_
 
@@ -38,7 +40,6 @@ class Model(object): # , metaclass=ABCMeta):
         else:
             data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T, 'N': N})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
-
 
     @abstractmethod
     def generateData(self, t, parameters, size):
@@ -52,7 +53,7 @@ class Model(object): # , metaclass=ABCMeta):
         """
         pass
 
-    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data = False):
+    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
         """
         Calculate parameter covariance Matrix by bootstrapping trainig data.
 
@@ -78,9 +79,9 @@ class Model(object): # , metaclass=ABCMeta):
                 # in case of compressed data you've gotta sample a multinomial distribution # TODO: test
                 N = data['N']
                 N_sum = sum(N)
-                prob = [float(n)/N_sum for n in N]
+                prob = [float(n) / N_sum for n in N]
                 sampled_N = np.random.multinomial(N_sum, prob, size=1)
-                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], N = sampled_N)
+                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], N=sampled_N)
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []
@@ -131,7 +132,7 @@ class Model(object): # , metaclass=ABCMeta):
 
         return NumericalMetrics(p_x, p_x_err)
 
-    def parameters_dictionary_from_list(self,parameters):
+    def parameters_dictionary_from_list(self, parameters):
         """
 
         Args:
@@ -144,7 +145,7 @@ class Model(object): # , metaclass=ABCMeta):
             raise ValueError("wrong number of parameter passed")
 
         param_dictionary = {}
-        for parameter,name in zip(parameters,self.param_names):
+        for parameter, name in zip(parameters, self.param_names):
             param_dictionary[name] = parameter
         return param_dictionary
 
@@ -170,7 +171,6 @@ class ModifiedBetaGeoModel(Model):
     """
 
     def __init__(self):
-
         super(ModifiedBetaGeoModel, self).__init__()
         self.fitter = ModifiedBetaGeoFitter()
         self.param_names = ['r', 'alpha', 'a', 'b']
@@ -196,7 +196,7 @@ class ParetoNBDModel(Model):
                                     parameters['beta'],
                                     size)
 
-    def expected_number_of_purchases_up_to_time_with_errors(self,t):
+    def expected_number_of_purchases_up_to_time_with_errors(self, t):
         """
 
         Args:
@@ -209,13 +209,46 @@ class ParetoNBDModel(Model):
         if self.params is None or self.params_C is None:
             raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
 
-        return self.fitter.expected_number_of_purchases_up_to_time(t),\
-               self.fitter.expected_number_of_purchases_up_to_time_error(t,self.params_C)
+        return self.fitter.expected_number_of_purchases_up_to_time(t), \
+               self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
+
+
+class BGBBModel(Model):
+    """
+    Fits a discrete-time BGBB to the data, and computes relevant metrics by mean of a simulation.
+    """
+
+    def __init__(self):
+        super(BGBBModel, self).__init__()
+        self.fitter = BGBBFitter()
+        self.param_names = ['alpha', 'beta', 'gamma', 'delta']
+
+    def generateData(self, t, parameters, size):
+        return gen.bgbb_model(t, parameters['alpha'],
+                              parameters['beta'],
+                              parameters['gamma'],
+                              parameters['delta'],
+                              size)
+
+    def expected_number_of_purchases_up_to_time_with_errors(self, t):
+        """
+
+        Args:
+            t: a scalar or array of times
+
+        Returns:
+            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
+            associated to it (or an array of them)
+        """
+        if self.params is None or self.params_C is None:
+            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
+
+        return self.fitter.expected_number_of_purchases_up_to_time(t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
 
 
 class NumericalMetrics(object):
     """
-    Contains the metrics common to all transaction counting models (Pareto/NBS, BG/NBD)
+    Contains the metrics common to all transaction counting models (Pareto/NBS, BG/NBD, BG/BB)
     """
 
     # TODO: add y, Ey, p to common metrics

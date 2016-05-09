@@ -8,7 +8,8 @@ from pandas import DataFrame
 from scipy import special
 from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
-from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
+from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
+    bgbb_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
@@ -350,7 +351,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -533,7 +534,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def __init__(self, penalizer_coef=0.):
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None):
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the MBG/NBD model.
         Parameters:
@@ -648,3 +649,139 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         second_term = special.beta(a + 1, b + n) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term
+
+
+class BGBBFitter(BaseFitter):
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None):
+
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        a, b, g, d = params
+        x = freq
+        tx = rec
+
+        common_factor = 1.0 / special.beta(a, b) * 1.0 / special.beta(g, d)
+        if isinstance(x, float) or isinstance(x, int):
+            # x is a single number
+            first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+            second_term = np.sum(
+                [special.beta(a + x, b + tx - x + i) * special.beta(g + 1, d + tx + i) for i in
+                 range(int(T - tx - 1 + 1))])
+        else:
+            # x is a vector
+            x = np.array(x)
+            tx = np.array(tx)
+            T = np.array(T)
+            first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+            second_term = np.array([np.sum(
+                [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
+                 range(int(T[j] - tx[j] - 1 + 1))])
+                                    for j in range(len(x))])
+
+        ll = np.log(common_factor * (first_term + second_term))  # this converts the terms in a no object on which you can call sum()
+
+        if N is not None:
+            return -(ll * N).sum()
+        else:
+            return -ll.sum()
+
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
+        """
+        This methods fits the data to the BG/BB discrete-time model.
+
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
+
+        Returns:
+            self, with additional properties and methods like params_ and plot
+        """
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
+        _check_inputs(frequency, recency, T)
+
+        if N is not None:  # in this case it means you're handling compressed data
+            N = asarray(N)
+            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                          [frequency, recency, T, self.penalizer_coef, N],
+                                                          iterative_fitting,
+                                                          initial_params,
+                                                          4,
+                                                          verbose)
+        else:
+            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                          [frequency, recency, T, self.penalizer_coef],
+                                                          iterative_fitting,
+                                                          initial_params,
+                                                          4,
+                                                          verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
+
+        # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
+        return self
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+
+        Returns: a scalar or array
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        # TODO: solve indeterminate form below   when t --> inf  :  inf/0
+        return a / (a + b) * d / (g - 1) * (
+            1.0 - special.gamma(g + d) / special.gamma(g + d + t) * special.gamma(1 + d + t) / special.gamma(1 + d))
+
+    def expected_number_of_purchases_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
+
+        Returns: a scalar
+        """
+        raise NotImplementedError
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        """
+        Compute the probability of
+
+        P( N(t) = n | model )
+
+        where N(t) is the number of repeat purchases a customer makes in t units of time.
+        """
+        if not (isinstance(n, int) and isinstance(t, int)):
+            raise TypeError("t and n musy be integers")
+
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+
+        common_factor = 1.0 / special.beta(a, b) * 1.0 / special.beta(g, d)
+
+        first_term = special.binom(t, n) * special.beta(a + n, b + t - n) * special.beta(g, d + t)
+        second_term = np.sum(
+            [special.binom(i, n) * special.beta(a + n, b + i - n) * special.beta(g + 1, d + i) for i in
+             range(n, int(t - 1 + 1))])
+
+        return common_factor * (first_term + second_term)
