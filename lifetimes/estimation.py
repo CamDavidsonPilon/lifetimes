@@ -10,6 +10,7 @@ from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model
+from lifetimes.formulas import gamma_ratio
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
@@ -683,7 +684,8 @@ class BGBBFitter(BaseFitter):
                  range(int(T[j] - tx[j] - 1 + 1))])
                                     for j in range(len(x))])
 
-        ll = np.log(common_factor * (first_term + second_term))  # this converts the terms in a no object on which you can call sum()
+        ll = np.log(common_factor * (
+        first_term + second_term))  # this converts the terms in a no object on which you can call sum()
 
         if N is not None:
             return -(ll * N).sum()
@@ -747,9 +749,8 @@ class BGBBFitter(BaseFitter):
         Returns: a scalar or array
         """
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
-        # TODO: solve indeterminate form below   when t --> inf  :  inf/0
         return a / (a + b) * d / (g - 1) * (
-            1.0 - special.gamma(g + d) / special.gamma(g + d + t) * special.gamma(1 + d + t) / special.gamma(1 + d))
+            1.0 - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
 
     def expected_number_of_purchases_up_to_time_error(self, t, C):
         """

@@ -113,10 +113,10 @@ def test_BGBB_additional_functions():
     print fitter.params_
 
     print "E[X(t)] as a function of t"
-    for t in range(200):
+    for t in [0,1,10,100,1000,10000]:
         Ex = fitter.expected_number_of_purchases_up_to_time(t)
         print t, Ex
-        # assert Ex >= 0
+        assert Ex >= 0
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
