@@ -233,7 +233,7 @@ def _scale_time(age):
     return 10. / age.max()
 
 
-def _check_inputs(frequency, recency, T):
+def _check_inputs(frequency, recency, T, N=None, frequency_purchases = None):
 
     def check_recency_is_less_than_T(recency, T):
         if np.any(recency > T):
@@ -251,6 +251,13 @@ def _check_inputs(frequency, recency, T):
     check_recency_is_less_than_T(recency, T)
     check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
     check_all_frequency_values_are_integer_values(frequency)
+    if N is not None:
+        if np.any(N < 0):
+            raise ValueError("""Some values in N are less than zero.""")
+    if frequency_purchases is not None:
+        check_all_frequency_values_are_integer_values(frequency_purchases)
+        if np.any(frequency_purchases > frequency + 1):
+            raise ValueError("""Some values in frequency_purchases vector are larger than frequency + 1 vector. This is impossible according to the model.""")
 
 
 def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):

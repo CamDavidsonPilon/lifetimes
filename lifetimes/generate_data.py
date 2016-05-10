@@ -259,6 +259,76 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1):
     return df.set_index('customer_id')
 
 
+def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1):
+    """
+    Generate artificial data according to the discrete BG/BB/BB model (purchases integrated).
+
+    Parameters:
+        T: scalar, the length of time observing new customers.
+        alpha, beta, gamma, delta, epsilon, zeta: scalars, representing parameters in the model.
+        size: the number of customers to generate, equal to size of T if T is
+           an array.
+
+    Returns:
+        DataFrame, with index as customer_ids and the following columns:
+        'frequency', 'recency', 'T', 'frequency_purchases', 'p', 'theta', 'pi', 'alive', 'customer_id'
+    """
+    if size < 1:
+        raise ValueError("size must be positive")
+
+    if alpha <= 0 or beta <= 0 or gamma <= 0 or delta <= 0 or epsilon <= 0 or zeta <= 0:
+        raise ValueError("Parameters of beta distribution must all be positive")
+
+    if type(T) in [int]:
+        T = T * np.ones(size)
+    else:
+        raise ValueError("Provide a integer T")
+
+    # Generate hidden parameters fo all costumers
+    ps = stats.beta.rvs(alpha, beta, size=size)  # probability of making a session while alive
+    thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
+    pis = stats.beta.rvs(epsilon, zeta, size=size)  # probability of purchasing while alive and making a session
+
+    columns = ['frequency', 'recency', 'T', 'frequency_purchases', 'p', 'theta', 'pi', 'alive', 'customer_id']
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+
+    for i in range(size):
+        p = ps[i]           # probability of making a session, if alive
+        theta = thetas[i]   # probability of dying
+        pi = pis[i]         # probability of purchasing, if alive and making a session
+
+        # initial conditions (has a session at 0)
+        x = 0
+        tx = 0
+        alive = True
+        xp = 0
+
+        # first possibility of purchasing (the first day)
+        purchases = np.random.random() <= pi
+        if purchases:
+            xp += 1
+
+        # start testing from t = 1
+        t = 1
+        while t <= T[i]:
+            alive = np.random.random() > theta
+            if alive:
+                has_session = np.random.random() <= p
+                if has_session:
+                    x += 1
+                    tx = t
+                    purchases = np.random.random() <= pi  # see whether this monazza buys too
+                    if purchases:
+                        xp += 1
+                t += 1
+            else:
+                break
+
+        df.ix[i] = x, tx, T[i], xp, p, theta, pi, alive, i
+
+    return df.set_index('customer_id')
+
+
 def generate_pareto_data_for_T_N(T, N, params):
     """
     Quick data generator over time

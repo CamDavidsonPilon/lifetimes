@@ -9,7 +9,7 @@ from scipy import special
 from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
-    bgbb_model
+    bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
@@ -816,3 +816,147 @@ class BGBBFitter(BaseFitter):
              range(n, int(t - 1 + 1))])
 
         return common_factor * (first_term + second_term)
+
+
+class BGBBBBFitter(BaseFitter):
+    """
+    BG/BB/BB discrete time model with session and purchases.
+
+    MM as extension of
+    Customer-Base Analysis in a Discrete-Time Noncontractual Setting
+    Peter S. Fader
+    Bruce G. S. Hardie
+    Jen Shang
+    """
+
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, frequency_purchases, penalizer_coef, N=None):
+
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        a, b, g, d, e, z = params
+        x = freq
+        xp = frequency_purchases
+        tx = rec
+
+        denominator = special.beta(a, b) * special.beta(g, d)
+
+        if isinstance(x, float) or isinstance(x, int):
+            # x is a single number
+            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+            numerator += np.sum(
+                [special.beta(a + x, b + tx - x + i) * special.beta(g + 1, d + tx + i) for i in
+                 range(int(T - tx - 1 + 1))])
+        else:
+            # x is a vector
+            x = np.array(x)
+            xp = np.array(xp)
+            tx = np.array(tx)
+            T = np.array(T)
+            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+            max_i = (T - tx - 1).astype(int)
+            for j in range(len(max_i)):
+                xj = x[j]
+                txj = tx[j]
+                i = np.arange(max_i[j] + 1)  # all indexes
+                numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
+
+        purchase_term = special.beta(e + xp, x - xp + z + 1) / special.beta(e, z)
+
+        ll = np.log(numerator / denominator) + np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
+
+        if N is not None:
+            return -(ll * N).sum()
+        else:
+            return -ll.sum()
+
+    def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=1, initial_params=None, verbose=False,
+            N=None):
+        """
+        This methods fits the data to the BG/BB/BB discrete-time model.
+
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            recency: the recency vector of customers' purchases (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            frequency_purchases: the frequency vector of customers' purchases (can go from 0 to f + 1).
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
+
+        Returns:
+            self, with additional properties and methods like params_ and plot
+        """
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
+        frequency_purchases = asarray(frequency_purchases)
+        _check_inputs(frequency, recency, T, N=N, frequency_purchases=frequency_purchases)
+
+        if N is not None:  # in this case it means you're handling compressed data
+            N = asarray(N)
+            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                          [frequency, recency, T, frequency_purchases,
+                                                           self.penalizer_coef, N],
+                                                          iterative_fitting,
+                                                          initial_params,
+                                                          6,
+                                                          verbose)
+        else:
+            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                          [frequency, recency, T, frequency_purchases,
+                                                           self.penalizer_coef],
+                                                          iterative_fitting,
+                                                          initial_params,
+                                                          6,
+                                                          verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
+        self.data = DataFrame(vconcat[frequency, recency, T, frequency_purchases],
+                              columns=['frequency', 'recency', 'T', 'frequency_purchases'])
+        self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
+
+        return self
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+
+        Returns: a scalar or array
+        """
+        raise NotImplementedError
+
+    def expected_number_of_purchases_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
+
+        Returns: a scalar
+        """
+        raise NotImplementedError
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        """
+        Compute the probability of
+
+        P( N(t) = n | model )
+
+        where N(t) is the number of repeat purchases a customer makes in t units of time.
+        """
+        raise NotImplementedError
