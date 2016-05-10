@@ -653,6 +653,15 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
 
 class BGBBFitter(BaseFitter):
+    """
+    BG/BB discrete time model.
+
+    Customer-Base Analysis in a Discrete-Time Noncontractual Setting
+    Peter S. Fader
+    Bruce G. S. Hardie
+    Jen Shang
+    """
+
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
@@ -685,7 +694,7 @@ class BGBBFitter(BaseFitter):
             for j in range(len(max_i)):
                 xj = x[j]
                 txj = tx[j]
-                i = np.arange(max_i[j] + 1)
+                i = np.arange(max_i[j] + 1)  # all indexes
                 numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
 
         ll = np.log(numerator / denominator)  # this converts the terms in a no object on which you can call sum()
@@ -766,7 +775,25 @@ class BGBBFitter(BaseFitter):
 
         Returns: a scalar
         """
-        raise NotImplementedError
+        if len(C) != 4 or len(C[0]) != 4:
+            raise ValueError("Covariance matrix: wrong dimensions. Must be 4x4 symmetric.")
+
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        E = self.expected_number_of_purchases_up_to_time(t)
+
+        R = a / (a + b) * d / (g - 1) * (
+            - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
+
+        dEda = b / (a + b) * E
+        dEdb = - 1.0 / (a + b) * E
+
+        dEdg = - E / (g - 1) + R * (special.psi(g + d) - special.psi(g + d + t))
+        dEdd = E / d + R * (special.psi(g + d) - special.psi(g + d + t) - special.psi(1 + d) + special.psi(1 + d + t))
+
+        Cov = np.matrix(C)
+        dE = np.array([[dEda], [dEdb], [dEdg], [dEdd]])
+
+        return math.sqrt(float(dE.transpose() * Cov * dE))
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """

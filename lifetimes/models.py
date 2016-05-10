@@ -76,7 +76,7 @@ class Model(object):
                 sampled_data = data.sample(N, replace=True)
                 tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'])
             else:
-                # in case of compressed data you've gotta sample a multinomial distribution # TODO: test
+                # in case of compressed data you've gotta sample a multinomial distribution
                 N = data['N']
                 N_sum = sum(N)
                 prob = [float(n) / N_sum for n in N]
@@ -93,7 +93,7 @@ class Model(object):
         self.params_C = cov
         self.sampled_parameters = par_estimates
 
-    def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10):  # TODO: test it
+    def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10):
         """
         Args:
             N:      number of users you're referring to

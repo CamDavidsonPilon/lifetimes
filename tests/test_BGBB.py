@@ -7,6 +7,7 @@ from lifetimes.data_compression import compress_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
 from scipy import special
+from lifetimes import models
 
 
 @pytest.mark.BGBB
@@ -69,6 +70,34 @@ def test_likelyhood():
 
 
 @pytest.mark.BGBB
+def test_BGBB_new_likelyhood():
+    a, b, g, d = 1.2, 0.7, 0.6, 2.7
+
+    x = np.array([0, 1, 2, 3, 4, 5])
+    tx = np.array([0, 1, 1, 1, 3, 5])
+    T = np.array([5, 5, 5, 5, 5, 5])
+
+    numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+    max_i = (T - tx - 1).astype(int)
+    for j in range(len(max_i)):
+        xj = x[j]
+        txj = tx[j]
+        i = np.arange(max_i[j] + 1)
+        numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
+
+    first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+    second_term = np.array([np.sum(
+        [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
+         range(int(T[j] - tx[j] - 1 + 1))])
+                            for j in range(len(x))])
+
+    for ii in range(len(numerator)):
+        assert numerator[ii] == first_term[ii] + second_term[ii]
+
+
+@pytest.mark.BGBB
 def test_BGBB_fitting_compressed_or_not():
     T = 10
     size = 1000
@@ -116,8 +145,11 @@ def test_BGBB_additional_functions():
     print "E[X(t)] as a function of t"
     for t in [0, 1, 10, 100, 1000, 10000]:
         Ex = fitter.expected_number_of_purchases_up_to_time(t)
-        print t, Ex
+        covariance_matrix = np.cov(np.vstack([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
+        Ex_err = fitter.expected_number_of_purchases_up_to_time_error(t, covariance_matrix)
+        print t, Ex, Ex_err
         assert Ex >= 0
+        assert Ex_err >= 0
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
@@ -198,28 +230,41 @@ def test_BGBB_fitting_time():
 
 
 @pytest.mark.BGBB
-def test_BGBB_fitting_time_with_different_likelyhood():
-    a, b, g, d = 1.2, 0.7, 0.6, 2.7
+def test_BGBB_integration_in_models():
+    T = 10
+    size = 100
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
 
-    x = np.array([0, 1, 2, 3, 4, 5])
-    tx = np.array([0, 1, 1, 1, 3, 5])
-    T = np.array([5, 5, 5, 5, 5, 5])
+    data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
 
-    numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+    data = compress_data(data)
 
-    max_i = (T - tx - 1).astype(int)
-    for j in range(len(max_i)):
-        xj = x[j]
-        txj = tx[j]
-        i = np.arange(max_i[j] + 1)
-        numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
+    model = models.BGBBModel()
 
-    first_term = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+    model.fit(data['frequency'], data['recency'], data['T'], bootstrap_size=10, N=data['N'],
+              initial_params=params.values())
 
-    second_term = np.array([np.sum(
-        [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
-         range(int(T[j] - tx[j] - 1 + 1))])
-                            for j in range(len(x))])
+    print "Generation params"
+    print params
 
-    for ii in range(len(numerator)):
-        assert numerator[ii] == first_term[ii] + second_term[ii]
+    print "Fitted params"
+    print model.params
+    print model.params_C
+
+    print "E[X(t)] as a function of t"
+    for t in [0, 1, 10, 100, 1000, 10000]:
+        Ex, Ex_err = model.expected_number_of_purchases_up_to_time_with_errors(t)
+        print t, Ex, Ex_err
+        assert Ex >= 0
+        assert Ex_err >= 0
+
+    t = 10
+    print "E[X(t) = n] as a function of n, t = " + str(t)
+    tot_prob = 0.0
+    for n in range(t + 1):
+        prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
+        print n, prob
+        tot_prob += prob
+        assert 1 >= prob >= 0
+
+    assert math.fabs(tot_prob - 1.0) < 0.00001
