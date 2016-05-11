@@ -233,8 +233,8 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1):
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
-        p = ps[i]           # probability of purchasing, if alive
-        theta = thetas[i]   # probability of dying
+        p = ps[i]  # probability of purchasing, if alive
+        theta = thetas[i]  # probability of dying
 
         # initial conditions (buys at 0)
         x = 0
@@ -259,7 +259,7 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1):
     return df.set_index('customer_id')
 
 
-def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1):
+def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1, time_first_purchase=False, death_time=False):
     """
     Generate artificial data according to the discrete BG/BB/BB model (purchases integrated).
 
@@ -268,6 +268,7 @@ def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1):
         alpha, beta, gamma, delta, epsilon, zeta: scalars, representing parameters in the model.
         size: the number of customers to generate, equal to size of T if T is
            an array.
+        time_first_purchase: if true, adds the time of the first purchase of a user (useful for conversion)
 
     Returns:
         DataFrame, with index as customer_ids and the following columns:
@@ -290,23 +291,33 @@ def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1):
     pis = stats.beta.rvs(epsilon, zeta, size=size)  # probability of purchasing while alive and making a session
 
     columns = ['frequency', 'recency', 'T', 'frequency_purchases', 'p', 'theta', 'pi', 'alive', 'customer_id']
+    if time_first_purchase:
+        columns.append('time_first_purchase')
+    elif death_time:
+        columns.append('death_time')
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
-        p = ps[i]           # probability of making a session, if alive
-        theta = thetas[i]   # probability of dying
-        pi = pis[i]         # probability of purchasing, if alive and making a session
+        p = ps[i]  # probability of making a session, if alive
+        theta = thetas[i]  # probability of dying
+        pi = pis[i]  # probability of purchasing, if alive and making a session
 
         # initial conditions (has a session at 0)
         x = 0
         tx = 0
         alive = True
         xp = 0
+        has_purchased = False
+        tfp = np.nan  # time_first_purchase
+        dt = np.nan # death_time
 
         # first possibility of purchasing (the first day)
         purchases = np.random.random() <= pi
         if purchases:
             xp += 1
+            if not has_purchased:
+                tfp = 0
+            has_purchased = True
 
         # start testing from t = 1
         t = 1
@@ -320,11 +331,20 @@ def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1):
                     purchases = np.random.random() <= pi  # see whether this monazza buys too
                     if purchases:
                         xp += 1
+                        if not has_purchased:
+                            tfp = t
+                        has_purchased = True
                 t += 1
             else:
+                dt = t
                 break
 
-        df.ix[i] = x, tx, T[i], xp, p, theta, pi, alive, i
+        if time_first_purchase:
+            df.ix[i] = x, tx, T[i], xp, p, theta, pi, alive, i, tfp
+        elif death_time:
+            df.ix[i] = x, tx, T[i], xp, p, theta, pi, alive, i, dt
+        else:
+            df.ix[i] = x, tx, T[i], xp, p, theta, pi, alive, i
 
     return df.set_index('customer_id')
 

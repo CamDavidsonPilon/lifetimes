@@ -798,6 +798,10 @@ class BGBBFitter(BaseFitter):
         Returns: a scalar or array
         """
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+
+    @staticmethod
+    def static_expected_number_of_purchases_up_to_time(a, b, g, d, t):
         return a / (a + b) * d / (g - 1) * (
             1.0 - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
 
@@ -812,11 +816,16 @@ class BGBBFitter(BaseFitter):
 
         Returns: a scalar
         """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)
+
+    @staticmethod
+    def static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C):
+
         if len(C) != 4 or len(C[0]) != 4:
             raise ValueError("Covariance matrix: wrong dimensions. Must be 4x4 symmetric.")
 
-        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
-        E = self.expected_number_of_purchases_up_to_time(t)
+        E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
 
         R = a / (a + b) * d / (g - 1) * (
             - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
@@ -840,10 +849,14 @@ class BGBBFitter(BaseFitter):
 
         where N(t) is the number of repeat purchases a customer makes in t units of time.
         """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+
+        return BGBBFitter.static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
+
+    @staticmethod
+    def static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n):
         if not (isinstance(n, int) and isinstance(t, int)):
             raise TypeError("t and n musy be integers")
-
-        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
 
         common_factor = 1.0 / special.beta(a, b) * 1.0 / special.beta(g, d)
 
@@ -876,41 +889,27 @@ class BGBBBBFitter(BaseFitter):
             return np.inf
 
         a, b, g, d, e, z = params
-        x = freq
         xp = frequency_purchases
-        tx = rec
+        x = freq
 
-        denominator = special.beta(a, b) * special.beta(g, d)
-
-        if isinstance(x, float) or isinstance(x, int):
-            # x is a single number
-            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
-            numerator += np.sum(
-                [special.beta(a + x, b + tx - x + i) * special.beta(g + 1, d + tx + i) for i in
-                 range(int(T - tx - 1 + 1))])
+        if isinstance(xp, float) or isinstance(xp, int):
+            pass
         else:
-            # x is a vector
+            # xp is a vector
             x = np.array(x)
             xp = np.array(xp)
-            tx = np.array(tx)
-            T = np.array(T)
-            numerator = special.beta(a + x, b + T - x) * special.beta(g, d + T)
-
-            max_i = (T - tx - 1).astype(int)
-            for j in range(len(max_i)):
-                xj = x[j]
-                txj = tx[j]
-                i = np.arange(max_i[j] + 1)  # all indexes
-                numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
 
         purchase_term = special.beta(e + xp, x - xp + z + 1) / special.beta(e, z)
 
-        ll = np.log(numerator / denominator) + np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
+        ll_vector = np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
 
         if N is not None:
-            return -(ll * N).sum()
+            ll_purchases = -(ll_vector * N).sum()
         else:
-            return -ll.sum()
+            ll_purchases = -ll_vector.sum()
+
+        sub_params = a, b, g, d
+        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
     def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=1, initial_params=None, verbose=False,
             N=None):
@@ -918,9 +917,9 @@ class BGBBBBFitter(BaseFitter):
         This methods fits the data to the BG/BB/BB discrete-time model.
 
         Parameters:
-            frequency: the frequency vector of customers' purchases (denoted x in literature).
-            recency: the recency vector of customers' purchases (denoted t_x in literature).
-            T: the vector of customers' age (time since first purchase)
+            frequency: the frequency vector of customers' sessions (denoted x in literature).
+            recency: the recency vector of customers' sessions (denoted t_x in literature).
+            T: the vector of customers' age (time since first session)
             frequency_purchases: the frequency vector of customers' purchases (can go from 0 to f + 1).
             iterative_fitting: perform `iterative_fitting` additional fits to find the best
                 parameters for the model. Setting to 0 will improve performances but possibly
@@ -963,6 +962,19 @@ class BGBBBBFitter(BaseFitter):
 
         return self
 
+    def expected_number_of_sessions_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+
+        Returns: a scalar or array
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+
     def expected_number_of_purchases_up_to_time(self, t):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
@@ -973,7 +985,26 @@ class BGBBBBFitter(BaseFitter):
 
         Returns: a scalar or array
         """
-        raise NotImplementedError
+        a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
+
+        E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+        Ep = special.beta(e + 1, z) / special.beta(e, z) * (1.0 + E)
+
+        return Ep
+
+    def expected_number_of_sessions_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
+
+        Returns: a scalar
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)
 
     def expected_number_of_purchases_up_to_time_error(self, t, C):
         """
@@ -986,7 +1017,31 @@ class BGBBBBFitter(BaseFitter):
 
         Returns: a scalar
         """
-        raise NotImplementedError
+        if len(C) != 6 or len(C[0]) != 6:
+            raise ValueError("Covariance matrix: wrong dimensions. Must be 6x6 symmetric.")
+
+        a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
+
+        E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+
+        R = a / (a + b) * d / (g - 1) * (
+            - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
+
+        dEda = b / (a + b) * E
+        dEdb = - 1.0 / (a + b) * E
+
+        dEdg = - E / (g - 1) + R * (special.psi(g + d) - special.psi(g + d + t))
+        dEdd = E / d + R * (special.psi(g + d) - special.psi(g + d + t) - special.psi(1 + d) + special.psi(1 + d + t))
+
+        B_ratio = special.beta(e + 1, z) / special.beta(e, z)
+
+        dEde = B_ratio * (special.psi(e + 1) - special.psi(e + z + 1) - special.psi(e) + special.psi(e + z))
+        dEdz = B_ratio * (special.psi(e + z) - special.psi(e + z + 1))
+
+        Cov = np.matrix(C)
+        dE = np.array([[dEda], [dEdb], [dEdg], [dEdd], [dEde], [dEdz]])
+
+        return math.sqrt(float(dE.transpose() * Cov * dE))
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """

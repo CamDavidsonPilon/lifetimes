@@ -23,7 +23,6 @@ def test_BGBB_generation():
     assert 'p' in gen_data
     assert 'theta' in gen_data
     assert 'alive' in gen_data
-    assert 'id' in gen_data
 
 
 @pytest.mark.BGBB
@@ -218,6 +217,7 @@ def test_BGBB_fitting_time():
         compressed_data[size] = compress_data(data)
 
     times = {}
+    lengths = {}
     for size in sizes:
         fitter = est.BGBBFitter()
         start_time = timeit.default_timer()
@@ -225,8 +225,10 @@ def test_BGBB_fitting_time():
                    N=compressed_data[size]['N'], initial_params=params.values())
         t1 = timeit.default_timer() - start_time
         times[size] = t1
+        lengths[size] = len(compressed_data[size])
 
     print times
+    print lengths
 
 
 @pytest.mark.BGBB
