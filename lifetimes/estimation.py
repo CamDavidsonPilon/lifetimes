@@ -11,7 +11,8 @@ from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
-
+import ctypes as ct
+import timeit
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 
@@ -573,6 +574,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2 + A_3 + log(exp(A_4) + 1.)).sum() + penalizer_term
 
+
+
     def expected_number_of_purchases_up_to_time(self, t):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
@@ -666,7 +669,7 @@ class BGBBFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None):
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None, c_likelihood_lib = None):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -704,7 +707,20 @@ class BGBBFitter(BaseFitter):
         else:
             return -ll.sum()
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
+    @staticmethod
+    def _c_negative_log_likelihood(params, x, tx, T, N, n_samples, c_likelihood_lib):
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        # putting parameters into c_double
+        a = ct.c_double(params[0])
+        b = ct.c_double(params[1])
+        g = ct.c_double(params[2])
+        d = ct.c_double(params[3])
+
+        return c_likelihood_lib.bgbb_likelihood(a, b, g, d, x, tx, T, N, n_samples)
+
+    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None,c_likelihood_lib = None):
         """
         This methods fits the data to the BG/BB discrete-time model.
 
@@ -722,6 +738,9 @@ class BGBBFitter(BaseFitter):
         Returns:
             self, with additional properties and methods like params_ and plot
         """
+        if c_likelihood_lib is not None:
+            return self.fit_c(frequency, recency, T, iterative_fitting, initial_params, verbose, N, c_likelihood_lib)
+
         frequency = asarray(frequency)
         recency = asarray(recency)
         T = asarray(T)
@@ -735,6 +754,7 @@ class BGBBFitter(BaseFitter):
                                                           initial_params,
                                                           4,
                                                           verbose)
+
         else:
             params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                           [frequency, recency, T, self.penalizer_coef],
@@ -748,6 +768,23 @@ class BGBBFitter(BaseFitter):
         self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
 
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
+        return self
+
+    def fit_c(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None, c_likelihood_lib = None):
+        n = len(N)
+        n_samples = ct.c_int(n)
+        int_n_size_array = ct.c_float * n
+
+        x = int_n_size_array(*frequency)
+        tx = int_n_size_array(*recency)
+        T = int_n_size_array(*T)
+        N = int_n_size_array(*N)
+
+        params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,[x, tx, T, N, n_samples, c_likelihood_lib], iterative_fitting, initial_params, 4, verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
         return self
 
     def expected_number_of_purchases_up_to_time(self, t):

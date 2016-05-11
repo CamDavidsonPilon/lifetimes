@@ -19,7 +19,7 @@ class Model(object):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=1):
+    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=1, c_likelihood_lib = None):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -30,7 +30,7 @@ class Model(object):
             N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
         """
         self.fitter.fit(frequency=frequency, recency=recency, T=T, N=N, initial_params=initial_params,
-                        iterative_fitting=iterative_fitting)
+                        iterative_fitting=iterative_fitting, c_likelihood_lib = c_likelihood_lib)
 
         self.params = self.fitter.params_
 
@@ -39,7 +39,7 @@ class Model(object):
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
         else:
             data = pd.DataFrame({'frequency': frequency, 'recency': recency, 'T': T, 'N': N})
-            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
+            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True, c_likelihood_lib = c_likelihood_lib)
 
     @abstractmethod
     def generateData(self, t, parameters, size):
@@ -53,7 +53,7 @@ class Model(object):
         """
         pass
 
-    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
+    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False, c_likelihood_lib  = None):
         """
         Calculate parameter covariance Matrix by bootstrapping trainig data.
 
@@ -80,8 +80,8 @@ class Model(object):
                 N = data['N']
                 N_sum = sum(N)
                 prob = [float(n) / N_sum for n in N]
-                sampled_N = np.random.multinomial(N_sum, prob, size=1)
-                tmp_fitter.fit(data['frequency'], data['recency'], data['T'], N=sampled_N)
+                sampled_N = np.random.multinomial(N_sum, prob, size = 1)
+                tmp_fitter.fit(frequency=data['frequency'],recency = data['recency'], T = data['T'], N = sampled_N[0], c_likelihood_lib = c_likelihood_lib)
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []
