@@ -37,6 +37,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
 
     """
+
     def to_period(d):
         return d.to_period(freq)
 
@@ -48,14 +49,19 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     # create calibration dataset
     calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
-    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
-                                                                  datetime_format, observation_period_end=calibration_period_end, freq=freq)
+    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col,
+                                                                  datetime_col,
+                                                                  datetime_format,
+                                                                  observation_period_end=calibration_period_end,
+                                                                  freq=freq)
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
     # create holdout dataset
-    holdout_transactions = transactions.ix[(observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)]
+    holdout_transactions = transactions.ix[
+        (observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
-    holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
+    holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(
+        level=customer_id_col).agg(['count'])
     holdout_summary_data.columns = ['frequency_holdout']
 
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
@@ -126,7 +132,8 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     return period_transactions[select_columns]
 
 
-def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
+def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None,
+                                       datetime_format=None,
                                        observation_period_end=datetime.today(), freq='D'):
     """
     This transforms a Dataframe of transaction data of the form:
@@ -176,7 +183,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         # those values will be excluded from the mean value calculation
         repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
 
-        customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
+        customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(
+            0)
         summary_columns.append('monetary_value')
 
     return customers[summary_columns].astype(float)
@@ -204,15 +212,17 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     # add cumulative transactions column
     customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
     # Add t_x column
-    customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
+    customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan,
+                                                         axis=1)
     customer_history['recency'] = customer_history['recency'].fillna(method='ffill').fillna(0)
-    return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
+    return customer_history.apply(
+        lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'Powell', 'BFGS']
+    methods = ['Powell', 'Nelder-Mead', 'BFGS']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
@@ -228,25 +238,54 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     return minimizing_params, np.min(ll)
 
 
+def _fit_with_method(minimizing_function, minimizing_function_args, initial_params, params_size, disp, fit_method='BFGS', jac=None, hess=None):
+    """
+    Kinda wrapper of minimize. By MM
+    Args:
+        minimizing_function:
+        minimizing_function_args:
+        initial_params:
+        params_size:
+        disp:
+        fit_method:
+        jac:
+        hess:
+
+    Returns: minimizing_params, ll
+
+    """
+    def _func_caller(params, func_args, function):
+        return function(params, *func_args)
+
+    params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
+    output = minimize(_func_caller, method=fit_method, tol=1e-6,
+                      x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
+    ll = output.fun
+    minimizing_params = output.x
+    return minimizing_params, ll
+
+
 def _scale_time(age):
     # create a scalar such that the maximum age is 10.
     return 10. / age.max()
 
 
-def _check_inputs(frequency, recency, T, N=None, frequency_purchases = None):
-
+def _check_inputs(frequency, recency, T, N=None, frequency_purchases=None):
     def check_recency_is_less_than_T(recency, T):
         if np.any(recency > T):
-            raise ValueError("""Some values in recency vector are larger than T vector. This is impossible according to the model.""")
+            raise ValueError(
+                """Some values in recency vector are larger than T vector. This is impossible according to the model.""")
 
     def check_frequency_of_zero_implies_recency_of_zero(frequency, recency):
         ix = frequency == 0
         if np.any(recency[ix] != 0):
-            raise ValueError("""There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
+            raise ValueError(
+                """There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
 
     def check_all_frequency_values_are_integer_values(frequency):
         if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
-            raise ValueError("""There exist non-integer values in the frequency vector. This is impossible according to the model.""")
+            raise ValueError(
+                """There exist non-integer values in the frequency vector. This is impossible according to the model.""")
 
     check_recency_is_less_than_T(recency, T)
     check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
@@ -257,10 +296,12 @@ def _check_inputs(frequency, recency, T, N=None, frequency_purchases = None):
     if frequency_purchases is not None:
         check_all_frequency_values_are_integer_values(frequency_purchases)
         if np.any(frequency_purchases > frequency + 1):
-            raise ValueError("""Some values in frequency_purchases vector are larger than frequency + 1 vector. This is impossible according to the model.""")
+            raise ValueError(
+                """Some values in frequency_purchases vector are larger than frequency + 1 vector. This is impossible according to the model.""")
 
 
-def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12,
+                            discount_rate=1):
     """
     This method computes the average lifetime value for a group of one or more customers.
         transaction_prediction_model: the model to predict future transactions, literature uses
@@ -276,12 +317,14 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         Series object with customer ids as index and the estimated customer lifetime values as values
     """
     df = pd.DataFrame(index=frequency.index)
-    df['clv'] = 0 # initialize the clv column to zeros
+    df['clv'] = 0  # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
         # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
-        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
+        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency,
+                                                                               T) - transaction_prediction_model.predict(
+            i - 30, frequency, recency, T)
         # sum up the CLV estimates of all of the periods
-        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate)**(i / 30) 
+        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
 
-    return df['clv'] # return as a series
+    return df['clv']  # return as a series

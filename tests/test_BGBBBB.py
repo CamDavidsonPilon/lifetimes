@@ -271,6 +271,8 @@ def test_BGBBBB_fitting_time():
         times[size] = t1
         lengths[size] = len(compressed_data[size])
 
+    print params
+    print fitter.params_
     print times
     print lengths
 

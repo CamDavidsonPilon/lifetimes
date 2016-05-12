@@ -134,7 +134,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -353,7 +353,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -536,7 +536,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def __init__(self, penalizer_coef=0.):
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the MBG/NBD model.
         Parameters:
@@ -720,7 +720,7 @@ class BGBBFitter(BaseFitter):
 
         return c_likelihood_lib.bgbb_likelihood(a, b, g, d, x, tx, T, N, n_samples)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N=None,c_likelihood_lib = None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None,c_likelihood_lib = None):
         """
         This methods fits the data to the BG/BB discrete-time model.
 
@@ -770,7 +770,7 @@ class BGBBFitter(BaseFitter):
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
         return self
 
-    def fit_c(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, N = None, c_likelihood_lib = None):
+    def fit_c(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N = None, c_likelihood_lib = None):
         n = len(N)
         n_samples = ct.c_int(n)
         int_n_size_array = ct.c_float * n
@@ -911,7 +911,7 @@ class BGBBBBFitter(BaseFitter):
         sub_params = a, b, g, d
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
-    def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=1, initial_params=None, verbose=False,
+    def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=0, initial_params=None, verbose=False,
             N=None):
         """
         This methods fits the data to the BG/BB/BB discrete-time model.
