@@ -1108,19 +1108,19 @@ class BGBBBBFitter(BaseFitter):
 
         B_ratio = special.beta(e + 1, z) / special.beta(e, z)
 
-        dEda = B_ratio * b / (a + b) * E
-        dEdb = B_ratio * (- 1.0 / (a + b) * E)
+        dEda = b / (a + b) * E
+        dEdb = - 1.0 / (a + b) * E
 
-        dEdg = B_ratio * (- E / (g - 1) + R * (special.psi(g + d) - special.psi(g + d + t)))
-        dEdd = B_ratio * E / d + R * (special.psi(g + d) - special.psi(g + d + t) - special.psi(1 + d) + special.psi(1 + d + t))
+        dEdg = - E / (g - 1) + R * (special.psi(g + d) - special.psi(g + d + t))
+        dEdd = E / d + R * (special.psi(g + d) - special.psi(g + d + t) - special.psi(1 + d) + special.psi(1 + d + t))
 
-        dEde = B_ratio * (special.psi(e + 1) - special.psi(e + z + 1) - special.psi(e) + special.psi(e + z))
-        dEdz = B_ratio * (special.psi(e + z) - special.psi(e + z + 1))
+        dEde = (1.0 + E) * (special.psi(e + 1) - special.psi(e + z + 1) - special.psi(e) + special.psi(e + z))
+        dEdz = (1.0 + E) * (special.psi(e + z) - special.psi(e + z + 1))
 
         Cov = np.matrix(C)
         dE = np.array([[dEda], [dEdb], [dEdg], [dEdd], [dEde], [dEdz]])
 
-        return math.sqrt(float(dE.transpose() * Cov * dE))
+        return math.fabs(B_ratio) * math.sqrt(float(dE.transpose() * Cov * dE))
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """
