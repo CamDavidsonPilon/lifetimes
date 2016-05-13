@@ -97,6 +97,62 @@ def test_BGBB_new_likelyhood():
 
 
 @pytest.mark.BGBB
+def test_likelyhood_with_jacobian():
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+
+    # test simgle number as inputs
+    freq = 1
+    rec = 1
+    T = 2
+    ll0 = est.BGBBFitter._negative_log_likelihood(params.values(), freq, rec, T, penalizer_coef=0, N=None)
+
+    ll, d_ll = est.BGBBFitter._negative_log_likelihood(params.values(), freq, rec, T, penalizer_coef=0, N=None,
+                                                       jac=True)
+
+    assert ll == ll0
+    assert len(d_ll) == 4
+
+    # test np.arrays as inputs
+    freq = np.array([1, 0])
+    rec = np.array([1, 0])
+    T = np.array([2, 2])
+    ll0 = est.BGBBFitter._negative_log_likelihood(params.values(), freq, rec, T, penalizer_coef=0, N=None)
+
+    ll, d_ll = est.BGBBFitter._negative_log_likelihood(params.values(), freq, rec, T, penalizer_coef=0, N=None,
+                                                       jac=True)
+
+    assert ll == ll0
+    assert len(d_ll) == 4
+
+
+@pytest.mark.BGBB
+def test_BGBB_fitting_with_jacobian():
+    T = 50
+    size = 5000
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+
+    data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
+
+    compressed_data = compress_data(data)
+
+    fitter = est.BGBBFitter()
+
+    fitter.fit(compressed_data['frequency'], compressed_data['recency'], compressed_data['T'],
+                          N=compressed_data['N'], initial_params=params.values(), jac=False)
+
+    print params
+    print "Without jacobian:"
+    print fitter.params_
+
+    fitter.fit(compressed_data['frequency'], compressed_data['recency'], compressed_data['T'],
+                          N=compressed_data['N'], initial_params=params.values(), jac=True)
+
+    print params
+    print "With jacobian:"
+    print fitter.params_
+
+
+@pytest.mark.BGBB
 def test_BGBB_fitting_compressed_or_not():
     T = 10
     size = 1000
@@ -208,7 +264,7 @@ def test_BGBB_fitting_with_different_T_windows():
 @pytest.mark.BGBB
 def test_BGBB_fitting_time():
     T = 100
-    sizes = [10, 100, 1000]
+    sizes = [10, 100, 1000, 10000]
     params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
 
     compressed_data = {}
@@ -222,7 +278,7 @@ def test_BGBB_fitting_time():
         fitter = est.BGBBFitter()
         start_time = timeit.default_timer()
         fitter.fit(compressed_data[size]['frequency'], compressed_data[size]['recency'], compressed_data[size]['T'],
-                   N=compressed_data[size]['N'], initial_params=params.values())
+                   N=compressed_data[size]['N'], initial_params=params.values(), jac=False)
         t1 = timeit.default_timer() - start_time
         times[size] = t1
         lengths[size] = len(compressed_data[size])

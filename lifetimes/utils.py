@@ -219,7 +219,8 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
         lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
-def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
+def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp,
+         jac=False):
     ll = []
     sols = []
     methods = ['Powell', 'Nelder-Mead', 'BFGS']
@@ -227,42 +228,25 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
 
-    for i in range(iterative_fitting + 1):
-        fit_method = methods[i % len(methods)]
+    if jac:
         params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
-        output = minimize(_func_caller, method=fit_method, tol=1e-6,
-                          x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
-        ll.append(output.fun)
-        sols.append(output.x)
-    minimizing_params = sols[np.argmin(ll)]
-    return minimizing_params, np.min(ll)
-
-
-def _fit_with_method(minimizing_function, minimizing_function_args, initial_params, params_size, disp, fit_method='BFGS', jac=None, hess=None):
-    """
-    Kinda wrapper of minimize. By MM
-    Args:
-        minimizing_function:
-        minimizing_function_args:
-        initial_params:
-        params_size:
-        disp:
-        fit_method:
-        jac:
-        hess:
-
-    Returns: minimizing_params, ll
-
-    """
-    def _func_caller(params, func_args, function):
-        return function(params, *func_args)
-
-    params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
-    output = minimize(_func_caller, method=fit_method, tol=1e-6,
-                      x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
-    ll = output.fun
-    minimizing_params = output.x
-    return minimizing_params, ll
+        output = minimize(_func_caller, method='BFGS', tol=1e-6,
+                          x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp},
+                          jac=jac)
+        ll = output.fun
+        minimizing_params = output.x
+        return minimizing_params, ll
+    else:
+        for i in range(iterative_fitting + 1):
+            fit_method = methods[i % len(methods)]
+            params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
+            output = minimize(_func_caller, method=fit_method, tol=1e-6,
+                              x0=params_init, args=(minimizing_function_args, minimizing_function),
+                              options={'disp': disp})
+            ll.append(output.fun)
+            sols.append(output.x)
+        minimizing_params = sols[np.argmin(ll)]
+        return minimizing_params, np.min(ll)
 
 
 def _scale_time(age):

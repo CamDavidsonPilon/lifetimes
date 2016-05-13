@@ -13,6 +13,7 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
 from lifetimes.formulas import gamma_ratio
 import ctypes as ct
 import timeit
+
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 
@@ -574,8 +575,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2 + A_3 + log(exp(A_4) + 1.)).sum() + penalizer_term
 
-
-
     def expected_number_of_purchases_up_to_time(self, t):
         """
         Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
@@ -669,9 +668,26 @@ class BGBBFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None, c_likelihood_lib = None):
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None, c_likelihood_lib=None, jac=False):
+        """
+
+        Args:
+            params:
+            freq:
+            rec:
+            T:
+            penalizer_coef:
+            N:
+            c_likelihood_lib:
+            jac:        if true, returns also the gradient of the likelyhood
+
+        Returns:
+
+        """
 
         if npany(asarray(params) <= 0.):
+            if jac:
+                return np.inf, np.array([0, 0, 0, 0])
             return np.inf
 
         a, b, g, d = params
@@ -700,12 +716,69 @@ class BGBBFitter(BaseFitter):
                 i = np.arange(max_i[j] + 1)  # all indexes
                 numerator[j] += np.sum(special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i))
 
-        ll = np.log(numerator / denominator)  # this converts the terms in a no object on which you can call sum()
+        Lj = numerator / denominator
+        llj = np.log(Lj)  # this converts the terms in a no object on which you can call sum()
 
         if N is not None:
-            return -(ll * N).sum()
+            ll = -(llj * N).sum()
         else:
-            return -ll.sum()
+            ll = -llj.sum()
+
+        if jac is False:
+            return ll
+        else:
+            # calculate the gradient
+
+            first_terms_j = np.array([special.psi(a + b) - special.psi(a),
+                                      special.psi(a + b) - special.psi(b),
+                                      special.psi(g + d) - special.psi(g),
+                                      special.psi(g + d) - special.psi(d)
+                                      ])
+
+            BjBj = special.beta(a + x, b + T - x) * special.beta(g, d + T)
+
+            if isinstance(x, float) or isinstance(x, int):
+                # x is a single number
+                i = np.arange(int(T - tx - 1) + 1)
+                BiBi = special.beta(a + x, b + tx - x + i) * special.beta(g + 1, d + tx + i)
+                sum_term_a = np.sum(BiBi * (special.psi(a + x) - special.psi(a + b + tx + i)))
+                sum_term_b = np.sum(BiBi * (special.psi(b + tx - x + i) - special.psi(a + b + tx + i)))
+                sum_term_g = np.sum(BiBi * (special.psi(g + 1) - special.psi(g + d + tx + i + 1)))
+                sum_term_d = np.sum(BiBi * (special.psi(d + tx + i) - special.psi(g + d + tx + i + 1)))
+            else:
+                sum_term_a = np.array([0.0] * len(x))
+                sum_term_b = np.array([0.0] * len(x))
+                sum_term_g = np.array([0.0] * len(x))
+                sum_term_d = np.array([0.0] * len(x))
+
+                max_i = (T - tx - 1).astype(int)
+                for j in range(len(max_i)):
+                    xj = x[j]
+                    txj = tx[j]
+                    i = np.arange(max_i[j] + 1)  # all indexes
+                    BjiBji = special.beta(a + xj, b + txj - xj + i) * special.beta(g + 1, d + txj + i)
+                    sum_term_a[j] += np.sum(BjiBji * (special.psi(a + xj) - special.psi(a + b + txj + i)))
+                    sum_term_b[j] += np.sum(BjiBji * (special.psi(b + txj - xj + i) - special.psi(a + b + txj + i)))
+                    sum_term_g[j] += np.sum(BjiBji * (special.psi(g + 1) - special.psi(g + d + txj + i + 1)))
+                    sum_term_d[j] += np.sum(BjiBji * (special.psi(d + txj + i) - special.psi(g + d + txj + i + 1)))
+
+            dLjda = first_terms_j[0] * Lj + 1.0 / denominator * (
+                BjBj * (special.psi(a + x) - special.psi(a + b + T)) + sum_term_a)
+            dLjdb = first_terms_j[1] * Lj + 1.0 / denominator * (
+                BjBj * (special.psi(b + T - x) - special.psi(a + b + T)) + sum_term_b)
+            dLjdg = first_terms_j[2] * Lj + 1.0 / denominator * (
+                BjBj * (special.psi(g) - special.psi(g + d + T)) + sum_term_g)
+            dLjdd = first_terms_j[3] * Lj + 1.0 / denominator * (
+                BjBj * (special.psi(d + T) - special.psi(g + d + T)) + sum_term_d)
+
+            if N is not None:
+                d_ll = np.array([-(dLjda / Lj * N).sum(), -(dLjdb / Lj * N).sum(), -(dLjdg / Lj * N).sum(),
+                                 -(dLjdd / Lj * N).sum()])
+            else:
+                d_ll = np.array([-(dLjda / Lj).sum(), -(dLjdb / Lj).sum(), -(dLjdg / Lj).sum(),
+                                 -(dLjdd / Lj).sum()])
+
+            return ll, d_ll
 
     @staticmethod
     def _c_negative_log_likelihood(params, x, tx, T, N, n_samples, c_likelihood_lib):
@@ -720,7 +793,8 @@ class BGBBFitter(BaseFitter):
 
         return c_likelihood_lib.bgbb_likelihood(a, b, g, d, x, tx, T, N, n_samples)
 
-    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None,c_likelihood_lib = None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None,
+            c_likelihood_lib=None, jac=False):
         """
         This methods fits the data to the BG/BB discrete-time model.
 
@@ -733,7 +807,7 @@ class BGBBFitter(BaseFitter):
                 hurt estimates.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
-            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency, T
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -749,19 +823,21 @@ class BGBBFitter(BaseFitter):
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
             params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, self.penalizer_coef, N],
+                                                          [frequency, recency, T, self.penalizer_coef, N, None, jac],
                                                           iterative_fitting,
                                                           initial_params,
                                                           4,
-                                                          verbose)
+                                                          verbose,
+                                                          jac)
 
         else:
             params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, self.penalizer_coef],
+                                                          [frequency, recency, T, self.penalizer_coef, None, None, jac],
                                                           iterative_fitting,
                                                           initial_params,
                                                           4,
-                                                          verbose)
+                                                          verbose,
+                                                          jac)
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -770,7 +846,8 @@ class BGBBFitter(BaseFitter):
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
         return self
 
-    def fit_c(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N = None, c_likelihood_lib = None):
+    def fit_c(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None,
+              c_likelihood_lib=None):
         n = len(N)
         n_samples = ct.c_int(n)
         int_n_size_array = ct.c_float * n
@@ -780,7 +857,9 @@ class BGBBFitter(BaseFitter):
         T = int_n_size_array(*T)
         N = int_n_size_array(*N)
 
-        params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,[x, tx, T, N, n_samples, c_likelihood_lib], iterative_fitting, initial_params, 4, verbose)
+        params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,
+                                                      [x, tx, T, N, n_samples, c_likelihood_lib], iterative_fitting,
+                                                      initial_params, 4, verbose)
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
