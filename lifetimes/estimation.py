@@ -12,7 +12,6 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
     bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
 import ctypes as ct
-import timeit
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 

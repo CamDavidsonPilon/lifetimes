@@ -38,3 +38,6 @@ double bgbb_likelihood(double a, double b,double g, double d,float* x,float* tx,
     return -res;
 }
 
+double bgbbbb_likelihood(double a, double b,double g, double d,double ,float* x,float* tx,float* T,float* N,int n_samples){
+
+}

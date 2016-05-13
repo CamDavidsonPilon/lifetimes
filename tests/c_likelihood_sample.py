@@ -8,7 +8,7 @@ import timeit
 def test_BGBB_integration_in_models(c_likelihood_lib, title):
     T = 10
     size = 10000
-    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+    params = {'alpha': 0.56, 'beta': 1.17, 'gamma': 0.38, 'delta': 1.13}
 
     data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
 
