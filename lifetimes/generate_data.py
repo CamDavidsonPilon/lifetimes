@@ -427,3 +427,43 @@ def generate_pareto_data_for_T_N(T, N, params):
         new_data = pareto.generateData(t, params, N)
         data = pd.concat([data, new_data])
     return data
+
+
+def compress_transaction_data(user_actions):
+    """
+    Takes the results of uncompressed data generation from a model, in the form of dictionary
+    [(T,[t1,...tx])]
+    and yields compressed lists (ns, Ns) yielding number of observations/successes for each day from install
+    ranging from 0 to T_max
+    Args:
+        user_actions: dictionary [(T,[t1,...tx])]
+
+    Returns: (ns, Ns)
+
+    """
+
+    if len(user_actions) < 1:
+        return None, None
+
+    ns = []
+    Ns = []
+    for action in user_actions:
+        T, ts = action
+
+        #increment array size (if needed)
+        while len(Ns) <= T:
+            ns.append(0)
+            Ns.append(0)
+
+        # fill Ns
+        Ns = [N + 1 for N in Ns]
+
+        # fill ns
+        ns[0] += 1
+
+        for t in ts:
+            if t > T:
+                raise ValueError("t cannot be larger than T")
+            ns[t] += 1
+
+    return ns, Ns
