@@ -258,6 +258,8 @@ class BGBBBBModel(Model):
         super(BGBBBBModel, self).__init__()
         self.fitter = BGBBBBFitter()
         self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
+        self.hess = None
+        self.jac = None
 
     def generateData(self, t, parameters, size):
         return gen.bgbbbb_model(t, parameters['alpha'],
@@ -269,7 +271,7 @@ class BGBBBBModel(Model):
                                 size)
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None,
-            iterative_fitting=1, frequency_purchases=None, c_fit = True):
+            iterative_fitting=1, frequency_purchases=None, c_fit = False):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -280,8 +282,13 @@ class BGBBBBModel(Model):
             N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
             frequency_purchases:  the frequency vector of customers' purchases --> Must be a valid array
         """
+
         if frequency_purchases is None:
             raise ValueError("You must provide a valid vector of frequency_purchases")
+
+        if c_fit:
+            if len(frequency) < 100 and (max(T) - min(T) < 30):
+                c_fit = False
 
         self.fitter.fit(frequency=frequency, recency=recency, T=T, frequency_purchases=frequency_purchases, N=N,
                         initial_params=initial_params,
@@ -298,7 +305,7 @@ class BGBBBBModel(Model):
                 {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_purchases': frequency_purchases,'N': N})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True, c_fit=c_fit)
 
-    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False, c_fit = True):
+    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False, c_fit = False):
 
         if not all(column in data.columns for column in ['frequency', 'recency', 'T', 'frequency_purchases']):
             raise ValueError("given data do not contain the 4 magic columns.")

@@ -20,6 +20,8 @@ c_lib.bgbbbb_likelihood.restype = ct.c_double
 c_lib.bgbb_likelihood.restype = ct.c_double
 c_lib.bgbbbb_likelihood_compressed.restype = ct.c_double
 c_lib.bgbb_likelihood_compressed.restype = ct.c_double
+c_lib.bgbbbb_likelihood_compressed_optimized.restype = ct.c_double
+c_lib.bgbbbb_likelihood_compressed_float.restype = ct.c_double
 
 class BaseFitter(object):
     def __repr__(self):
@@ -990,7 +992,7 @@ class BGBBBBFitter(BaseFitter):
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
     @staticmethod
-    def _c_negative_log_likelihood(params, x, tx, T, xp, N, n_samples, c_lib):
+    def _c_negative_log_likelihood(params, x, tx, T, xp, N, n_samples):
         if npany(asarray(params) <= 0.):
             return np.inf
 
@@ -1065,8 +1067,8 @@ class BGBBBBFitter(BaseFitter):
         if N is not None:
             N = int_n_size_array(*N)
         params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,
-                                                      [x, tx, T, xp, N, n_samples, c_lib], iterative_fitting,
-                                                      initial_params, 6, verbose)
+                                                                           [x, tx, T, xp, N, n_samples], iterative_fitting,
+                                                                           initial_params, 6, verbose)
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta','epsilon','zeta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
