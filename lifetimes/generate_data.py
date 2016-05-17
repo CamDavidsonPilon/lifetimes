@@ -200,7 +200,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     return df.set_index('customer_id')
 
 
-def bgbb_model(T, alpha, beta, gamma, delta, size=1):
+def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
     """
     Generate artificial data according to the discrete BG/BB model.
 
@@ -228,9 +228,11 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1):
     # Generate hidden parameters fo all costumers
     ps = stats.beta.rvs(alpha, beta, size=size)  # probability of purchasing while alive
     thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
-
-    columns = ['frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id']
-    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+    if transactional:
+        users = []
+    else:
+        columns = ['frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id']
+        df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
         p = ps[i]  # probability of purchasing, if alive
@@ -243,20 +245,77 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1):
 
         # start testing from t = 1
         t = 1
+        ts = []
         while t <= T[i]:
             alive = np.random.random() > theta
             if alive:
                 purchases = np.random.random() <= p
                 if purchases:
                     x += 1
-                    tx = t
+                    ts.append(t)
                 t += 1
             else:
                 break
+        if transactional:
+            users.append((T[i],ts))
+        else:
+            df.ix[i] = x, len(ts), T[i], p, theta, alive, i
+    if transactional:
+        return users
+    else:
+        return df.set_index('customer_id')
 
-        df.ix[i] = x, tx, T[i], p, theta, alive, i
+def bgbb_model_transactional(T, alpha, beta, gamma, delta, size=1):
+    """
+    Generate artificial data according to the discrete BG/BB model.
 
-    return df.set_index('customer_id')
+    Parameters:
+        T: scalar, the length of time observing new customers.
+        alpha, beta, gamma, delta: scalars, representing parameters in the model. See [2]
+        size: the number of customers to generate, equal to size of T if T is
+           an array.
+
+    Returns:
+        DataFrame, with index as customer_ids and the following columns:
+        'frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id'
+    """
+    if size < 1:
+        raise ValueError("size must be positive")
+
+    if alpha <= 0 or beta <= 0 or gamma <= 0 or delta <= 0:
+        raise ValueError("Parameters of beta distribution must all be positive")
+    # Generate hidden parameters fo all costumers
+    ps = stats.beta.rvs(alpha, beta, size=size)  # probability of purchasing while alive
+    thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
+
+    users = []
+
+    for i in range(size):
+        p = ps[i]  # probability of purchasing, if alive
+        theta = thetas[i]  # probability of dying
+
+        # initial conditions (buys at 0)
+        x = 0
+        tx = 0
+
+        # start testing from t = 1
+        t = 1
+        ts = []
+        while t <= T:
+            alive = np.random.random() > theta
+            if alive:
+                purchases = np.random.random() <= p
+                if purchases:
+                    x += 1
+                    ts.append(t)
+                t += 1
+            else:
+                break
+        users.append((T,ts))
+
+    return users
+
+
 
 
 def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1, time_first_purchase=False, death_time=False):

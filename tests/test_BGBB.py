@@ -23,6 +23,7 @@ def test_BGBB_generation():
     assert 'p' in gen_data
     assert 'theta' in gen_data
     assert 'alive' in gen_data
+    print gen_data
 
 
 @pytest.mark.BGBB
@@ -328,3 +329,14 @@ def test_BGBB_integration_in_models():
         assert 1 >= prob >= 0
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+@pytest.mark.BGBB
+def test_BGBBBB_transaction():
+    N = 10
+    T = 20
+    gen_data = gen.bgbb(T,0.3,5,0.6,10,N,True)
+    assert len(gen_data) == N
+    for user in gen_data:
+        for t in user[1]:
+            assert t != 0
+            assert user[0] == T
