@@ -201,7 +201,7 @@ def test_BGBBBB_additional_functions():
 
 @pytest.mark.BGBBBB
 def test_BGBBNN_fitting_with_different_T_windows():
-    size = 10
+    size = 50
     params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0}
 
     est_params = {}
