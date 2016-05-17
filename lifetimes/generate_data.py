@@ -228,11 +228,9 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
     # Generate hidden parameters fo all costumers
     ps = stats.beta.rvs(alpha, beta, size=size)  # probability of purchasing while alive
     thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
-    if transactional:
-        users = []
-    else:
-        columns = ['frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id']
-        df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+    users = []
+    columns = ['frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id']
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
         p = ps[i]  # probability of purchasing, if alive
