@@ -12,16 +12,17 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
     bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
 import ctypes as ct
+import os
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
-c_lib = ct.CDLL('/Users/enricomartinelli/lifetimes/c_utilities/betalib.so')
-c_lib.bgbbbb_likelihood.restype = ct.c_double
-c_lib.bgbb_likelihood.restype = ct.c_double
-c_lib.bgbbbb_likelihood_compressed.restype = ct.c_double
-c_lib.bgbb_likelihood_compressed.restype = ct.c_double
-c_lib.bgbbbb_likelihood_compressed_optimized.restype = ct.c_double
-c_lib.bgbbbb_likelihood_compressed_float.restype = ct.c_double
+# c_lib = ct.CDLL(os.path.join(os.path.dirname(__file__), 'c_utilities/betalib.so'))
+# c_lib.bgbbbb_likelihood.restype = ct.c_double
+# c_lib.bgbb_likelihood.restype = ct.c_double
+# c_lib.bgbbbb_likelihood_compressed.restype = ct.c_double
+# c_lib.bgbb_likelihood_compressed.restype = ct.c_double
+# c_lib.bgbbbb_likelihood_compressed_optimized.restype = ct.c_double
+# c_lib.bgbbbb_likelihood_compressed_float.restype = ct.c_double
 
 class BaseFitter(object):
     def __repr__(self):
