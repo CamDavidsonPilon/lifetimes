@@ -258,8 +258,6 @@ class BGBBBBModel(Model):
         super(BGBBBBModel, self).__init__()
         self.fitter = BGBBBBFitter()
         self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
-        self.hess = None
-        self.jac = None
 
     def generateData(self, t, parameters, size):
         return gen.bgbbbb_model(t, parameters['alpha'],
