@@ -334,7 +334,7 @@ def test_BGBB_integration_in_models():
 def test_BGBBBB_transaction():
     N = 10
     T = 20
-    gen_data = gen.bgbb(T,0.3,5,0.6,10,N,True)
+    gen_data = gen.bgbb_model(T,0.3,5,0.6,10,N,True)
     assert len(gen_data) == N
     for user in gen_data:
         for t in user[1]:

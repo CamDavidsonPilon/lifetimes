@@ -251,7 +251,6 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
             if alive:
                 purchases = np.random.random() <= p
                 if purchases:
-                    x += 1
                     ts.append(t)
                 t += 1
             else:
@@ -259,7 +258,11 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
         if transactional:
             users.append((T[i],ts))
         else:
-            df.ix[i] = x, len(ts), T[i], p, theta, alive, i
+            if len(ts) > 0:
+                tx = max(ts)
+            else:
+                tx = 0
+            df.ix[i] = len(ts), tx, T[i], p, theta, alive, i
     if transactional:
         return users
     else:
