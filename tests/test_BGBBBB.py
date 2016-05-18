@@ -3,10 +3,9 @@ import math
 import lifetimes.generate_data as gen
 import numpy as np
 import lifetimes.estimation as est
-from lifetimes.data_compression import compress_data, compress_session_purchase_data
+from lifetimes.data_compression import compress_session_purchase_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
-from scipy import special
 from lifetimes import models
 import pandas as pd
 
@@ -87,8 +86,6 @@ def test_BGBBBB_generation_with_time_death():
         cs[t] = p
         cs_err[t] = np.sqrt(1.0 / N * p * (1.0 - p))
 
-    conversion_data_frame = pd.DataFrame({'t': ts, 'c': cs, 'c_err': cs_err})
-    conversion_data_frame.to_csv("/Users/marcomeneghelli/Desktop/death_time_simulation.csv")
 
 
 @pytest.mark.BGBBBB

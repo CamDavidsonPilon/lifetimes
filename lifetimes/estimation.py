@@ -11,18 +11,9 @@ from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
-import ctypes as ct
-import os
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
-# c_lib = ct.CDLL(os.path.join(os.path.dirname(__file__), 'c_utilities/betalib.so'))
-# c_lib.bgbbbb_likelihood.restype = ct.c_double
-# c_lib.bgbb_likelihood.restype = ct.c_double
-# c_lib.bgbbbb_likelihood_compressed.restype = ct.c_double
-# c_lib.bgbb_likelihood_compressed.restype = ct.c_double
-# c_lib.bgbbbb_likelihood_compressed_optimized.restype = ct.c_double
-# c_lib.bgbbbb_likelihood_compressed_float.restype = ct.c_double
 
 class BaseFitter(object):
     def __repr__(self):
@@ -787,22 +778,7 @@ class BGBBFitter(BaseFitter):
 
             return ll, d_ll
 
-    @staticmethod
-    def _c_negative_log_likelihood(params, x, tx, T, N, n_samples):
-        if npany(asarray(params) <= 0.):
-            return np.inf
-
-        # putting parameters into c_double
-        a = ct.c_double(params[0])
-        b = ct.c_double(params[1])
-        g = ct.c_double(params[2])
-        d = ct.c_double(params[3])
-        if N is None:
-            return c_lib.bgbb_likelihood(a, b, g, d, x, tx, T, n_samples)
-        else:
-            return c_lib.bgbb_likelihood_compressed(a, b, g, d, x, tx, T, N, n_samples)
-
-    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None, jac=False, c_fit = False):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None, jac=False):
         """
         This methods fits the data to the BG/BB discrete-time model.
 
@@ -820,9 +796,6 @@ class BGBBFitter(BaseFitter):
         Returns:
             self, with additional properties and methods like params_ and plot
         """
-        if c_fit:
-            return self._fit_c(frequency, recency, T, iterative_fitting, initial_params, verbose, N)
-
         frequency = asarray(frequency)
         recency = asarray(recency)
         T = asarray(T)
@@ -845,26 +818,6 @@ class BGBBFitter(BaseFitter):
         self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
 
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
-        return self
-
-    def _fit_c(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N = None):
-        n = len(frequency)
-        n_samples = ct.c_int(n)
-        int_n_size_array = ct.c_float * n
-
-        x = int_n_size_array(*frequency)
-        tx = int_n_size_array(*recency)
-        T = int_n_size_array(*T)
-        if N is not None:
-            N = int_n_size_array(*N)
-
-        params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,
-                                                      [x, tx, T, N, n_samples], iterative_fitting,
-                                                      initial_params, 4, verbose)
-
-        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
-        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
         return self
 
     def expected_number_of_purchases_up_to_time(self, t):
@@ -992,25 +945,9 @@ class BGBBBBFitter(BaseFitter):
         sub_params = a, b, g, d
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
-    @staticmethod
-    def _c_negative_log_likelihood(params, x, tx, T, xp, N, n_samples):
-        if npany(asarray(params) <= 0.):
-            return np.inf
-
-        # putting parameters into c_double
-        a = ct.c_double(params[0])
-        b = ct.c_double(params[1])
-        g = ct.c_double(params[2])
-        d = ct.c_double(params[3])
-        e = ct.c_double(params[4])
-        z = ct.c_double(params[5])
-        if N is None:
-            return c_lib.bgbbbb_likelihood(a, b, g, d, e, z, x, tx, T, xp, n_samples)
-        else:
-            return c_lib.bgbbbb_likelihood_compressed(a, b, g, d, e, z, x, tx, T, xp, N, n_samples)
 
     def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=0, initial_params=None, verbose=False,
-            N=None, c_fit = False):
+            N=None):
         """
         This methods fits the data to the BG/BB/BB discrete-time model.
 
@@ -1029,9 +966,6 @@ class BGBBBBFitter(BaseFitter):
         Returns:
             self, with additional properties and methods like params_ and plot
         """
-
-        if c_fit:
-            return self._fit_c(frequency,recency,T,frequency_purchases,iterative_fitting,N=N)
 
         frequency = asarray(frequency)
         recency = asarray(recency)
@@ -1053,27 +987,6 @@ class BGBBBBFitter(BaseFitter):
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
         self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
 
-        return self
-
-    def _fit_c(self, frequency, recency, T, frequency_purchases, iterative_fitting=0, initial_params=None, verbose=False, N=None):
-        n = len(frequency)
-        n_samples = ct.c_int(n)
-        int_n_size_array = ct.c_float * n
-
-        x = int_n_size_array(*frequency)
-        tx = int_n_size_array(*recency)
-        T = int_n_size_array(*T)
-        xp = int_n_size_array(*frequency_purchases)
-
-        if N is not None:
-            N = int_n_size_array(*N)
-        params, self._negative_log_likelihood_ = _fit(self._c_negative_log_likelihood,
-                                                                           [x, tx, T, xp, N, n_samples], iterative_fitting,
-                                                                           initial_params, 6, verbose)
-
-        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta','epsilon','zeta'], params))
-        self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
         return self
 
     def expected_number_of_sessions_up_to_time(self, t):
