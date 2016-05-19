@@ -200,7 +200,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     return df.set_index('customer_id')
 
 
-def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
+def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional=False):
     """
     Generate artificial data according to the discrete BG/BB model.
 
@@ -254,7 +254,7 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
             else:
                 break
         if transactional:
-            users.append((T[i],ts))
+            users.append((T[i], ts))
         else:
             if len(ts) > 0:
                 tx = max(ts)
@@ -265,6 +265,7 @@ def bgbb_model(T, alpha, beta, gamma, delta, size=1, transactional = False):
         return users
     else:
         return df.set_index('customer_id')
+
 
 def bgbb_model_transactional(T, alpha, beta, gamma, delta, size=1):
     """
@@ -312,11 +313,9 @@ def bgbb_model_transactional(T, alpha, beta, gamma, delta, size=1):
                 t += 1
             else:
                 break
-        users.append((T,ts))
+        users.append((T, ts))
 
     return users
-
-
 
 
 def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1, time_first_purchase=False, death_time=False):
@@ -369,7 +368,7 @@ def bgbbbb_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1, time_first
         xp = 0
         has_purchased = False
         tfp = np.nan  # time_first_purchase
-        dt = np.nan # death_time
+        dt = np.nan  # death_time
 
         # first possibility of purchasing (the first day)
         purchases = np.random.random() <= pi
@@ -448,7 +447,7 @@ def compress_transaction_data(user_actions):
     for action in user_actions:
         T, ts = action
 
-        #increment array size (if needed)
+        # increment array size (if needed)
         while len(Ns) <= T:
             ns.append(0)
             Ns.append(0)
