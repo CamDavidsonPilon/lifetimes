@@ -48,7 +48,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     # create calibration dataset
     calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
-    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
+    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,monetary_value_col,
                                                                   datetime_format, observation_period_end=calibration_period_end, freq=freq)
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
