@@ -8,7 +8,8 @@ from pkg_resources import resource_filename
 __all__ = [
     'load_cdnow',
     'load_transaction_data',
-    'load_summary_data_with_monetary_value'
+    'load_summary_data_with_monetary_value',
+    'load_donations'
 ]
 
 
@@ -24,6 +25,8 @@ def load_dataset(filename, **kwargs):
     '''
     return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)
 
+def load_donations(**kwargs):
+    return load_dataset('donations.csv', **kwargs)
 
 def load_cdnow(**kwargs):
     return load_dataset('cdnow_customers.csv', **kwargs)
