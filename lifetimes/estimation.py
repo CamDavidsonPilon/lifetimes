@@ -716,6 +716,7 @@ class BGBBFitter(BaseFitter):
 
         Lj = numerator / denominator
         llj = np.log(Lj)  # this converts the terms in a no object on which you can call sum()
+        penalizer_term = penalizer_coef * log(params).sum()
 
         if N is not None:
             ll = -(llj * N).sum()
@@ -723,7 +724,7 @@ class BGBBFitter(BaseFitter):
             ll = -llj.sum()
 
         if jac is False:
-            return ll
+            return ll + penalizer_term
         else:
             # calculate the gradient
 
