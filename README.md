@@ -1,6 +1,6 @@
 ![logo](http://i.imgur.com/7s3jqZM.png)
 
-#### Measuring users is hard. Lifetimes makes it easy. 
+#### Measuring users is hard. Lifetimes makes it easy.
 [![Latest Version](https://pypip.in/v/lifetimes/badge.png)](https://pypi.python.org/pypi/lifetimes/)
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 [![Coverage Status](https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master)](https://coveralls.io/r/CamDavidsonPilon/lifetimes?branch=master)
@@ -23,16 +23,16 @@ If this is too abstract, consider these applications:
  - Predicting individuals who have churned from an app using only their usage history. (Alive = logins. Die = removed the app)
  - Predicting repeat purchases from a customer. (Alive = actively purchasing. Die = became disinterested with your product)
  - Predicting the lifetime values of your customers
- 
+
 ### Specific Application: Customer Lifetime Value
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
- 
+
 
 ## Installation
 
     pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas (and optionally-but-seriously matplotlib). 
+Requirements are only Numpy, Scipy, Pandas (and optionally-but-seriously matplotlib).
 
 ## Quickstart
 
@@ -44,7 +44,7 @@ For the following examples, we'll use a dataset from an ecommerce provider to an
     print data.head()
     """
          frequency   recency      T
-    ID 
+    ID
     1    2           30.43       38.86
     2    1            1.71       38.86
     3    0            0.00       38.86
@@ -55,14 +55,14 @@ For the following examples, we'll use a dataset from an ecommerce provider to an
 #### What do these columns represent?
 
 - `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases.   
-- `T` represents the age of the customer in whatever time units chosen (weekly above). This is equal to the duration between a customer's first purchase and the end of the period under study. 
+- `T` represents the age of the customer in whatever time units chosen (weekly above). This is equal to the duration between a customer's first purchase and the end of the period under study.
 - `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
 
-If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifelines to transform your data to look like this. 
+If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifelines to transform your data to look like this.
 
 #### Fitting models to our data
 
-We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf). 
+We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
 
     from lifetimes import BetaGeoFitter
 
@@ -87,9 +87,9 @@ Consider: a customer bought from you every day for three weeks straight, and we 
 ![fr_matrix](http://i.imgur.com/oYfTH0Dl.png)
 
 
-We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are your best customer (bottom-right). You coldest customers are those that in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks. 
+We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are your best customer (bottom-right). You coldest customers are those that in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks.
 
-There's also that beautiful "tail" around (5,25). That represents the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between purchases. 
+There's also that beautiful "tail" around (5,25). That represents the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between purchases.
 
 Another interesting matrix to look at is the probability of still being *alive*:
 
@@ -116,11 +116,11 @@ Let's return to our customers and rank them from "highest expected purchases in 
     1516  26          30.86        31.00    0.710623
     """
 
-Great, we can see that the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period. 
+Great, we can see that the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period.
 
 #### Assessing model fit
 
-Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artifical data simulated with your fitted model's parameters. 
+Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artifical data simulated with your fitted model's parameters.
 
     from lifetimes.plotting import plot_period_transactions
     plot_period_transactions(bgf)
@@ -169,7 +169,7 @@ With transactional data, we can partition the dataset into a calibration period 
 
     from lifetimes.utils import calibration_and_holdout_data
 
-    summary_cal_holdout = calibration_and_holdout_data(transaction_data, 'id', 'date', 
+    summary_cal_holdout = calibration_and_holdout_data(transaction_data, 'id', 'date',
                                             calibration_period_end='2014-09-01',
                                             observation_period_end='2014-12-31' )   
     print summary_cal_holdout.head()
@@ -205,7 +205,7 @@ Based on customer history, we can predict what an individuals future purchases m
 
 ### Customer Probability Histories
 
-Given a customer transaction history, we can calculate their historical probability of being alive, according to 
+Given a customer transaction history, we can calculate their historical probability of being alive, according to
 our trained model. For example:
 
     from lifetimes.plotting import plot_history_alive
@@ -228,7 +228,7 @@ from transactional data also containing economic values for each transaction (i.
     summary_with_money_value = load_summary_data_with_monetary_value()
     summary_with_money_value.head()
     returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency']>0]
-    
+
     returning_customers_summary.head()
     """
                  frequency  recency      T  monetary_value
@@ -241,9 +241,9 @@ from transactional data also containing economic values for each transaction (i.
     """
 
 #### The Gamma-Gamma model and the independence assumption
-The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma submodel, 
-which relies upon an important assumption. The Gamma-Gamma submodel, in fact, assumes that there is no 
-relationship between the monetary value and the purchase frequency. In practice we need to check whether 
+The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma submodel,
+which relies upon an important assumption. The Gamma-Gamma submodel, in fact, assumes that there is no
+relationship between the monetary value and the purchase frequency. In practice we need to check whether
 the Pearson correlation between the two vectors is close to 0 in order to use this model.
 
     returning_customers_summary[['monetary_value', 'frequency']].corr()
@@ -258,13 +258,13 @@ At this point we can train our Gamma-Gamma submodel and predict the conditional,
     from lifetimes import GammaGammaFitter
 
     ggf = GammaGammaFitter(penalizer_coef = 0)
-    ggf.fit(returning_customers_summary['frequency'], 
+    ggf.fit(returning_customers_summary['frequency'],
             returning_customers_summary['monetary_value'])
     print ggf    
     """
     <lifetimes.GammaGammaFitter: fitted with 946 subjects, p: 6.25, q: 3.74, v: 15.45>
     """
-    
+
 We can now estimate the average transaction value:
 
     print ggf.conditional_expected_average_profit(
@@ -298,7 +298,7 @@ We can now estimate the average transaction value:
     """
 
 While for computing the total CLV using the DCF method (https://en.wikipedia.org/wiki/Discounted_cash_flow) adjusting for cost of capital:
- 
+
     # refit the BG model to the summary_with_money_value dataset
     bgf.fit(summary_with_money_value['frequency'], summary_with_money_value['recency'], summary_with_money_value['T'])
 
@@ -309,26 +309,26 @@ While for computing the total CLV using the DCF method (https://en.wikipedia.org
         summary_with_money_value['T'],
         summary_with_money_value['monetary_value'],
         time=12, # months
-        discount_rate=0.7
+        discount_rate=0.01 # monthly discount rate ~ 12.7% annually
     ).head(10)
     """
     customer_id
-    1      27.535074
-    2       3.568358
-    3       6.598023
-    4       6.598023
-    5       6.598023
-    6     210.596327
-    7       5.294988
-    8       6.598023
-    9      32.905051
-    10      6.598023
+    1      140.096211
+    2       18.943467
+    3       38.180574
+    4       38.180574
+    5       38.180574
+    6     1003.868107
+    7       28.109683
+    8       38.180574
+    9      167.418216
+    10      38.180574
     Name: clv, dtype: float64
     """
 
-## Questions? Comments? 
+## Questions? Comments?
 
-Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)! 
+Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)!
 
 
 ## More Information
@@ -336,4 +336,3 @@ Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)!
 1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
 2. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
 3. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy Til You Die*).
-
