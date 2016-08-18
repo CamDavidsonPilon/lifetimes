@@ -52,7 +52,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         Marketing Science, 29 (6), 1086-1108.
 
     """
-    
+
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
@@ -289,7 +289,7 @@ class GammaGammaFitter(BaseFitter):
 
         return self
 
-    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=1):
+    def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
         """
         This method computes the average lifetime value for a group of one or more customers.
             transaction_prediction_model: the model to predict future transactions, literature uses
