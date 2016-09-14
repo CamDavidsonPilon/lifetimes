@@ -1,5 +1,5 @@
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBBFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBBFitter, BGBBBGFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
@@ -87,6 +87,8 @@ class Model(object):
         par_lists = []
         for par_name in self.param_names:
             par_lists.append([par[par_name] for par in par_estimates])
+
+        par_lists = remove_outliers_from_fitted_params(par_lists)
 
         x = np.vstack(par_lists)
         cov = np.cov(x)
@@ -249,6 +251,99 @@ class BGBBModel(Model):
             t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
 
 
+class BGBBBGModel(Model):
+    """
+       Fits a discrete-time BGBBBG to the data, and computes relevant metrics by mean of a simulation.
+     """
+
+    def __init__(self):
+        super(BGBBBGModel, self).__init__()
+        self.fitter = BGBBBGFitter()
+        self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
+
+    def generateData(self, t, parameters, size):
+        return gen.bgbbbg_model(t, parameters['alpha'],
+                                parameters['beta'],
+                                parameters['gamma'],
+                                parameters['delta'],
+                                parameters['epsilon'],
+                                parameters['zeta'],
+                                size)
+
+    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None,
+            iterative_fitting=1, frequency_before_conversion=None):
+        """
+        Fit the model to data, finding parameters and their errors, and assigning them to internal variables
+        Args:
+            frequency: the frequency vector of customers' sessions (denoted x in literature).
+            recency: the recency vector of customers' sessions (denoted t_x in literature).
+            T: the vector of customers' age (time since first purchase)
+            bootstrap_size: number of data-samplings used to address parameter uncertainty
+            N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
+            frequency_before_conversion:  the frequency vector of customers' sessions before first purchase--> Must be a valid array
+        """
+
+        if frequency_before_conversion is None:
+            raise ValueError("You must provide a valid vector of frequency_before_purchase")
+
+        self.fitter.fit(frequency=frequency, recency=recency, T=T, frequency_before_conversion=frequency_before_conversion, N=N,
+                        initial_params=initial_params,
+                        iterative_fitting=iterative_fitting)
+
+        self.params = self.fitter.params_
+
+        if N is None:
+            data = pd.DataFrame(
+                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion})
+            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
+        else:
+            data = pd.DataFrame(
+                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion, 'N': N})
+            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
+
+    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
+
+        if not all(column in data.columns for column in ['frequency', 'recency', 'T', 'frequency_before_conversion']):
+            raise ValueError("given data do not contain the 4 magic columns.")
+        if size < 2:
+            raise ValueError("Run at least 2 samplings to get a covariance.")
+
+        par_estimates = []
+
+        tmp_fitter = copy.deepcopy(self.fitter)
+        for i in range(size):
+            N = len(data)
+            if compressed_data is False:
+                sampled_data = data.sample(N, replace=True)
+                tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'],
+                               sampled_data['frequency_before_conversion'])
+            else:
+                # in case of compressed data you've gotta sample a multinomial distribution
+                N = data['N']
+                N_sum = sum(N)
+                prob = [float(n) / N_sum for n in N]
+                sampled_N = np.random.multinomial(N_sum, prob, size=1)
+                tmp_fitter.fit(frequency=data['frequency'], recency=data['recency'], T=data['T'],
+                               frequency_before_conversion=data['frequency_before_conversion'], N=sampled_N[0])
+            par_estimates.append(tmp_fitter.params_)
+
+        par_lists = []
+        for par_name in self.param_names:
+            par_lists.append([par[par_name] for par in par_estimates])
+
+        par_lists = remove_outliers_from_fitted_params(par_lists)
+        x = np.vstack(par_lists)
+        cov = np.cov(x)
+        self.params_C = cov
+        self.sampled_parameters = par_estimates
+        self.par_lists = par_lists
+
+    def expected_probability_of_converting_at_time_with_error(self, t):
+        value = self.fitter.expected_probability_of_converting_at_time(t)
+        error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
+        return value, error
+
+
 class BGBBBBModel(Model):
     """
     Fits a discrete-time BGBBBB to the data, and computes relevant metrics by mean of a simulation.
@@ -283,7 +378,6 @@ class BGBBBBModel(Model):
 
         if frequency_purchases is None:
             raise ValueError("You must provide a valid vector of frequency_purchases")
-
 
         self.fitter.fit(frequency=frequency, recency=recency, T=T, frequency_purchases=frequency_purchases, N=N,
                         initial_params=initial_params,
@@ -329,6 +423,7 @@ class BGBBBBModel(Model):
         for par_name in self.param_names:
             par_lists.append([par[par_name] for par in par_estimates])
 
+        par_lists = remove_outliers_from_fitted_params(par_lists)
         x = np.vstack(par_lists)
         cov = np.cov(x)
         self.params_C = cov
@@ -432,3 +527,33 @@ def extract_frequencies(data, max_x=10):
             n_success = len(data[data['frequency'] == x])
         fx.append(float(n_success) / n)
     return fx
+
+
+def remove_outliers_from_fitted_params(par_lists, method = 'Gaussian'):
+    is_outlier_lists = []
+    for par_list in par_lists:
+        is_outlier_lists.append(is_outlier(par_list))
+    is_outlier_full = [False] * len(is_outlier_lists[0])
+    for is_outlier_list in is_outlier_lists:
+        is_outlier_full = is_outlier_full | is_outlier_list
+
+    result = []
+    for par_list in par_lists:
+        new_list = []
+        for i in range(len(par_list)):
+            if not is_outlier_full[i]:
+                new_list.append(par_list[i])
+        result.append(new_list)
+    return result
+
+
+def is_outlier(points, thresh=4):
+    points = np.array(points)
+    median = np.median(points)
+    diff = (points - median)**2
+    diff = np.array(np.sqrt(diff))
+    med_abs_deviation = np.median(diff)
+
+    modified_z_score = 0.6745 * diff / med_abs_deviation
+
+    return ((modified_z_score > thresh)*1 + (points < 0)*1) > 0

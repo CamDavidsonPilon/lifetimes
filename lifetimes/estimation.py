@@ -7,10 +7,11 @@ from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat, \
 from pandas import DataFrame
 from scipy import special
 from scipy import misc
-from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
+from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value, ncr
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbb_model
 from lifetimes.formulas import gamma_ratio
+
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
@@ -934,7 +935,8 @@ class BGBBBBFitter(BaseFitter):
             x = np.array(x)
             xp = np.array(xp)
 
-        purchase_term = special.beta(e + xp, x - xp + z + 1) / special.beta(e, z)
+        #purchase_term = special.beta(e + xp, x - xp + z + 1) / special.beta(e, z)
+        purchase_term = special.beta(e + xp, x - xp + z) / special.beta(e, z)
 
         ll_vector = np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
 
@@ -945,7 +947,6 @@ class BGBBBBFitter(BaseFitter):
 
         sub_params = a, b, g, d
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
-
 
     def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=0, initial_params=None, verbose=False,
             N=None):
@@ -987,6 +988,7 @@ class BGBBBBFitter(BaseFitter):
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_purchases],
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
         self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
+        print("ciao")
 
         return self
 
@@ -1016,8 +1018,9 @@ class BGBBBBFitter(BaseFitter):
         a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
 
         E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
-        Ep = special.beta(e + 1, z) / special.beta(e, z) * (1.0 + E)
-
+        #Ep = special.beta(e + 1, z) / special.beta(e, z) * (1.0 + E)
+        Ep = special.beta(e + 1, z) / special.beta(e, z) * (E)
+        print("Ep = special.beta(e + 1, z) / special.beta(e, z) * (E)")
         return Ep
 
     def expected_number_of_sessions_up_to_time_error(self, t, C):
@@ -1080,3 +1083,198 @@ class BGBBBBFitter(BaseFitter):
         where N(t) is the number of repeat purchases a customer makes in t units of time.
         """
         raise NotImplementedError
+
+
+class BGBBBGFitter(BaseFitter):
+    """
+        BG/BB/BG discrete time model with session and conversion.
+
+        EM as extension of
+        Customer-Base Analysis in a Discrete-Time Noncontractual Setting
+        Peter S. Fader
+        Bruce G. S. Hardie
+        Jen Shang
+        """
+
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+        self.params_ = None
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, frequency_before_conversion, penalizer_coef, N=None):
+
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        a, b, g, d, e, z = params
+        xc = frequency_before_conversion
+        x = freq
+
+        if isinstance(xc, float) or isinstance(xc, int):
+            pass
+        else:
+            # xp is a vector
+            x = np.array(x)
+            xc = np.array(xc)
+
+        mask = x >= xc
+        purchase_term = special.beta(e + mask, z + xc) / special.beta(e, z)
+
+        ll_vector = np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
+
+        if N is not None:
+            ll_purchases = -(ll_vector * N).sum()
+        else:
+            ll_purchases = -ll_vector.sum()
+
+        sub_params = a, b, g, d
+        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
+
+    def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None, verbose=False,
+            N=None):
+        """
+        This methods fits the data to the BG/BB/BG discrete-time model.
+
+        Parameters:
+            frequency: the frequency vector of customers' sessions (denoted x in literature).
+            recency: the recency vector of customers' sessions (denoted t_x in literature).
+            T: the vector of customers' age (time since first session)
+            frequency_before_conversion: the frequency vector of customers' purchases (can go from 0 to f).
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
+
+        Returns:
+            self, with additional properties and methods like params_ and plot
+        """
+
+        frequency = asarray(frequency)
+        recency = asarray(recency)
+        T = asarray(T)
+        frequency_before_conversion = asarray(frequency_before_conversion)
+        _check_inputs(frequency, recency, T, N=N, frequency_before_conversion=frequency_before_conversion)
+        if N is not None:  # in this case it means you're handling compressed data
+            N = asarray(N)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, recency, T, frequency_before_conversion,
+                                                       self.penalizer_coef, N],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      6,
+                                                      verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
+        self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
+                              columns=['frequency', 'recency', 'T', 'frequency_purchases'])
+        self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
+
+        return self
+
+    def expected_probability_of_converting_at_time(self, t):
+
+        a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
+
+        B = special.beta
+        if t == 0:
+            return B(e+1, z) / B(e, z)
+
+        alive_coefficient = B(g, d+t) / (B(a, b) * B(g, d) * B(e, z))
+        summation = sum([ncr(t-1, k) * (-1)**k * B(a + k + 1, b) * B(e+k+1, z+1) for k in range(t)])
+
+        return alive_coefficient * summation
+
+    def expected_probability_of_converting_at_time_error(self, t, params_list):
+        initial_params = self.params_.copy()
+        values = []
+        for params in params_list:
+            self.params_ = {'alpha' : params[0], 'beta': params[1], 'gamma': params[2],'delta' : params[3], 'epsilon' : params[4], 'zeta' : params[5]}
+            value = self.expected_probability_of_converting_at_time(t)
+            values.append(value)
+        error = np.std(values)
+        self.params_ = initial_params
+        return error
+
+class BGBGFitter(BaseFitter):
+    """
+        BG/BB/BG discrete time model with conversion instead of purchase
+
+        EM as extension of
+        Customer-Base Analysis in a Discrete-Time Noncontractual Setting
+        Peter S. Fader
+        Bruce G. S. Hardie
+        Jen Shang
+        """
+
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, T, conversion_instant, penalizer_coef, N=None):
+
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        a, b, g, d = params
+        tc = conversion_instant
+
+        if isinstance(tc, float) or isinstance(tc, int):
+            pass
+        else:
+            # tc is a vector
+            tc = np.array(tc)
+
+        B = special.beta
+
+        mask1 = tc == 0
+        mask2 = tc > 0
+        mask3 = tc < 0
+
+        term1 = B(a+1, b) / B(a,b)
+        term2 = B(a+1, b+tc) * B(g, d+tc) / (B(a, b) * B(g, d))
+        term3 = 0
+        # building term3
+        if isinstance(tc, float) or isinstance(tc, int):
+            term3 = (B(g, d+T) * B(a, b+T+1) + np.sum([B(a, b+t) * B(g+1, d+t-1) for t in range(T)])) / (B(a, b) * B(g, d))
+        else:
+            term3 = []
+            for Ti in T:
+                constant_part = B(g, d + Ti) * B(a, b + Ti + 1)
+                den = B(a, b) * B(g, d)
+                summation = np.sum([B(a, b+t) * B(g+1, d+t-1) for t in range(1, int(Ti)+1)])
+                term3.append((constant_part+summation)/den)
+            term3 = np.array(term3)
+
+        term = term1*mask1 + term2*mask2 + term3*mask3
+
+        ll_vector = np.log(term)  # this converts the terms in a no object on which you can call sum()
+
+        if N is not None:
+            ll_purchases = -(ll_vector * N).sum()
+        else:
+            ll_purchases = -ll_vector.sum()
+
+        return ll_purchases
+
+    def fit(self, T, conversion_instant, iterative_fitting=0, initial_params=None,
+            verbose=False,
+            N=None):
+
+        T = asarray(T)
+        tc = asarray(conversion_instant)
+        if N is not None:  # in this case it means you're handling compressed data
+            N = asarray(N)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [T, tc, self.penalizer_coef, N],
+                                                      iterative_fitting,
+                                                      None,
+                                                      4,
+                                                      verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
+        self.data = DataFrame(vconcat[T, tc],
+                              columns=['T', 'conversion_instant'])
+
+        return self

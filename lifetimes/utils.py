@@ -3,6 +3,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+import operator as op
 
 pd.options.mode.chained_assignment = None
 
@@ -254,7 +255,7 @@ def _scale_time(age):
     return 10. / age.max()
 
 
-def _check_inputs(frequency, recency, T, N=None, frequency_purchases=None):
+def _check_inputs(frequency, recency, T, N=None, frequency_purchases=None, frequency_before_conversion=None):
     def check_recency_is_less_than_T(recency, T):
         if np.any(recency > T):
             raise ValueError(
@@ -283,6 +284,11 @@ def _check_inputs(frequency, recency, T, N=None, frequency_purchases=None):
             raise ValueError(
                 """Some values in frequency_purchases vector are larger than frequency + 1 vector. This is impossible according to the model.""")
 
+    if frequency_before_conversion is not None:
+        check_all_frequency_values_are_integer_values(frequency_before_conversion)
+        if np.any(frequency_before_conversion > frequency + 1):
+            raise ValueError(
+                """Some values in frequency_before_conversion vector are larger than frequency vector. This is impossible according to the model.""")
 
 def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12,
                             discount_rate=1):
@@ -312,3 +318,11 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
 
     return df['clv']  # return as a series
+
+
+def ncr(n, r):
+    r = min(r, n-r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n-r, -1))
+    denom = reduce(op.mul, xrange(1, r+1))
+    return numer//denom
