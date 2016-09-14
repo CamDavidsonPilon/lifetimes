@@ -343,6 +343,11 @@ class BGBBBGModel(Model):
         error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
         return value, error
 
+    def expected_probability_of_converting_within_time_with_error(self, t):
+        value = self.fitter.expected_probability_of_converting_within_time(t)
+        error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
+        return value, error
+
 
 class BGBBBBModel(Model):
     """

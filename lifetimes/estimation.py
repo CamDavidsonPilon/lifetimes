@@ -1197,6 +1197,22 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = initial_params
         return error
 
+    def expected_probability_of_converting_within_time(self, t):
+        return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t+1)])
+
+    def expected_probability_of_converting_within_time_error(self, t, params_list):
+        initial_params = self.params_.copy()
+        values = []
+        for params in params_list:
+            self.params_ = {'alpha': params[0], 'beta': params[1], 'gamma': params[2], 'delta': params[3],
+                            'epsilon': params[4], 'zeta': params[5]}
+            value = self.expected_probability_of_converting_within_time(t)
+            values.append(value)
+        error = np.std(values)
+        self.params_ = initial_params
+        return error
+
+
 class BGBGFitter(BaseFitter):
     """
         BG/BB/BG discrete time model with conversion instead of purchase
