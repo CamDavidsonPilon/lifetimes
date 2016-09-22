@@ -172,6 +172,36 @@ def test_BGBBBG_fitting_compressed_or_not():
     for t in range(30):
         print model.expected_probability_of_converting_at_time_with_error(t)
 
+@pytest.mark.BGBBBB
+def test_BGBBBGExt_fitting_compressed_or_not():
+    T = 10
+    size = 100
+
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0, 'c0' : 0.03}
+
+    data = gen.bgbbbgext_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'],
+                            params['epsilon'],
+                            params['zeta'], params['c0'], size=size, time_first_purchase=True)
+
+    compressed_data = compress_session_session_before_conversion_data(data)
+
+    #fitter = est.BGBBBGFitter()
+    model = mod.BGBBBGExtModel()
+    #fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
+    #           initial_params=params.values())
+    model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
+                          frequency_before_conversion=compressed_data['frequency_before_conversion'],
+                          N=compressed_data['N'], initial_params=params.values())
+
+    print params
+    #print fitter.params_
+    print model.params
+    tot = 0
+    fitted_conv = []
+
+    for t in range(30):
+        print model.expected_probability_of_converting_at_time_with_error(t)
+
 
 
 @pytest.mark.BGBG
@@ -191,3 +221,4 @@ def test_BGBG_fitting_compressed_or_not():
         print fitter_compressed.params_, fitter_compressed._negative_log_likelihood_
 
 
+test_BGBBBGExt_fitting_compressed_or_not()

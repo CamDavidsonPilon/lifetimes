@@ -502,6 +502,100 @@ def bgbbbg_model(T, alpha, beta, gamma, delta, epsilon, zeta, size=1, time_first
 
     return df.set_index('customer_id')
 
+def bgbbbgext_model(T, alpha, beta, gamma, delta, epsilon, zeta, c0, size=1, time_first_purchase=False, death_time=False):
+    """
+        Generate artificial data according to the discrete BG/BB/BG model (modeling conversion as BG).
+
+        Parameters:
+            T: scalar, the length of time observing new customers.
+            alpha, beta, gamma, delta, epsilon, zeta: scalars, representing parameters in the model.
+            size: the number of customers to generate, equal to size of T if T is
+               an array.
+            time_first_purchase: if true, adds the time of the first purchase of a user (useful for conversion)
+            death_time: if true, adds death time
+        Returns:
+            DataFrame, with index as customer_ids and the following columns:
+            'frequency', 'recency', 'T', 'frequency_before_conversion', 'p', 'theta', 'c', 'alive', 'customer_id'
+        """
+    if size < 1:
+        raise ValueError("size must be positive")
+
+    if alpha <= 0 or beta <= 0 or gamma <= 0 or delta <= 0 or epsilon <= 0 or zeta <= 0:
+        raise ValueError("Parameters of beta distribution must all be positive")
+
+    if type(T) in [int]:
+        T = T * np.ones(size)
+    else:
+        raise ValueError("Provide a integer T")
+
+    # Generate hidden parameters fo all costumers
+    ps = stats.beta.rvs(alpha, beta, size=size)  # probability of making a session while alive
+    thetas = stats.beta.rvs(gamma, delta, size=size)  # probability of dying at the beginning of a time bin
+    cs = stats.beta.rvs(epsilon, zeta, size=size)  # probability of converting while alive and making a session
+
+    columns = ['frequency', 'recency', 'T', 'frequency_before_conversion', 'p', 'theta', 'c', 'alive', 'customer_id']
+    if time_first_purchase:
+        columns.append('time_first_purchase')
+    elif death_time:
+        columns.append('death_time')
+
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+
+    for i in range(size):
+        p = ps[i]  # probability of making a session, if alive
+        theta = thetas[i]  # probability of dying
+        c = cs[i]  # probability of purchasing, if alive and making a session
+
+        # initial conditions (has a session at 0)
+        x = 0
+        tx = 0
+        alive = True
+        s = 0
+        has_converted = False
+        tfp = np.nan  # time_first_purchase
+        dt = np.nan  # death_time
+
+        # first possibility of purchasing (the first day)
+        converts = np.random.random() <= c0
+        if converts:
+            if not has_converted:
+                tfp = 0
+            has_converted = True
+        else:
+            s += 1
+
+        # start testing from t = 1
+        t = 1
+        while t <= T[i]:
+            alive = np.random.random() > theta
+            if alive:
+                has_session = np.random.random() <= p
+                if has_session:
+                    x += 1
+                    tx = t
+                    if not has_converted:
+                        converts = np.random.random() <= c  # see whether this monazza buys too
+                        if converts:
+                            if not has_converted:
+                                tfp = t
+                            has_converted = True
+                        else:
+                            s += 1
+
+                t += 1
+            else:
+                dt = t
+                break
+
+        if time_first_purchase:
+            df.ix[i] = x, tx, T[i], s, p, theta, c, alive, i, tfp
+        elif death_time:
+            df.ix[i] = x, tx, T[i], s, p, theta, c, alive, i, dt
+        else:
+            df.ix[i] = x, tx, T[i], s, p, theta, c, alive, i
+
+    return df.set_index('customer_id')
+
 
 def generate_pareto_data_for_T_N(T, N, params):
     """
