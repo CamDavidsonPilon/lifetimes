@@ -1306,14 +1306,28 @@ class BGBBBGExtFitter(BaseFitter):
 
     def expected_probability_of_converting_at_time(self, t):
 
+        if t==0:
+            return self.simple_expected_probability_of_converting_at_time(t)
+
+        value = self.simple_expected_probability_of_converting_at_time(t)
+        prev_value = self.simple_expected_probability_of_converting_at_time(t-1)
+
+        if value < 0 or value > prev_value:
+            return 0.0
+        return value
+
+
+
+
+    def simple_expected_probability_of_converting_at_time(self,t):
         a, b, g, d, e, z, c0 = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0')
 
         B = special.beta
         if t == 0:
             return c0
 
-        alive_coefficient = B(g, d+t) / (B(a, b) * B(g, d) * B(e, z))
-        summation = (1 - c0) * sum([ncr(t-1, k) * (-1)**k * B(a + k + 1, b) * B(e+k+1, z) for k in range(t)])
+        alive_coefficient = B(g, d + t) / (B(a, b) * B(g, d) * B(e, z))
+        summation = (1 - c0) * sum([ncr(t - 1, k) * (-1) ** k * B(a + k + 1, b) * B(e + k + 1, z) for k in range(t)])
 
         return alive_coefficient * summation
 
