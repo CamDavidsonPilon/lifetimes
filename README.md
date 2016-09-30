@@ -105,7 +105,7 @@ Let's return to our customers and rank them from "highest expected purchases in 
 
     t = 1
     data['predicted_purchases'] = bgf.conditional_expected_number_of_purchases_up_to_time(t, data['frequency'], data['recency'], data['T'])
-    data.sort('predicted_purchases').tail(5)
+    data.sort_values(by='predicted_purchases').tail(5)
     """
            frequency  recency      T        predicted_purchases
     ID
