@@ -1300,7 +1300,7 @@ class BGBBBGExtFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
-                              columns=['frequency', 'recency', 'T', 'frequency_purchases'])
+                              columns=['frequency', 'recency', 'T', 'frequency_before_conversion'])
         self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
         return self
 
