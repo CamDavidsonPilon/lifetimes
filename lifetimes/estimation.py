@@ -1128,10 +1128,11 @@ class BGBBBGExtFitter(BaseFitter):
             return self.simple_expected_probability_of_converting_at_time(t)
 
         value = self.simple_expected_probability_of_converting_at_time(t)
-        prev_value = self.simple_expected_probability_of_converting_at_time(t-1)
 
-        if value < 0 or value > prev_value:
-            return 0.0
+        if t > 1:
+            prev_value = self.simple_expected_probability_of_converting_at_time(t-1)
+            if value < 0 or value > prev_value:
+                return 0.0
         return value
 
 
