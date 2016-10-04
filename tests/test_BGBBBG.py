@@ -4,7 +4,8 @@ import lifetimes.generate_data as gen
 import numpy as np
 import lifetimes.estimation as est
 import lifetimes.models as mod
-from lifetimes.data_compression import compress_session_purchase_data, compress_session_session_before_conversion_data, compress_conversion_data
+from lifetimes.data_compression import compress_session_purchase_data, compress_session_session_before_conversion_data, \
+    compress_conversion_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
 from lifetimes import models
@@ -70,7 +71,8 @@ def test_likelyhood():
     sess_before_purch = 1
     rec = 1
     T = 2
-    ll = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0, N=None)
+    ll = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0,
+                                                   N=None)
 
     assert isinstance(ll, float) or isinstance(ll, int)
 
@@ -79,7 +81,8 @@ def test_likelyhood():
     sess_before_purch = [1, 1]
     rec = [1, 0]
     T = [2, 2]
-    ll = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0, N=None)
+    ll = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0,
+                                                   N=None)
 
     assert isinstance(ll, float) or isinstance(ll, int)
 
@@ -88,10 +91,12 @@ def test_likelyhood():
     sess_before_purch = np.array([1, 1])
     rec = np.array([1, 0])
     T = np.array([2, 2])
-    ll1 = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0, N=None)
+    ll1 = est.BGBBBGFitter._negative_log_likelihood(params.values(), freq, rec, T, sess_before_purch, penalizer_coef=0,
+                                                    N=None)
 
     assert ll == ll1
     assert isinstance(ll1, float) or isinstance(ll1, int)
+
 
 @pytest.mark.BGBBBB
 def test_BGBBBG_fitting_compressed_or_not():
@@ -106,17 +111,17 @@ def test_BGBBBG_fitting_compressed_or_not():
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
-    #fitter = est.BGBBBGFitter()
+    # fitter = est.BGBBBGFitter()
     fitter_compressed = est.BGBBBGFitter()
 
-    #fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
+    # fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
     #           initial_params=params.values())
     fitter_compressed.fit(compressed_data['frequency'], compressed_data['recency'], compressed_data['T'],
                           compressed_data['frequency_before_conversion'],
                           N=compressed_data['N'], initial_params=params.values())
 
     print params
-    #print fitter.params_
+    # print fitter.params_
     print fitter_compressed.params_
     tot = 0
     fitted_conv = []
@@ -133,14 +138,15 @@ def test_BGBBBG_fitting_compressed_or_not():
             real_conv[int(t)] += 1.0
     real_conv = [x / len(conversion_instants) for x in real_conv]
 
-    for r, f in zip(real_conv,fitted_conv):
+    for r, f in zip(real_conv, fitted_conv):
         print r, " - ", f
 
     print sum(real_conv), " - ", sum(fitted_conv)
 
 
-    #for par_name in params.keys():
-        #assert math.fabs(fitter.params_[par_name] - fitter_compressed.params_[par_name]) < 0.00001
+    # for par_name in params.keys():
+    # assert math.fabs(fitter.params_[par_name] - fitter_compressed.params_[par_name]) < 0.00001
+
 
 @pytest.mark.BGBBBB
 def test_BGBBBG_fitting_compressed_or_not():
@@ -155,46 +161,47 @@ def test_BGBBBG_fitting_compressed_or_not():
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
-    #fitter = est.BGBBBGFitter()
+    # fitter = est.BGBBBGFitter()
     model = mod.BGBBBGModel()
-    #fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
+    # fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
     #           initial_params=params.values())
     model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
-                          frequency_before_conversion=compressed_data['frequency_before_conversion'],
-                          N=compressed_data['N'], initial_params=params.values())
+              frequency_before_conversion=compressed_data['frequency_before_conversion'],
+              N=compressed_data['N'], initial_params=params.values())
 
     print params
-    #print fitter.params_
+    # print fitter.params_
     print model.params
     tot = 0
     fitted_conv = []
 
     for t in range(30):
         print model.expected_probability_of_converting_at_time_with_error(t)
+
 
 @pytest.mark.BGBBBB
 def test_BGBBBGExt_fitting_compressed_or_not():
     T = 10
     size = 100
 
-    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0, 'c0' : 0.03}
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0, 'c0': 0.03}
 
     data = gen.bgbbbgext_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'],
-                            params['epsilon'],
-                            params['zeta'], params['c0'], size=size, time_first_purchase=True)
+                               params['epsilon'],
+                               params['zeta'], params['c0'], size=size, time_first_purchase=True)
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
-    #fitter = est.BGBBBGFitter()
+    # fitter = est.BGBBBGFitter()
     model = mod.BGBBBGExtModel()
-    #fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
+    # fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
     #           initial_params=params.values())
     model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
-                          frequency_before_conversion=compressed_data['frequency_before_conversion'],
-                          N=compressed_data['N'], initial_params=params.values())
+              frequency_before_conversion=compressed_data['frequency_before_conversion'],
+              N=compressed_data['N'], initial_params=params.values())
 
     print params
-    #print fitter.params_
+    # print fitter.params_
     print model.params
     tot = 0
     fitted_conv = []
@@ -202,23 +209,6 @@ def test_BGBBBGExt_fitting_compressed_or_not():
     for t in range(30):
         print model.expected_probability_of_converting_at_time_with_error(t)
 
-
-
-@pytest.mark.BGBG
-def test_BGBG_fitting_compressed_or_not():
-    T = 50
-    size = 10000
-
-    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
-
-    data = gen.bgbg_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
-
-    compressed_data = compress_conversion_data(data)
-    fitter_compressed = est.BGBGFitter()
-
-    for _ in range(10):
-        fitter_compressed.fit(compressed_data['T'], compressed_data['conversion_instant'], N=compressed_data['N'])
-        print fitter_compressed.params_, fitter_compressed._negative_log_likelihood_
 
 
 test_BGBBBGExt_fitting_compressed_or_not()

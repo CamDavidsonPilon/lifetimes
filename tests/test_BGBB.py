@@ -340,3 +340,17 @@ def test_BGBBBB_transaction():
         for t in user[1]:
             assert t != 0
             assert user[0] == T
+
+
+@pytest.mark.BGBB
+def test_BGBB_generation_speedtest():
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+
+    N = 1000
+
+    start_time = timeit.default_timer()
+    for T in range(60):
+        gen_data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=N)
+    t1 = timeit.default_timer() - start_time
+    print "time required: " + str(t1)
+

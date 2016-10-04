@@ -9,7 +9,7 @@ from scipy import special
 from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value, ncr
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
-    bgbb_model, bgbbbb_model
+    bgbb_model, bgbbbg_model, bgbbbgext_model
 from lifetimes.formulas import gamma_ratio
 
 
@@ -903,188 +903,6 @@ class BGBBFitter(BaseFitter):
         return common_factor * (first_term + second_term)
 
 
-class BGBBBBFitter(BaseFitter):
-    """
-    BG/BB/BB discrete time model with session and purchases.
-
-    MM as extension of
-    Customer-Base Analysis in a Discrete-Time Noncontractual Setting
-    Peter S. Fader
-    Bruce G. S. Hardie
-    Jen Shang
-    """
-
-    def __init__(self, penalizer_coef=0.):
-        self.penalizer_coef = penalizer_coef
-
-
-    @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, frequency_purchases, penalizer_coef, N=None):
-
-        if npany(asarray(params) <= 0.):
-            return np.inf
-
-        a, b, g, d, e, z = params
-        xp = frequency_purchases
-        x = freq
-
-        if isinstance(xp, float) or isinstance(xp, int):
-            pass
-        else:
-            # xp is a vector
-            x = np.array(x)
-            xp = np.array(xp)
-
-        #purchase_term = special.beta(e + xp, x - xp + z + 1) / special.beta(e, z)
-        purchase_term = special.beta(e + xp, x - xp + z) / special.beta(e, z)
-
-        ll_vector = np.log(purchase_term)  # this converts the terms in a no object on which you can call sum()
-
-        if N is not None:
-            ll_purchases = -(ll_vector * N).sum()
-        else:
-            ll_purchases = -ll_vector.sum()
-
-        sub_params = a, b, g, d
-        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
-
-    def fit(self, frequency, recency, T, frequency_purchases, iterative_fitting=0, initial_params=None, verbose=False,
-            N=None):
-        """
-        This methods fits the data to the BG/BB/BB discrete-time model.
-
-        Parameters:
-            frequency: the frequency vector of customers' sessions (denoted x in literature).
-            recency: the recency vector of customers' sessions (denoted t_x in literature).
-            T: the vector of customers' age (time since first session)
-            frequency_purchases: the frequency vector of customers' purchases (can go from 0 to f + 1).
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve performances but possibly
-                hurt estimates.
-            initial_params: set initial params for the iterative fitter.
-            verbose: set to true to print out convergence diagnostics.
-            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
-
-        Returns:
-            self, with additional properties and methods like params_ and plot
-        """
-
-        frequency = asarray(frequency)
-        recency = asarray(recency)
-        T = asarray(T)
-        frequency_purchases = asarray(frequency_purchases)
-        _check_inputs(frequency, recency, T, N=N, frequency_purchases=frequency_purchases)
-        if N is not None:  # in this case it means you're handling compressed data
-            N = asarray(N)
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, frequency_purchases,
-                                                           self.penalizer_coef, N],
-                                                          iterative_fitting,
-                                                          initial_params,
-                                                          6,
-                                                          verbose)
-
-        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
-        self.data = DataFrame(vconcat[frequency, recency, T, frequency_purchases],
-                              columns=['frequency', 'recency', 'T', 'frequency_purchases'])
-        self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
-        print("ciao")
-
-        return self
-
-    def expected_number_of_sessions_up_to_time(self, t):
-        """
-        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
-        the population.
-
-        Parameters:
-            t: a scalar or array of times.
-
-        Returns: a scalar or array
-        """
-        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
-        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
-
-    def expected_number_of_purchases_up_to_time(self, t):
-        """
-        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
-        the population.
-
-        Parameters:
-            t: a scalar or array of times.
-
-        Returns: a scalar or array
-        """
-        a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
-
-        E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
-        #Ep = special.beta(e + 1, z) / special.beta(e, z) * (1.0 + E)
-        Ep = special.beta(e + 1, z) / special.beta(e, z) * (E)
-        print("Ep = special.beta(e + 1, z) / special.beta(e, z) * (E)")
-        return Ep
-
-    def expected_number_of_sessions_up_to_time_error(self, t, C):
-        """
-        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
-        the population.
-
-        Parameters:
-            t: a scalar or array of times.
-            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
-
-        Returns: a scalar
-        """
-        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
-        return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)
-
-    def expected_number_of_purchases_up_to_time_error(self, t, C):
-        """
-        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
-        the population.
-
-        Parameters:
-            t: a scalar or array of times.
-            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
-
-        Returns: a scalar
-        """
-        if len(C) != 6 or len(C[0]) != 6:
-            raise ValueError("Covariance matrix: wrong dimensions. Must be 6x6 symmetric.")
-
-        a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
-
-        E = BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
-
-        R = a / (a + b) * d / (g - 1) * (
-            - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
-
-        B_ratio = special.beta(e + 1, z) / special.beta(e, z)
-
-        dEda = b / (a + b) * E
-        dEdb = - 1.0 / (a + b) * E
-
-        dEdg = - E / (g - 1) + R * (special.psi(g + d) - special.psi(g + d + t))
-        dEdd = E / d + R * (special.psi(g + d) - special.psi(g + d + t) - special.psi(1 + d) + special.psi(1 + d + t))
-
-        dEde = (1.0 + E) * (special.psi(e + 1) - special.psi(e + z + 1) - special.psi(e) + special.psi(e + z))
-        dEdz = (1.0 + E) * (special.psi(e + z) - special.psi(e + z + 1))
-
-        Cov = np.matrix(C)
-        dE = np.array([[dEda], [dEdb], [dEdg], [dEdd], [dEde], [dEdz]])
-
-        return math.fabs(B_ratio) * math.sqrt(float(dE.transpose() * Cov * dE))
-
-    def probability_of_n_purchases_up_to_time(self, t, n):
-        """
-        Compute the probability of
-
-        P( N(t) = n | model )
-
-        where N(t) is the number of repeat purchases a customer makes in t units of time.
-        """
-        raise NotImplementedError
-
-
 class BGBBBGFitter(BaseFitter):
     """
         BG/BB/BG discrete time model with session and conversion.
@@ -1169,7 +987,7 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
-        self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
+        self.generate_new_data = lambda size=1: bgbbbg_model(T, *params, size=size)
 
         return self
 
@@ -1301,7 +1119,7 @@ class BGBBBGExtFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_before_conversion'])
-        self.generate_new_data = lambda size=1: bgbbbb_model(T, *params, size=size)
+        self.generate_new_data = lambda size=1: bgbbbgext_model(T, *params, size=size)
         return self
 
     def expected_probability_of_converting_at_time(self, t):
