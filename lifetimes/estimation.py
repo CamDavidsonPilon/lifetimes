@@ -12,7 +12,6 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
     bgbb_model, bgbbbg_model, bgbbbgext_model
 from lifetimes.formulas import gamma_ratio
 
-
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 
@@ -806,14 +805,12 @@ class BGBBFitter(BaseFitter):
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, self.penalizer_coef, N, jac],
-                                                          iterative_fitting,
-                                                          initial_params,
-                                                          4,
-                                                          verbose,
-                                                          jac)
-
-
+                                                      [frequency, recency, T, self.penalizer_coef, N, jac],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose,
+                                                      jac)
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -948,7 +945,8 @@ class BGBBBGFitter(BaseFitter):
         sub_params = a, b, g, d
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
-    def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None, verbose=False,
+    def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None,
+            verbose=False,
             N=None):
         """
         This methods fits the data to the BG/BB/BG discrete-time model.
@@ -997,10 +995,10 @@ class BGBBBGFitter(BaseFitter):
 
         B = special.beta
         if t == 0:
-            return B(e+1, z) / B(e, z)
+            return B(e + 1, z) / B(e, z)
 
-        alive_coefficient = B(g, d+t) / (B(a, b) * B(g, d) * B(e, z))
-        summation = sum([ncr(t-1, k) * (-1)**k * B(a + k + 1, b) * B(e+k+1, z+1) for k in range(t)])
+        alive_coefficient = B(g, d + t) / (B(a, b) * B(g, d) * B(e, z))
+        summation = sum([ncr(t - 1, k) * (-1) ** k * B(a + k + 1, b) * B(e + k + 1, z + 1) for k in range(t)])
 
         return alive_coefficient * summation
 
@@ -1008,7 +1006,8 @@ class BGBBBGFitter(BaseFitter):
         initial_params = self.params_.copy()
         values = []
         for params in params_list:
-            self.params_ = {'alpha' : params[0], 'beta': params[1], 'gamma': params[2],'delta' : params[3], 'epsilon' : params[4], 'zeta' : params[5]}
+            self.params_ = {'alpha': params[0], 'beta': params[1], 'gamma': params[2], 'delta': params[3],
+                            'epsilon': params[4], 'zeta': params[5]}
             value = self.expected_probability_of_converting_at_time(t)
             values.append(value)
         error = np.std(values)
@@ -1016,7 +1015,7 @@ class BGBBBGFitter(BaseFitter):
         return error
 
     def expected_probability_of_converting_within_time(self, t):
-        return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t+1)])
+        return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t + 1)])
 
     def expected_probability_of_converting_within_time_error(self, t, params_list):
         initial_params = self.params_.copy()
@@ -1029,6 +1028,7 @@ class BGBBBGFitter(BaseFitter):
         error = np.std(values)
         self.params_ = initial_params
         return error
+
 
 class BGBBBGExtFitter(BaseFitter):
     """
@@ -1050,7 +1050,6 @@ class BGBBBGExtFitter(BaseFitter):
 
         if npany(asarray(params) <= 0.):
             return np.inf
-
 
         a, b, g, d, e, z, c0 = params
         if c0 >= 1:
@@ -1080,7 +1079,8 @@ class BGBBBGExtFitter(BaseFitter):
         sub_params = a, b, g, d
         return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
 
-    def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None, verbose=False,
+    def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None,
+            verbose=False,
             N=None):
         """
         This methods fits the data to the BG/BB/BG discrete-time model.
@@ -1124,21 +1124,18 @@ class BGBBBGExtFitter(BaseFitter):
 
     def expected_probability_of_converting_at_time(self, t):
 
-        if t==0:
+        if t == 0:
             return self.simple_expected_probability_of_converting_at_time(t)
 
         value = self.simple_expected_probability_of_converting_at_time(t)
 
         if t > 1:
-            prev_value = self.simple_expected_probability_of_converting_at_time(t-1)
+            prev_value = self.simple_expected_probability_of_converting_at_time(t - 1)
             if value < 0 or value > prev_value:
                 return 0.0
         return value
 
-
-
-
-    def simple_expected_probability_of_converting_at_time(self,t):
+    def simple_expected_probability_of_converting_at_time(self, t):
         a, b, g, d, e, z, c0 = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0')
 
         B = special.beta
@@ -1154,7 +1151,8 @@ class BGBBBGExtFitter(BaseFitter):
         initial_params = self.params_.copy()
         values = []
         for params in params_list:
-            self.params_ = {'alpha' : params[0], 'beta': params[1], 'gamma': params[2],'delta' : params[3], 'epsilon' : params[4], 'zeta' : params[5], 'c0' : params[6]}
+            self.params_ = {'alpha': params[0], 'beta': params[1], 'gamma': params[2], 'delta': params[3],
+                            'epsilon': params[4], 'zeta': params[5], 'c0': params[6]}
             value = self.expected_probability_of_converting_at_time(t)
             values.append(value)
         error = np.std(values)
@@ -1162,98 +1160,43 @@ class BGBBBGExtFitter(BaseFitter):
         return error
 
     def expected_probability_of_converting_within_time(self, t):
-        return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t+1)])
+        return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t + 1)])
 
     def expected_probability_of_converting_within_time_error(self, t, params_list):
         initial_params = self.params_.copy()
         values = []
         for params in params_list:
             self.params_ = {'alpha': params[0], 'beta': params[1], 'gamma': params[2], 'delta': params[3],
-                            'epsilon': params[4], 'zeta': params[5], 'c0' : params[6]}
+                            'epsilon': params[4], 'zeta': params[5], 'c0': params[6]}
             value = self.expected_probability_of_converting_within_time(t)
             values.append(value)
         error = np.std(values)
         self.params_ = initial_params
         return error
 
-class BGBGFitter(BaseFitter):
-    """
-        BG/BB/BG discrete time model with conversion instead of purchase
-
-        EM as extension of
-        Customer-Base Analysis in a Discrete-Time Noncontractual Setting
-        Peter S. Fader
-        Bruce G. S. Hardie
-        Jen Shang
+    def expected_number_of_sessions_up_to_time(self, t):
         """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
 
-    def __init__(self, penalizer_coef=0.):
-        self.penalizer_coef = penalizer_coef
+        Parameters:
+            t: a scalar or array of times.
 
-    @staticmethod
-    def _negative_log_likelihood(params, T, conversion_instant, penalizer_coef, N=None):
+        Returns: a scalar or array
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
 
-        if npany(asarray(params) <= 0.):
-            return np.inf
+    def expected_number_of_sessions_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
 
-        a, b, g, d = params
-        tc = conversion_instant
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
 
-        if isinstance(tc, float) or isinstance(tc, int):
-            pass
-        else:
-            # tc is a vector
-            tc = np.array(tc)
-
-        B = special.beta
-
-        mask1 = tc == 0
-        mask2 = tc > 0
-        mask3 = tc < 0
-
-        term1 = B(a+1, b) / B(a,b)
-        term2 = B(a+1, b+tc) * B(g, d+tc) / (B(a, b) * B(g, d))
-        term3 = 0
-        # building term3
-        if isinstance(tc, float) or isinstance(tc, int):
-            term3 = (B(g, d+T) * B(a, b+T+1) + np.sum([B(a, b+t) * B(g+1, d+t-1) for t in range(T)])) / (B(a, b) * B(g, d))
-        else:
-            term3 = []
-            for Ti in T:
-                constant_part = B(g, d + Ti) * B(a, b + Ti + 1)
-                den = B(a, b) * B(g, d)
-                summation = np.sum([B(a, b+t) * B(g+1, d+t-1) for t in range(1, int(Ti)+1)])
-                term3.append((constant_part+summation)/den)
-            term3 = np.array(term3)
-
-        term = term1*mask1 + term2*mask2 + term3*mask3
-
-        ll_vector = np.log(term)  # this converts the terms in a no object on which you can call sum()
-
-        if N is not None:
-            ll_purchases = -(ll_vector * N).sum()
-        else:
-            ll_purchases = -ll_vector.sum()
-
-        return ll_purchases
-
-    def fit(self, T, conversion_instant, iterative_fitting=0, initial_params=None,
-            verbose=False,
-            N=None):
-
-        T = asarray(T)
-        tc = asarray(conversion_instant)
-        if N is not None:  # in this case it means you're handling compressed data
-            N = asarray(N)
-        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                      [T, tc, self.penalizer_coef, N],
-                                                      iterative_fitting,
-                                                      None,
-                                                      4,
-                                                      verbose)
-
-        self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
-        self.data = DataFrame(vconcat[T, tc],
-                              columns=['T', 'conversion_instant'])
-
-        return self
+        Returns: a scalar
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)

@@ -23,7 +23,7 @@ def test_models_fitting_and_simulation():
 @pytest.mark.models
 def test_Pareto_expected_number_of_purchases_with_error():
     fitted_model = _fit_and_simulate(models.ParetoNBDModel(),params,t)
-    e_x,err_e_x = fitted_model.expected_number_of_purchases_up_to_time_with_errors(t)
+    e_x,err_e_x = fitted_model.expected_number_of_sessions_up_to_time_with_errors(t)
     assert e_x is not None and err_e_x is not None
     assert math.fabs(err_e_x - EM_expected_number_of_purchases_up_to_time_error(fitted_model.fitter,t,fitted_model.params_C)) < 10**-6
 
@@ -69,7 +69,7 @@ def test_NumericalMetrics():
 
 
 def EM_expected_number_of_purchases_up_to_time_error(pareto_fitter, t, C):
-    E = pareto_fitter.expected_number_of_purchases_up_to_time(t)
+    E = pareto_fitter.expected_number_of_sessions_up_to_time(t)
     r, alpha, s, beta = pareto_fitter._unload_params('r', 'alpha', 's', 'beta')
 
     d_r = E / r

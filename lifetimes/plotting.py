@@ -168,10 +168,10 @@ def plot_expected_repeat_purchases(model, **kwargs):
     max_T = model.data['T'].max()
 
     times = np.linspace(0, max_T, 100)
-    ax = plt.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
+    ax = plt.plot(times, model.expected_number_of_sessions_up_to_time(times), color=color, label=label, **kwargs)
 
     times = np.linspace(max_T, 1.5 * max_T, 100)
-    plt.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
+    plt.plot(times, model.expected_number_of_sessions_up_to_time(times), color=color, ls='--', **kwargs)
 
     plt.title('Expected Number of Repeat Purchases per Customer')
     plt.xlabel('Time Since First Purchase')

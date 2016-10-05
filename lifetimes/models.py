@@ -1,5 +1,5 @@
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBBFitter, BGBBBGFitter, BGBBBGExtFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGFitter, BGBBBGExtFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
@@ -19,7 +19,7 @@ class Model(object):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
 
-    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=1):
+    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -80,8 +80,8 @@ class Model(object):
                 N = data['N']
                 N_sum = sum(N)
                 prob = [float(n) / N_sum for n in N]
-                sampled_N = np.random.multinomial(N_sum, prob, size = 1)
-                tmp_fitter.fit(frequency=data['frequency'],recency = data['recency'], T = data['T'], N = sampled_N[0])
+                sampled_N = np.random.multinomial(N_sum, prob, size=1)
+                tmp_fitter.fit(frequency=data['frequency'], recency=data['recency'], T=data['T'], N=sampled_N[0])
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []
@@ -95,7 +95,7 @@ class Model(object):
         self.params_C = cov
         self.sampled_parameters = par_estimates
 
-    def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag = 'frequency'):
+    def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag='frequency'):
         """
         Args:
             N:      number of users you're referring to
@@ -159,9 +159,9 @@ class BetaGeoModel(Model):
     Fits a BetaGeoModel to the data, and computes relevant metrics by mean of a simulation.
     """
 
-    def __init__(self):
+    def __init__(self, penalizer_coef=0.):
         super(BetaGeoModel, self).__init__()
-        self.fitter = BetaGeoFitter()
+        self.fitter = BetaGeoFitter(penalizer_coef)
         self.param_names = ['r', 'alpha', 'a', 'b']
 
     def generateData(self, t, parameters, size):
@@ -174,9 +174,9 @@ class ModifiedBetaGeoModel(Model):
     Fits a ModifiedBetaGeoModel to the data, and computes relevant metrics by mean of a simulation.
     """
 
-    def __init__(self):
+    def __init__(self, penalizer_coef=0.):
         super(ModifiedBetaGeoModel, self).__init__()
-        self.fitter = ModifiedBetaGeoFitter()
+        self.fitter = ModifiedBetaGeoFitter(penalizer_coef)
         self.param_names = ['r', 'alpha', 'a', 'b']
 
     def generateData(self, t, parameters, size):
@@ -190,9 +190,9 @@ class ParetoNBDModel(Model):
     Fits a ParetoNBDModel to the data, and computes relevant metrics by mean of a simulation.
     """
 
-    def __init__(self):
+    def __init__(self, penalizer_coef=0.):
         super(ParetoNBDModel, self).__init__()
-        self.fitter = ParetoNBDFitter()
+        self.fitter = ParetoNBDFitter(penalizer_coef)
         self.param_names = ['r', 'alpha', 's', 'beta']
 
     def generateData(self, t, parameters, size):
@@ -222,9 +222,9 @@ class BGBBModel(Model):
     Fits a discrete-time BGBB to the data, and computes relevant metrics by mean of a simulation.
     """
 
-    def __init__(self):
+    def __init__(self, penalizer_coef=0.):
         super(BGBBModel, self).__init__()
-        self.fitter = BGBBFitter()
+        self.fitter = BGBBFitter(penalizer_coef)
         self.param_names = ['alpha', 'beta', 'gamma', 'delta']
 
     def generateData(self, t, parameters, size):
@@ -256,9 +256,9 @@ class BGBBBGModel(Model):
        Fits a discrete-time BGBBBG to the data, and computes relevant metrics by mean of a simulation.
      """
 
-    def __init__(self):
+    def __init__(self, penalizer_coef=0.):
         super(BGBBBGModel, self).__init__()
-        self.fitter = BGBBBGFitter()
+        self.fitter = BGBBBGFitter(penalizer_coef)
         self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
 
     def generateData(self, t, parameters, size):
@@ -271,7 +271,7 @@ class BGBBBGModel(Model):
                                 size)
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None,
-            iterative_fitting=1, frequency_before_conversion=None):
+            iterative_fitting=0, frequency_before_conversion=None):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -286,7 +286,8 @@ class BGBBBGModel(Model):
         if frequency_before_conversion is None:
             raise ValueError("You must provide a valid vector of frequency_before_purchase")
 
-        self.fitter.fit(frequency=frequency, recency=recency, T=T, frequency_before_conversion=frequency_before_conversion, N=N,
+        self.fitter.fit(frequency=frequency, recency=recency, T=T,
+                        frequency_before_conversion=frequency_before_conversion, N=N,
                         initial_params=initial_params,
                         iterative_fitting=iterative_fitting)
 
@@ -294,11 +295,13 @@ class BGBBBGModel(Model):
 
         if N is None:
             data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion})
+                {'frequency': frequency, 'recency': recency, 'T': T,
+                 'frequency_before_conversion': frequency_before_conversion})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
         else:
             data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion, 'N': N})
+                {'frequency': frequency, 'recency': recency, 'T': T,
+                 'frequency_before_conversion': frequency_before_conversion, 'N': N})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
 
     def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
@@ -347,29 +350,32 @@ class BGBBBGModel(Model):
         value = self.fitter.expected_probability_of_converting_within_time(t)
         error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
         return value, error
+
 
 class BGBBBGExtModel(Model):
     """
        Fits a discrete-time BGBBBG to the data, and computes relevant metrics by mean of a simulation.
      """
 
-    def __init__(self):
+    # TODO: include underlying BGBB model in a smart and elegant way
+
+    def __init__(self, penalizer_coef=0.):
         super(BGBBBGExtModel, self).__init__()
-        self.fitter = BGBBBGExtFitter()
+        self.fitter = BGBBBGExtFitter(penalizer_coef)
         self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0']
 
     def generateData(self, t, parameters, size):
         return gen.bgbbbgext_model(t, parameters['alpha'],
-                                parameters['beta'],
-                                parameters['gamma'],
-                                parameters['delta'],
-                                parameters['epsilon'],
-                                parameters['zeta'],
-                                parameters['c0'],
-                                size)
+                                   parameters['beta'],
+                                   parameters['gamma'],
+                                   parameters['delta'],
+                                   parameters['epsilon'],
+                                   parameters['zeta'],
+                                   parameters['c0'],
+                                   size)
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None,
-            iterative_fitting=1, frequency_before_conversion=None):
+            iterative_fitting=0, frequency_before_conversion=None):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -384,7 +390,8 @@ class BGBBBGExtModel(Model):
         if frequency_before_conversion is None:
             raise ValueError("You must provide a valid vector of frequency_before_purchase")
 
-        self.fitter.fit(frequency=frequency, recency=recency, T=T, frequency_before_conversion=frequency_before_conversion, N=N,
+        self.fitter.fit(frequency=frequency, recency=recency, T=T,
+                        frequency_before_conversion=frequency_before_conversion, N=N,
                         initial_params=initial_params,
                         iterative_fitting=iterative_fitting)
 
@@ -392,11 +399,13 @@ class BGBBBGExtModel(Model):
 
         if N is None:
             data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion})
+                {'frequency': frequency, 'recency': recency, 'T': T,
+                 'frequency_before_conversion': frequency_before_conversion})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
         else:
             data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T, 'frequency_before_conversion': frequency_before_conversion, 'N': N})
+                {'frequency': frequency, 'recency': recency, 'T': T,
+                 'frequency_before_conversion': frequency_before_conversion, 'N': N})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
 
     def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
@@ -445,6 +454,25 @@ class BGBBBGExtModel(Model):
         value = self.fitter.expected_probability_of_converting_within_time(t)
         error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
         return value, error
+
+    def expected_number_of_sessions_up_to_time_with_errors(self, t):
+        """
+        The "number of purchases" is actually the number of sessions...
+
+        Args:
+            t: a scalar or array of times
+
+        Returns:
+            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
+            associated to it (or an array of them)
+        """
+        if self.params is None or self.params_C is None:
+            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
+
+        C = self.params_C[0:4, 0:4]
+
+        return self.fitter.expected_number_of_sessions_up_to_time(
+            t), self.fitter.expected_number_of_sessions_up_to_time_error(t, C)
 
 
 class NumericalMetrics(object):
@@ -512,7 +540,7 @@ def extract_frequencies(data, max_x=10):
     return fx
 
 
-def remove_outliers_from_fitted_params(par_lists, method = 'Gaussian'):
+def remove_outliers_from_fitted_params(par_lists, method='Gaussian'):
     is_outlier_lists = []
     for par_list in par_lists:
         is_outlier_lists.append(is_outlier(par_list))
@@ -533,10 +561,10 @@ def remove_outliers_from_fitted_params(par_lists, method = 'Gaussian'):
 def is_outlier(points, thresh=4):
     points = np.array(points)
     median = np.median(points)
-    diff = (points - median)**2
+    diff = (points - median) ** 2
     diff = np.array(np.sqrt(diff))
     med_abs_deviation = np.median(diff)
 
     modified_z_score = 0.6745 * diff / med_abs_deviation
 
-    return ((modified_z_score > thresh)*1 + (points < 0)*1) > 0
+    return ((modified_z_score > thresh) * 1 + (points < 0) * 1) > 0

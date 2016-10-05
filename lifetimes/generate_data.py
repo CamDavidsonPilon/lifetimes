@@ -1,7 +1,9 @@
 import numpy as np
 from scipy import stats
 import pandas as pd
-
+import random
+import csv
+import os
 
 def hello():
     print "hello from MM! :)"
@@ -507,6 +509,53 @@ def bgbbbgext_model(T, alpha, beta, gamma, delta, epsilon, zeta, c0, size=1, tim
             df.ix[i] = x, tx, T[i], s, p, theta, c, alive, i
 
     return df.set_index('customer_id')
+
+
+def generate_monetary_values(values, probs, size=1):
+    """
+    Generate monetary value data, ideally one per user, according to the multinomial distribution given as input.
+    Args:
+        values: values of distribution
+        probs:  probabilities associated at the values
+        size:   number of samples
+
+    Returns:            generated data
+    """
+    # normalize probs first
+    tot_prob = sum(probs)
+    probs = [float(p) / tot_prob for p in probs]
+
+    # you've gotta sample a multinomial distribution
+
+    sampled_frequencies = np.random.multinomial(size, probs)
+    sampled_values = []
+    j = 0
+    for frequency in sampled_frequencies:
+        for i in range(frequency):
+            sampled_values.append(values[j])
+        j += 1
+
+    random.shuffle(sampled_values)
+    return sampled_values
+
+
+def sample_monetary_values(size=1, filename="datasets/weekly_monetary_values_sample.csv"):
+    """
+    Generate monetary value data, sampled from an input csv.
+    Args:
+        size:   number of samples
+        filename: file from where to sample
+
+    Returns:            generated data
+    """
+    filename = os.path.join(os.path.dirname(__file__), filename)
+
+    values = []
+    with open(filename, 'rb') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            values.append(float(row[0]))
+    return np.random.choice(values, size)
 
 
 def generate_pareto_data_for_T_N(T, N, params):
