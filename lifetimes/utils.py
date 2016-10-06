@@ -212,7 +212,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'Powell', 'BFGS']
+    methods = ['Nelder-Mead', 'BFGS', 'Powell']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
