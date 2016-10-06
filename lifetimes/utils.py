@@ -212,14 +212,13 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['BFGS', 'Nelder-Mead', 'Powell']
+    methods = ['BFGS']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
 
     for i in range(iterative_fitting + 1):
         fit_method = methods[i % len(methods)]
-        print fit_method
         params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
         output = minimize(_func_caller, method=fit_method, tol=1e-6,
                           x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
