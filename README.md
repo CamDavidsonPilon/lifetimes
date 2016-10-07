@@ -58,7 +58,7 @@ For the following examples, we'll use a dataset from an ecommerce provider to an
 - `T` represents the age of the customer in whatever time units chosen (weekly above). This is equal to the duration between a customer's first purchase and the end of the period under study.
 - `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
 
-If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifelines to transform your data to look like this.
+If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifetimes to transform your data to look like this.
 
 #### Fitting models to our data
 
