@@ -14,6 +14,7 @@ from lifetimes.formulas import gamma_ratio
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
+B = special.beta
 
 class BaseFitter(object):
     def __repr__(self):
@@ -993,7 +994,6 @@ class BGBBBGFitter(BaseFitter):
 
         a, b, g, d, e, z = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta')
 
-        B = special.beta
         if t == 0:
             return B(e + 1, z) / B(e, z)
 
@@ -1125,20 +1125,24 @@ class BGBBBGExtFitter(BaseFitter):
     def expected_probability_of_converting_at_time(self, t):
 
         if t == 0:
-            return self.simple_expected_probability_of_converting_at_time(t)
+            return self._straight_expected_probability_of_converting_at_time(t)
 
-        value = self.simple_expected_probability_of_converting_at_time(t)
+        value = self._straight_expected_probability_of_converting_at_time(t)
 
         if t > 1:
-            prev_value = self.simple_expected_probability_of_converting_at_time(t - 1)
+            prev_value = self._straight_expected_probability_of_converting_at_time(t - 1)
             if value < 0 or value > prev_value:
                 return 0.0
         return value
 
-    def simple_expected_probability_of_converting_at_time(self, t):
+    def _straight_expected_probability_of_converting_at_time(self, t):
         a, b, g, d, e, z, c0 = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0')
 
-        B = special.beta
+        return BGBBBGExtFitter.static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+
+    @staticmethod
+    def static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t):
+
         if t == 0:
             return c0
 
