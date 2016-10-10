@@ -7,7 +7,7 @@ from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
     isinf, isnan, ones_like
 from pandas import DataFrame
 
-from scipy import special
+from scipy.special import gammaln, hyp2f1, beta, gamma
 from scipy import misc
 
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
@@ -236,7 +236,7 @@ class GammaGammaFitter(BaseFitter):
         x = frequency
         m = avg_monetary_value
 
-        negative_log_likelihood_values = special.gammaln(p * x + q) - special.gammaln(p * x) - special.gammaln(q)\
+        negative_log_likelihood_values = gammaln(p * x + q) - gammaln(p * x) - gammaln(q)\
             + q * np.log(v) + (p * x - 1) * np.log(m) + (p * x) * np.log(x) - (p * x + q) * np.log(x * m + v)
 
         penalizer_term = penalizer_coef * log(params).sum()
@@ -359,8 +359,8 @@ class ParetoNBDFitter(BaseFitter):
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
         rsf = r + s + freq
-        p_1, q_1 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (max_of_alpha_beta + recency)
-        p_2, q_2 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (max_of_alpha_beta + age)
+        p_1, q_1 = hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (max_of_alpha_beta + recency)
+        p_2, q_2 = hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (max_of_alpha_beta + age)
 
         try:
             size = len(freq)
@@ -382,7 +382,7 @@ class ParetoNBDFitter(BaseFitter):
 
         r_s_x = r + s + x
 
-        A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
+        A_1 = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta)
         log_A_0 = ParetoNBDFitter._log_A_0(params, freq, rec, T)
 
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
@@ -448,7 +448,7 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         likelihood = exp(-self._negative_log_likelihood(params, x, t_x, T, 0))
-        first_term = (special.gamma(r + x) / special.gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (beta + T) ** s
+        first_term = (gamma(r + x) / gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (beta + T) ** s
         second_term = (r + x) * (beta + T) / (alpha + T) / (s - 1)
         third_term = 1 - ((beta + T) / (beta + T + t)) ** (s - 1)
         return first_term * second_term * third_term / likelihood
@@ -540,8 +540,8 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = params
 
-        A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + freq) - special.gammaln(b) - special.gammaln(a + b + freq)
+        A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
+        A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
         A_3 = -(r + freq) * log(alpha + T)
 
         d = vconcat[ones_like(freq), (freq > 0)]
@@ -561,7 +561,7 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar or array
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        hyp = special.hyp2f1(r, b, a + b - 1, t / (alpha + t))
+        hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
@@ -580,7 +580,7 @@ class BetaGeoFitter(BaseFitter):
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        hyp_term = special.hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
+        hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
         first_term = (a + b + x - 1) / (a - 1)
         second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
         numerator = first_term * second_term
@@ -638,10 +638,10 @@ class BetaGeoFitter(BaseFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        first_term = special.beta(a, b + n) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        first_term = beta(a, b + n) / beta(a, b) * gamma(r + n) / gamma(r) / gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
         if n > 0:
-            finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
-            second_term = special.beta(a + 1, b + n - 1) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+            finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+            second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
         return first_term + second_term
@@ -695,13 +695,13 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
-        if npany(asarray(params) <= 0):
+        if any(p <= 0 for p in params):
             return np.inf
 
         r, alpha, a, b = params
 
-        A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + freq + 1) - special.gammaln(b) - special.gammaln(a + b + freq + 1)
+        A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
+        A_2 = gammaln(a + b) + gammaln(b + freq + 1) - gammaln(b) - gammaln(a + b + freq + 1)
         A_3 = -(r + freq) * log(alpha + T)
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
@@ -719,7 +719,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Returns: a scalar or array
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        hyp = special.hyp2f1(r, b + 1, a + b, t / (alpha + t))
+        hyp = hyp2f1(r, b + 1, a + b, t / (alpha + t))
         return b / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
@@ -739,7 +739,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        hyp_term = special.hyp2f1(r + x, b + x + 1, a + b + x, t / (alpha + T + t))
+        hyp_term = hyp2f1(r + x, b + x + 1, a + b + x, t / (alpha + T + t))
         first_term = (a + b + x) / (a - 1)
         second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
         numerator = first_term * second_term
@@ -787,8 +787,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        first_term = special.beta(a, b + n + 1) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
-        finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
-        second_term = special.beta(a + 1, b + n) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+        first_term = beta(a, b + n + 1) / beta(a, b) * gamma(r + n) / gamma(r) / gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
+        finite_sum = np.sum([gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+        second_term = beta(a + 1, b + n) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term
