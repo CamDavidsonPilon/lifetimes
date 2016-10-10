@@ -235,7 +235,7 @@ class TestBetaGammaFitter():
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self):
         bfg = estimation.BetaGeoFitter()
-        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576])
@@ -358,17 +358,17 @@ class TestModifiedBetaGammaFitter():
         x = 2
         t_x = 30.43
         T = 38.86
-        t = 39 
+        t = 39
         expected = 1.226
         actual = mbfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
         assert abs(expected - actual) < 0.05
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self):
         mbfg = estimation.ModifiedBetaGeoFitter()
-        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
-        expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576])
+        expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
         actual = mbfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_allclose(actual, expected, rtol=0.05) 
 
