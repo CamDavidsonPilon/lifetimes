@@ -222,7 +222,7 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     while success_count < iterative_fitting:
         fit_method = methods[total_count % len(methods)]
         params_init = np.random.exponential(2., size=params_size) if initial_params is None else initial_params
-        output = minimize(_func_caller, method=fit_method, tol=1e-6,
+        output = minimize(_func_caller, method=fit_method, tol=1e-4,
                           x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
         if output.success:
             ll.append(output.fun)
