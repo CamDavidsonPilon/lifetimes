@@ -42,7 +42,6 @@ class TestBetaGeoBetaBinomFitter():
 
         # Expected probabilities for last year 1995-0 repeat, 1999-2 repeat, 2001-6 repeat
         expected = np.array([0.11, 0.59, 0.93])
-
         prob_list = np.zeros(3)
         prob_list[0] = (bbtf.data[(bbtf.data['frequency'] == 0) & (bbtf.data['recency'] == 0)]['prob_alive'])
         prob_list[1] = (bbtf.data[(bbtf.data['frequency'] == 2) & (bbtf.data['recency'] == 4)]['prob_alive'])
@@ -325,7 +324,6 @@ class TestBetaGammaFitter():
     def test_scaling_inputs_gives_same_or_similar_results(self):
         bgf = estimation.BetaGeoFitter()
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
-
         scale = 10
         bgf_with_large_inputs = estimation.BetaGeoFitter()
         bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
@@ -339,10 +337,10 @@ class TestModifiedBetaGammaFitter():
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         mbgf = estimation.ModifiedBetaGeoFitter
-        x = np.array([1,3])
-        t_x = np.array([2,2])
-        t = np.array([5,6])
-        params = [1,1,1,1]
+        x = np.array([1, 3])
+        t_x = np.array([2, 2])
+        t = np.array([5, 6])
+        params = [1, 1, 1, 1]
         assert mbgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
              + mbgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
             == mbgf._negative_log_likelihood(params, x, t_x, t, 0)
@@ -413,7 +411,7 @@ class TestModifiedBetaGammaFitter():
         params_2 = np.array(list(mbfg_with_penalizer.params_.values()))
         assert params_2.sum() < params_1.sum()
 
-        mbfg_with_more_penalizer = estimation.ModifiedBetaGeoFitter(penalizer_coef=100)
+        mbfg_with_more_penalizer = estimation.ModifiedBetaGeoFitter(penalizer_coef=1.)
         mbfg_with_more_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
         params_3 = np.array(list(mbfg_with_more_penalizer.params_.values()))
         assert params_3.sum() < params_2.sum()
@@ -450,8 +448,7 @@ class TestModifiedBetaGammaFitter():
     def test_scaling_inputs_gives_same_or_similar_results(self):
         mbgf = estimation.ModifiedBetaGeoFitter()
         mbgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
-
-        scale = 10
+        scale = 10.
         mbgf_with_large_inputs = estimation.ModifiedBetaGeoFitter()
         mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
         assert mbgf_with_large_inputs._scale < 1.

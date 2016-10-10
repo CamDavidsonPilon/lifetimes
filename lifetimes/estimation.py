@@ -85,10 +85,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     @staticmethod
     def _negative_log_likelihood(params, frequency, recency, n, n_custs, penalizer_coef=0):
+        penalizer_term = penalizer_coef * log(params).sum()
+        return -np.sum(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
 
-        return -np.sum(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_coef
-
-    def fit(self, frequency, recency, n, n_custs, verbose=False):
+    def fit(self, frequency, recency, n, n_custs, verbose=False, iterative_fitting=1):
         """
         Fit the BG/BB model.
 
@@ -114,7 +114,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, recency, n, n_custs, self.penalizer_coef],
-                                                      0,
+                                                      iterative_fitting,
                                                       np.ones(4),
                                                       4,
                                                       verbose)
@@ -146,7 +146,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         tx = self.data['recency']
         n = self.data['n']
 
-        params = self._unload_params('alpha','beta','gamma','delta')
+        params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         alpha, beta, gamma, delta = params
 
         p1 = 1 / exp(BetaGeoBetaBinomFitter._loglikelihood(params, x, tx, n))
@@ -223,7 +223,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
 class GammaGammaFitter(BaseFitter):
 
-    def __init__(self, penalizer_coef=0.):
+    def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
@@ -310,7 +310,7 @@ class GammaGammaFitter(BaseFitter):
 
 class ParetoNBDFitter(BaseFitter):
 
-    def __init__(self, penalizer_coef=0.):
+    def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
     def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
@@ -486,7 +486,7 @@ class BetaGeoFitter(BaseFitter):
 
     """
 
-    def __init__(self, penalizer_coef=0.):
+    def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
     def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
@@ -667,7 +667,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     """
 
-    def __init__(self, penalizer_coef=0.):
+    def __init__(self, penalizer_coef=0.0):
         super(self.__class__, self).__init__(penalizer_coef)
 
     def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False):
