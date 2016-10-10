@@ -261,16 +261,15 @@ class GammaGammaFitter(BaseFitter):
         p, q, v = self._unload_params('p', 'q', 'v')
         return (((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m
 
-    def fit(self, frequency, monetary_value, iterative_fitting=5, initial_params=None, verbose=False):
+    def fit(self, frequency, monetary_value, iterative_fitting=4, initial_params=None, verbose=False):
         """
         This methods fits the data to the Gamma/Gamma model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve performances but possibly
-                hurt estimates. This model is not very stable so we suggest >10 for best estimates evaluation.
+            iterative_fitting: perform iterative_fitting fits over random/warm-started initial params.
+                 This model is not very stable so we suggest >10 for best estimates evaluation.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
 
@@ -321,9 +320,7 @@ class ParetoNBDFitter(BaseFitter):
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve performances but possibly
-                hurt estimates.
+            iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
 
@@ -497,9 +494,7 @@ class BetaGeoFitter(BaseFitter):
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve performances but possibly
-                hurt estimates.
+            iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
 
@@ -678,9 +673,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             recency: the recency vector of customers' purchases (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform `iterative_fitting` additional fits to find the best
-                parameters for the model. Setting to 0 will improve performances but possibly
-                hurt estimates.
+            iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
 
