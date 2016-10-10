@@ -212,18 +212,27 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'Powell', 'BFGS']
+    methods = ['Nelder-Mead', 'BFGS']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
 
-    for i in range(iterative_fitting + 1):
-        fit_method = methods[i % len(methods)]
-        params_init = np.random.exponential(0.5, size=params_size) if initial_params is None else initial_params
+    success_count = 0
+    total_count = 0
+    while success_count < iterative_fitting:
+        fit_method = methods[total_count % len(methods)]
+        params_init = np.random.exponential(2., size=params_size) if initial_params is None else initial_params
         output = minimize(_func_caller, method=fit_method, tol=1e-6,
                           x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
-        ll.append(output.fun)
-        sols.append(output.x)
+        if output.success:
+            ll.append(output.fun)
+            sols.append(output.x)
+            params_init = output.x
+            success_count += 1
+        total_count += 1
+
+    if len(ll) == 0:
+        raise ValueError("None of the fit methods converged. Try increasing or decreasing the penalizer_coef.")
     minimizing_params = sols[np.argmin(ll)]
     return minimizing_params, np.min(ll)
 
