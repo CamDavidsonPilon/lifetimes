@@ -208,7 +208,7 @@ def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs)
     plt.plot(path_dates, path, '-', label='P_alive')
 
     # plot buying dates
-    payment_dates = customer_history[customer_history['transactions'] >= 1]['index']
+    payment_dates = customer_history[customer_history['transactions'] >= 1].index
     plt.vlines(payment_dates.values, ymin=0, ymax=1, colors='r', linestyles='dashed', label='purchases')
 
     plt.ylim(0, 1.0)

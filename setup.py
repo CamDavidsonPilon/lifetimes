@@ -28,7 +28,7 @@ setup(name='Lifetimes',
       install_requires=[
         "numpy",
         "scipy",
-        "pandas>=0.14",
+        "pandas>=0.19",
         ],
       package_data={
         "lifetimes": [
