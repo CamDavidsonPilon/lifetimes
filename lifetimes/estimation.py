@@ -520,7 +520,7 @@ class BetaGeoFitter(BaseFitter):
                                                       iterative_fitting,
                                                       initial_params,
                                                       4,
-                                                      verbose, 
+                                                      verbose,
                                                       tol)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))

@@ -240,7 +240,7 @@ class TestBetaGammaFitter():
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078 ,0.0532 ,0.1506 ,1.0405,1.0437, 1.8576])
         actual = bfg.expected_number_of_purchases_up_to_time(times)
-        npt.assert_array_almost_equal(actual, expected, decimal=3) 
+        npt.assert_array_almost_equal(actual, expected, decimal=3)
 
     def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self):
         bfg = estimation.BetaGeoFitter()
