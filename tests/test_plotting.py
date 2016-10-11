@@ -13,7 +13,7 @@ from lifetimes import utils
 
 bgf = BetaGeoFitter()
 cd_data = load_cdnow()
-bgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=0)
+bgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
 
 @pytest.mark.plottest
 class TestPlotting():
@@ -27,7 +27,7 @@ class TestPlotting():
     @pytest.mark.mpl_image_compare(tolerance=30)
     def test_plot_period_transactions_parento(self):
         pnbd = ParetoNBDFitter()
-        pnbd.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=0)
+        pnbd.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
         
         plt.figure()
         plotting.plot_period_transactions(pnbd)
@@ -36,7 +36,7 @@ class TestPlotting():
     @pytest.mark.mpl_image_compare(tolerance=30)
     def test_plot_period_transactions_mbgf(self):
         mbgf = ModifiedBetaGeoFitter()
-        mbgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=0)
+        mbgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
         
         plt.figure()
         plotting.plot_period_transactions(mbgf)
