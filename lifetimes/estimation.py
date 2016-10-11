@@ -59,27 +59,27 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     @staticmethod
     def _loglikelihood(params, x, tx, T):
 
-        N = x.shape[0]
-
         alpha, beta, gamma, delta = params
 
         beta_ab = special.betaln(alpha, beta)
         beta_gd = special.betaln(gamma, delta)
 
         indiv_loglike = (special.betaln(alpha + x, beta + T - x) - beta_ab +
-                        special.betaln(gamma, delta + T) - beta_gd)
+                         special.betaln(gamma, delta + T) - beta_gd)
 
         recency_T = T - tx - 1
 
-        def _sum(x, tx, recency_T):
+        J = np.arange(max(recency_T) + 1)
 
-            j = np.arange(recency_T+1)
+        @np.vectorize
+        def _sum(x, tx, recency_T):
+            j = J[:recency_T + 1]
             return log(
                 np.sum(exp(special.betaln(alpha + x, beta + tx - x + j) - beta_ab +
                               special.betaln(gamma + 1, delta + tx + j) - beta_gd)))
 
-        for i in np.arange(N):
-            indiv_loglike[i] = logaddexp(indiv_loglike[i],_sum(x[i], tx[i], recency_T[i]))
+        s = _sum(x, tx, recency_T)
+        indiv_loglike = logaddexp(indiv_loglike, s)
 
         return indiv_loglike
 
@@ -117,7 +117,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                                                       iterative_fitting,
                                                       np.ones(4),
                                                       4,
-                                                      verbose, 
+                                                      verbose,
                                                       tol)
         self.params_ = OrderedDict(zip(['alpha','beta','gamma','delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, n, n_custs],
@@ -211,12 +211,22 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         p1 = special.binom(n, x) * exp(special.betaln(alpha + x, beta + n - x) - special.betaln(alpha, beta) +
          special.betaln(gamma, delta + n) - special.betaln(gamma, delta))
 
-        for j in np.arange(x.shape[0]):
-            i = np.arange(x[j], n)
-            p2 = np.sum(special.binom(i, x[j]) *
-                        exp(special.betaln(alpha + x[j], beta + i - x[j]) - special.betaln(alpha, beta) +
-                            special.betaln(gamma +1, delta + i) - special.betaln(gamma, delta)))
-            p1[j] += p2
+        I = np.arange(x.min(), n)
+
+        @np.vectorize
+        def p2(j, x):
+            i = I[j:]
+            return np.sum(
+                special.binom(i, x) *
+                exp(
+                    special.betaln(alpha + x, beta + i - x) -
+                    special.betaln(alpha, beta) +
+                    special.betaln(gamma +1, delta + i) -
+                    special.betaln(gamma, delta)
+                )
+            )
+
+        p1 += np.fromfunction(p2, (x.shape[0],), x=x)
 
         idx = pd.Index(x, name='frequency')
         return DataFrame(p1 * x_counts.sum(), index=idx, columns=['model'])
@@ -282,7 +292,7 @@ class GammaGammaFitter(BaseFitter):
                                                       iterative_fitting,
                                                       initial_params,
                                                       3,
-                                                      verbose, 
+                                                      verbose,
                                                       tol)
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
@@ -619,12 +629,9 @@ class BetaGeoFitter(BaseFitter):
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
 
-        Z = np.zeros((max_recency + 1, max_frequency + 1))
-        for i, t_x in enumerate(np.arange(max_recency + 1)):
-            for j, x in enumerate(np.arange(max_frequency + 1)):
-                Z[i, j] = self.conditional_probability_alive(x, t_x, max_recency)
-
-        return Z
+        return np.fromfunction(self.conditional_probability_alive,
+                               (max_frequency + 1, max_recency + 1),
+                               T=max_recency).T
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """
@@ -639,7 +646,8 @@ class BetaGeoFitter(BaseFitter):
 
         first_term = special.beta(a, b + n) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
         if n > 0:
-            finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+            j = np.arange(0, n)
+            finite_sum = (special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j).sum()
             second_term = special.beta(a + 1, b + n - 1) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
@@ -783,9 +791,10 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
 
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        _j = np.arange(0, n)
 
         first_term = special.beta(a, b + n + 1) / special.beta(a, b) * special.gamma(r + n) / special.gamma(r) / special.gamma(n + 1) * (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n
-        finite_sum = np.sum([special.gamma(r + j) / special.gamma(r) / special.gamma(j + 1) * (t / (alpha + t)) ** j for j in range(0, n)])
+        finite_sum = (special.gamma(r + _j) / special.gamma(r) / special.gamma(_j + 1) * (t / (alpha + t)) ** _j).sum()
         second_term = special.beta(a + 1, b + n) / special.beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term
