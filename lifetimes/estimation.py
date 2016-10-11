@@ -117,7 +117,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                                                       iterative_fitting,
                                                       np.ones(4),
                                                       4,
-                                                      verbose, 
+                                                      verbose,
                                                       tol)
         self.params_ = OrderedDict(zip(['alpha','beta','gamma','delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, n, n_custs],
@@ -292,7 +292,7 @@ class GammaGammaFitter(BaseFitter):
                                                       iterative_fitting,
                                                       initial_params,
                                                       3,
-                                                      verbose, 
+                                                      verbose,
                                                       tol)
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
@@ -629,12 +629,9 @@ class BetaGeoFitter(BaseFitter):
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
 
-        Z = np.zeros((max_recency + 1, max_frequency + 1))
-        for i, t_x in enumerate(np.arange(max_recency + 1)):
-            for j, x in enumerate(np.arange(max_frequency + 1)):
-                Z[i, j] = self.conditional_probability_alive(x, t_x, max_recency)
-
-        return Z
+        return np.fromfunction(self.conditional_probability_alive,
+                               (max_frequency + 1, max_recency + 1),
+                               T=max_recency).T
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         """
