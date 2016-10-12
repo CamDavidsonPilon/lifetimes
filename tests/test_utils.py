@@ -18,7 +18,7 @@ def example_summary_data(example_transaction_data):
 @pytest.fixture()
 def fitted_bg(example_summary_data):
     bg = BetaGeoFitter()
-    bg.fit(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T'], iterative_fitting=1, tol=1e-6)
+    bg.fit(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T'], iterative_fitting=2, tol=1e-6)
     return bg
 
 @pytest.fixture()

@@ -220,24 +220,24 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     if iterative_fitting <= 0:
         raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
 
-    success_count = 0
     total_count = 0
-    while success_count < iterative_fitting:
+    while total_count < iterative_fitting:
         fit_method = methods[total_count % len(methods)]
         params_init = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
         output = minimize(_func_caller, method=fit_method, tol=tol,
                           x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
+        sols.append(output.x)
+        ll.append((-1 if output.success else 1, output.fun))
+
         if output.success:
-            ll.append(output.fun)
-            sols.append(output.x)
             params_init = output.x
-            success_count += 1
+
         total_count += 1
 
     if len(ll) == 0:
         raise ValueError("None of the fit methods converged. Try increasing or decreasing the penalizer_coef.")
     minimizing_params = sols[np.argmin(ll)]
-    return minimizing_params, np.min(ll)
+    return minimizing_params, min(ll)[1]
 
 
 def _scale_time(age):

@@ -326,7 +326,7 @@ class TestBetaGammaFitter():
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10
         bgf_with_large_inputs = estimation.BetaGeoFitter()
-        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
+        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'], iterative_fitting=2)
         assert bgf_with_large_inputs._scale < 1.
 
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale*1, scale*2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
@@ -365,7 +365,7 @@ class TestModifiedBetaGammaFitter():
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self):
         mbfg = estimation.ModifiedBetaGeoFitter()
-        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
+        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6, iterative_fitting=3)
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
@@ -450,8 +450,20 @@ class TestModifiedBetaGammaFitter():
         mbgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10.
         mbgf_with_large_inputs = estimation.ModifiedBetaGeoFitter()
-        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'])
+        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'], iterative_fitting=2)
         assert mbgf_with_large_inputs._scale < 1.
 
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale*1, scale*2) - mbgf.conditional_probability_alive(1, 1, 2)) < 10e-2
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale*2, scale*10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
+
+    def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self):
+        reduced_dataset = cdnow_customers.ix[:2]
+        mbfg1 = estimation.ModifiedBetaGeoFitter()
+        mbfg2 = estimation.ModifiedBetaGeoFitter()
+
+        np.random.seed(0)
+        mbfg1.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'])
+
+        np.random.seed(0)
+        mbfg2.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'], iterative_fitting=10)
+        assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
