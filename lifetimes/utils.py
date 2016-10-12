@@ -236,8 +236,10 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
 
     if len(ll) == 0:
         raise ValueError("None of the fit methods converged. Try increasing or decreasing the penalizer_coef.")
-    minimizing_params = sols[np.argmin(ll)]
-    return minimizing_params, min(ll)[1]
+
+    argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
+    minimizing_params = sols[argmin_ll]
+    return minimizing_params, min_ll[1]
 
 
 def _scale_time(age):
