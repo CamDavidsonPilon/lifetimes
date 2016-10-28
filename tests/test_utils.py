@@ -195,6 +195,7 @@ def test_calibration_and_holdout_data(large_transaction_level_data):
     with pytest.raises(KeyError):
         actual.ix[6] 
 
+
 def test_calibration_and_holdout_data_works_with_specific_frequency(large_transaction_level_data):
     today = '2015-02-07'
     calibration_end = '2015-02-01'
@@ -206,6 +207,7 @@ def test_calibration_and_holdout_data_works_with_specific_frequency(large_transa
                              [4, 0., 0., 2., 1, 1],
                              [5, 0., 0., 2., 0, 1]], columns=expected_cols).set_index('id')
     assert_frame_equal(actual, expected, check_dtype=False)
+
 
 def test_calibration_and_holdout_data_gives_correct_date_boundaries():
 
@@ -228,6 +230,19 @@ def test_calibration_and_holdout_data_gives_correct_date_boundaries():
     actual = utils.calibration_and_holdout_data(transactions, 'id', 'date', calibration_period_end='2015-02-01', observation_period_end='2015-02-04')
     assert actual['frequency_holdout'].ix[1] == 0 
     assert actual['frequency_holdout'].ix[4] == 1 
+
+
+def test_calibration_and_holdout_data_with_monetary_value(large_transaction_level_data_with_monetary_value):
+    today = '2015-02-07'
+    calibration_end = '2015-02-01'
+    actual = utils.calibration_and_holdout_data(large_transaction_level_data_with_monetary_value,
+                                                'id',
+                                                'date',
+                                                calibration_end,
+                                                observation_period_end=today,
+                                                monetary_value_col='monetary_value')
+    assert (actual['monetary_value_cal'] == [0, 0, 3, 0, 4.5]).all()
+    assert (actual['monetary_value_holdout'] == [2, 0, 0, 3, 0]).all()
 
 
 def test_summary_data_from_transaction_data_squashes_period_purchases_to_one_purchase():

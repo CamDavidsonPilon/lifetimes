@@ -17,9 +17,11 @@ def coalesce(*args):
 
 
 def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, calibration_period_end,
-                                 observation_period_end=datetime.today(), freq='D', datetime_format=None):
+                                 observation_period_end=datetime.today(), freq='D', datetime_format=None,
+                                 monetary_value_col=None):
     """
-    This function creates a summary of each customer over a calibration and holdout period (training and testing, respectively).
+    This function creates a summary of each customer over a calibration and holdout period (training and testing,
+    respectively).
     It accepts transition data, and returns a Dataframe of sufficient statistics.
 
     Parameters:
@@ -29,18 +31,24 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         calibration_period_end: a period to limit the calibration to, inclusive.
         observation_period_end: a string or datetime to denote the final date of the study. Events
             after this date are truncated, inclusive.
+        freq: Default 'D' for days. Other examples: 'W' for weekly.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
-        freq: Default 'D' for days. Other examples: 'W' for weekly.
+        monetary_value_col: the column in transactions that denotes the monetary value of the transaction.
+            Optional, only needed for customer lifetime value estimation models.
 
     Returns:
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
-
+        If monetary_value_col isn't None, the dataframe will also have the columns monetary_value_cal and
+        monetary_value_holdout.
     """
     def to_period(d):
         return d.to_period(freq)
 
-    transactions = transactions[[customer_id_col, datetime_col]].copy()
+    transaction_cols = [customer_id_col, datetime_col]
+    if monetary_value_col:
+        transaction_cols.append(monetary_value_col)
+    transactions = transactions[transaction_cols].copy()
 
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
@@ -48,27 +56,33 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     # create calibration dataset
     calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
-    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions, customer_id_col, datetime_col,
-                                                                  datetime_format, observation_period_end=calibration_period_end, freq=freq)
+    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions,
+                                                                  customer_id_col,
+                                                                  datetime_col,
+                                                                  datetime_format=datetime_format,
+                                                                  observation_period_end=calibration_period_end,
+                                                                  freq=freq,
+                                                                  monetary_value_col=monetary_value_col)
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
     # create holdout dataset
-    holdout_transactions = transactions.ix[(observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)]
+    holdout_transactions = transactions.ix[(observation_period_end >= transactions[datetime_col]) &
+                                           (transactions[datetime_col] > calibration_period_end)]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
-    holdout_summary_data = reduce_events_to_period(holdout_transactions, customer_id_col, datetime_col).groupby(level=customer_id_col).agg(['count'])
+    holdout_summary_data = holdout_transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)\
+                                               .groupby(level=customer_id_col).agg(['count'])
     holdout_summary_data.columns = ['frequency_holdout']
+    if monetary_value_col:
+        holdout_summary_data['monetary_value_holdout'] = \
+            holdout_transactions.groupby(customer_id_col)[monetary_value_col].mean()
 
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
-    combined_data['frequency_holdout'].fillna(0, inplace=True)
+    combined_data.fillna(0, inplace=True)
 
     delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
     combined_data['duration_holdout'] = delta_time
 
     return combined_data
-
-
-def reduce_events_to_period(transactions, *aggregation_columns):
-    return transactions.groupby(aggregation_columns, sort=False).agg(lambda r: 1)
 
 
 def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
@@ -82,7 +96,7 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
         transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        monetary_value_col: the columns in the transactions that denotes the monetary value of the transaction.
+        monetary_value_col: the column in transactions that denotes the monetary value of the transaction.
             Optional, only needed for customer lifetime value estimation models.
         observation_period_end: a string or datetime to denote the final date of the study. Events
             after this date are truncated.
