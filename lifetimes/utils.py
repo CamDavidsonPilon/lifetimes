@@ -220,17 +220,17 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     if iterative_fitting <= 0:
         raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
 
+    current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
     total_count = 0
     while total_count < iterative_fitting:
         fit_method = methods[total_count % len(methods)]
-        params_init = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
         output = minimize(_func_caller, method=fit_method, tol=tol,
-                          x0=params_init, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
+                          x0=current_init_params, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
         sols.append(output.x)
         ll.append((-1 if output.success else 1, output.fun))
 
         if output.success:
-            params_init = output.x
+            current_init_params = output.x
 
         total_count += 1
 
@@ -283,7 +283,7 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         Series object with customer ids as index and the estimated customer lifetime values as values
     """
     df = pd.DataFrame(index=frequency.index)
-    df['clv'] = 0 # initialize the clv column to zeros
+    df['clv'] = 0  # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
         # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
@@ -291,4 +291,4 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         # sum up the CLV estimates of all of the periods
         df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate)**(i / 30)
 
-    return df['clv'] # return as a series
+    return df['clv']  # return as a series
