@@ -260,21 +260,29 @@ def test_calculate_alive_path(example_transaction_data, example_summary_data, fi
 
 
 def test_check_inputs():
-    freq, recency, T = np.array([0,1,2]), np.array([0, 1, 10]), np.array([5, 6, 15])
-    assert utils._check_inputs(freq, recency, T) is None
+    frequency = np.array([0, 1, 2])
+    recency = np.array([0, 1, 10])
+    T = np.array([5, 6, 15])
+    monetary_value = np.array([2.3, 490, 33.33])
+    assert utils._check_inputs(frequency, recency, T, monetary_value) is None
 
     with pytest.raises(ValueError):
         bad_recency = T + 1
-        utils._check_inputs(freq, bad_recency, T)
+        utils._check_inputs(frequency, bad_recency, T)
 
     with pytest.raises(ValueError):
         bad_recency = recency.copy()
         bad_recency[0] = 1
-        utils._check_inputs(freq, bad_recency, T)
+        utils._check_inputs(frequency, bad_recency, T)
 
     with pytest.raises(ValueError):
         bad_freq = np.array([0, 0.5, 2])
         utils._check_inputs(bad_freq, recency, T)
+
+    with pytest.raises(ValueError):
+        bad_monetary_value = monetary_value.copy()
+        bad_monetary_value[0] = 0
+        utils._check_inputs(frequency, recency, T, bad_monetary_value)
 
 
 def test_summary_data_from_transaction_data_obeys_data_contraints(example_summary_data):
