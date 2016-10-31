@@ -21,7 +21,7 @@ class BaseFitter(object):
     def __repr__(self):
         classname = self.__class__.__name__
         try:
-            param_str = ", ".join("%s: %.2f" % (param, value) for param, value in self.params_.items())
+            param_str = ", ".join("%s: %.2f" % (param, value) for param, value in sorted(self.params_.items()))
             return "<lifetimes.%s: fitted with %d subjects, %s>" % (classname, self.data.shape[0], param_str)
         except AttributeError:
             return "<lifetimes.%s>" % classname

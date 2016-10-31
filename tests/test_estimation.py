@@ -20,7 +20,7 @@ class TestBaseFitter():
         assert repr(base_fitter) == '<lifetimes.BaseFitter>'
         base_fitter.params_ = dict(x=12.3, y=42)
         base_fitter.data = np.array([1, 2, 3])
-        assert repr(base_fitter) == '<lifetimes.BaseFitter: fitted with 3 subjects, y: 42.00, x: 12.30>'
+        assert repr(base_fitter) == '<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.30, y: 42.00>'
 
     def test_unload_params(self):
         base_fitter = estimation.BaseFitter()
