@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 import pandas as pd
 import numpy.testing as npt
+import pytest
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
@@ -11,6 +12,23 @@ from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value
 cdnow_customers = load_cdnow()
 cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
 donations = load_donations()
+
+
+class TestBaseFitter():
+    def test_repr(self):
+        base_fitter = estimation.BaseFitter()
+        assert repr(base_fitter) == '<lifetimes.BaseFitter>'
+        base_fitter.params_ = dict(x=12.3, y=42)
+        base_fitter.data = np.array([1, 2, 3])
+        assert repr(base_fitter) == '<lifetimes.BaseFitter: fitted with 3 subjects, y: 42.00, x: 12.30>'
+
+    def test_unload_params(self):
+        base_fitter = estimation.BaseFitter()
+        with pytest.raises(ValueError):
+            base_fitter._unload_params()
+        base_fitter.params_ = dict(x=12.3, y=42)
+        npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params('x', 'y'))
+
 
 class TestBetaGeoBetaBinomFitter():
 

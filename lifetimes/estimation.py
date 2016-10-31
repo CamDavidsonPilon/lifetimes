@@ -21,21 +21,16 @@ class BaseFitter(object):
     def __repr__(self):
         classname = self.__class__.__name__
         try:
-            s = """<lifetimes.%s: fitted with %d subjects, %s>""" % (classname, self.data.shape[0], self._print_params())
+            param_str = ", ".join("%s: %.2f" % (param, value) for param, value in self.params_.items())
+            return "<lifetimes.%s: fitted with %d subjects, %s>" % (classname, self.data.shape[0], param_str)
         except AttributeError:
-            s = """<lifetimes.%s>""" % classname
-        return s
+            return "<lifetimes.%s>" % classname
 
     def _unload_params(self, *args):
         if not hasattr(self, 'params_'):
             raise ValueError("Model has not been fit yet. Please call the .fit method first.")
         return [self.params_[x] for x in args]
 
-    def _print_params(self):
-        s = ""
-        for p, value in self.params_.items():
-            s += "%s: %.2f, " % (p, value)
-        return s.strip(', ')
 
 class BetaGeoBetaBinomFitter(BaseFitter):
     """
