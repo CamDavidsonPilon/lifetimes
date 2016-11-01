@@ -103,10 +103,13 @@ class TestBetaGeoBetaBinomFitter():
 class TestGammaGammaFitter():
 
     def test_params_out_is_close_to_Hardie_paper(self):
+        returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
+            cdnow_customers_with_monetary_value['frequency'] > 0
+        ]
         ggf = estimation.GammaGammaFitter()
         ggf.fit(
-            cdnow_customers_with_monetary_value['frequency'],
-            cdnow_customers_with_monetary_value['monetary_value'],
+            returning_cdnow_customers_with_monetary_value['frequency'],
+            returning_cdnow_customers_with_monetary_value['monetary_value'],
             iterative_fitting=3
         )
         expected = np.array([6.25, 3.74, 15.44])
@@ -131,7 +134,10 @@ class TestGammaGammaFitter():
         ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
 
         bgf = estimation.BetaGeoFitter()
-        bgf.fit(cdnow_customers_with_monetary_value['frequency'], cdnow_customers_with_monetary_value['recency'], cdnow_customers_with_monetary_value['T'], iterative_fitting=3)
+        bgf.fit(cdnow_customers_with_monetary_value['frequency'],
+                cdnow_customers_with_monetary_value['recency'],
+                cdnow_customers_with_monetary_value['T'],
+                iterative_fitting=3)
 
         ggf_clv = ggf.customer_lifetime_value(
                 bgf,
@@ -146,7 +152,8 @@ class TestGammaGammaFitter():
                 cdnow_customers_with_monetary_value['frequency'],
                 cdnow_customers_with_monetary_value['recency'],
                 cdnow_customers_with_monetary_value['T'],
-                ggf.conditional_expected_average_profit(cdnow_customers_with_monetary_value['frequency'],cdnow_customers_with_monetary_value['monetary_value'])
+                ggf.conditional_expected_average_profit(cdnow_customers_with_monetary_value['frequency'],
+                                                        cdnow_customers_with_monetary_value['monetary_value'])
         )
         npt.assert_equal(ggf_clv.values, utils_clv.values)
 

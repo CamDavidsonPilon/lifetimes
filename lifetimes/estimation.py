@@ -104,7 +104,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         frequency = asarray(frequency)
         recency = asarray(recency)
         n = asarray(n)
-        n_custs= asarray(n_custs)
+        n_custs = asarray(n_custs)
         _check_inputs(frequency, recency, n)
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
@@ -254,9 +254,9 @@ class GammaGammaFitter(BaseFitter):
         """
         This method computes the conditional expectation of the average profit per transaction
         for a group of one or more customers.
-            x: a vector containing the customers' frequencies. Defaults to the whole set of
+            frequency: a vector containing the customers' frequencies. Defaults to the whole set of
                 frequencies used for fitting the model.
-            m: a vector containing the customers' monetary values. Defaults to the whole set of
+            monetary_value: a vector containing the customers' monetary values. Defaults to the whole set of
                 monetary values used for fitting the model.
 
         Returns:
@@ -282,6 +282,8 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             self, fitted and with parameters estimated
         """
+        _check_inputs(frequency, monetary_value=monetary_value)
+
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, monetary_value, self.penalizer_coef],
                                                       iterative_fitting,

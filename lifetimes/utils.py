@@ -261,24 +261,16 @@ def _scale_time(age):
     return 10. / age.max()
 
 
-def _check_inputs(frequency, recency, T):
-
-    def check_recency_is_less_than_T(recency, T):
-        if np.any(recency > T):
-            raise ValueError("""Some values in recency vector are larger than T vector. This is impossible according to the model.""")
-
-    def check_frequency_of_zero_implies_recency_of_zero(frequency, recency):
-        ix = frequency == 0
-        if np.any(recency[ix] != 0):
-            raise ValueError("""There exist non-zero recency values when frequency is zero. This is impossible according to the model.""")
-
-    def check_all_frequency_values_are_integer_values(frequency):
-        if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
-            raise ValueError("""There exist non-integer values in the frequency vector. This is impossible according to the model.""")
-
-    check_recency_is_less_than_T(recency, T)
-    check_frequency_of_zero_implies_recency_of_zero(frequency, recency)
-    check_all_frequency_values_are_integer_values(frequency)
+def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
+    if recency is not None:
+        if T is not None and np.any(recency > T):
+            raise ValueError("Some values in recency vector are larger than T vector.")
+        if np.any(recency[frequency == 0] != 0):
+            raise ValueError("There exist non-zero recency values when frequency is zero.")
+    if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
+        raise ValueError("There exist non-integer values in the frequency vector.")
+    if monetary_value is not None and np.any(monetary_value <= 0):
+        raise ValueError("There exist non-positive values in the monetary_value vector.")
 
 
 def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
