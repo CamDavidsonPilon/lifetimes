@@ -10,9 +10,6 @@ from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value
 
 cdnow_customers = load_cdnow()
 cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
-returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
-    cdnow_customers_with_monetary_value['frequency'] > 0
-]
 donations = load_donations()
 
 class TestBetaGeoBetaBinomFitter():
@@ -88,6 +85,9 @@ class TestBetaGeoBetaBinomFitter():
 class TestGammaGammaFitter():
 
     def test_params_out_is_close_to_Hardie_paper(self):
+        returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
+            cdnow_customers_with_monetary_value['frequency'] > 0
+        ]
         ggf = estimation.GammaGammaFitter()
         ggf.fit(
             returning_cdnow_customers_with_monetary_value['frequency'],
