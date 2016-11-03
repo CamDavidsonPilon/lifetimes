@@ -295,7 +295,6 @@ class GammaGammaFitter(BaseFitter):
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params.
-                 This model is not very stable so we suggest >10 for best estimates evaluation.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
             tol: tolerance for termination of the function minimization process.
