@@ -32,6 +32,7 @@ class BaseFitter(object):
         return [self.params_[x] for x in args]
 
 
+
 class BetaGeoBetaBinomFitter(BaseFitter):
     """
     Also known as the Beta-Geometric/Beta-Binomial Model Model [1].
@@ -228,6 +229,16 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
 
 class GammaGammaFitter(BaseFitter):
+    """
+    Fitter for the gamma-gamma model, which is used to estimate the average monetary value of customer transactions.
+
+    This implementation is based on the Excel spreadsheet found in [1]. More details on the derivation and evaluation
+    can be found in [2].
+
+    [1] http://www.brucehardie.com/notes/025/
+    [2] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005), "RFM and CLV: Using iso-value curves for customer
+        base analysis", Journal of Marketing Research, 42 (November), 415-430
+    """
 
     def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
@@ -242,18 +253,22 @@ class GammaGammaFitter(BaseFitter):
         x = frequency
         m = avg_monetary_value
 
-        negative_log_likelihood_values = special.gammaln(p * x + q) - special.gammaln(p * x) - special.gammaln(q)\
-            + q * np.log(v) + (p * x - 1) * np.log(m) + (p * x) * np.log(x) - (p * x + q) * np.log(x * m + v)
-
+        negative_log_likelihood_values = (special.gammaln(p * x + q) -
+                                          special.gammaln(p * x) -
+                                          special.gammaln(q) +
+                                          q * np.log(v) +
+                                          (p * x - 1) * np.log(m) +
+                                          (p * x) * np.log(x) -
+                                          (p * x + q) * np.log(x * m + v))
         penalizer_term = penalizer_coef * log(params).sum()
-        negative_log_likelihood = -np.sum(negative_log_likelihood_values) + penalizer_term
-
-        return negative_log_likelihood
+        return -np.sum(negative_log_likelihood_values) + penalizer_term
 
     def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
         """
         This method computes the conditional expectation of the average profit per transaction
         for a group of one or more customers.
+
+        Parameters:
             frequency: a vector containing the customers' frequencies. Defaults to the whole set of
                 frequencies used for fitting the model.
             monetary_value: a vector containing the customers' monetary values. Defaults to the whole set of
@@ -262,10 +277,15 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             the conditional expectation of the average profit per transaction
         """
-        m = self.data['monetary_value'] if monetary_value is None else monetary_value
-        x = self.data['frequency'] if frequency is None else frequency
+        if monetary_value is None:
+            monetary_value = self.data['monetary_value']
+        if frequency is None:
+            frequency = self.data['frequency']
         p, q, v = self._unload_params('p', 'q', 'v')
-        return (((q - 1) / (p * x + q - 1)) * (v * p / (q - 1))) + (p * x / (p * x + q - 1)) * m
+        # The expected average profit is a weighted average of individual monetary value and the population mean.
+        individual_weight = p * frequency / (p * frequency + q - 1)
+        population_mean = v * p / (q - 1)
+        return (1 - individual_weight) * population_mean + individual_weight * monetary_value
 
     def fit(self, frequency, monetary_value, iterative_fitting=4, initial_params=None, verbose=False, tol=1e-4):
         """
@@ -275,9 +295,9 @@ class GammaGammaFitter(BaseFitter):
             frequency: the frequency vector of customers' purchases (denoted x in literature).
             monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params.
-                 This model is not very stable so we suggest >10 for best estimates evaluation.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
+            tol: tolerance for termination of the function minimization process.
 
         Returns:
             self, fitted and with parameters estimated
@@ -300,6 +320,8 @@ class GammaGammaFitter(BaseFitter):
     def customer_lifetime_value(self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
         """
         This method computes the average lifetime value for a group of one or more customers.
+
+        Parameters:
             transaction_prediction_model: the model to predict future transactions, literature uses
                 pareto/ndb but we can also use a different model like bg
             frequency: the frequency vector of customers' purchases (denoted x in literature).
@@ -307,12 +329,13 @@ class GammaGammaFitter(BaseFitter):
             T: the vector of customers' age (time since first purchase)
             monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
             time: the lifetime expected for the user in months. Default: 12
-            discount_rate: the monthly adjusted discount rate. Default: 1
+            discount_rate: the monthly adjusted discount rate. Default: 0.01
 
         Returns:
             Series object with customer ids as index and the estimated customer lifetime values as values
         """
-        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)  # use the Gamma-Gamma estimates for the monetary_values
+        # use the Gamma-Gamma estimates for the monetary_values
+        adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)
         return customer_lifetime_value(transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate)
 
 
