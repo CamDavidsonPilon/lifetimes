@@ -731,7 +731,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
         penalizer_term = penalizer_coef * log(params).sum()
-        return -(A_1 + A_2 + A_3 + log(exp(A_4) + 1.)).sum() + penalizer_term
+        return -(A_1 + A_2 + A_3 + logaddexp(A_4, 0)).sum() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
