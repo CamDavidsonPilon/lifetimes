@@ -1,5 +1,5 @@
 import pytest
-import pandas as pd 
+import pandas as pd
 import numpy as np
 from pandas.util.testing import assert_frame_equal
 from numpy.testing import assert_almost_equal, assert_allclose

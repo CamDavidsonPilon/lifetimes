@@ -2,7 +2,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+from scipy.optimize import fmin
 
 pd.options.mode.chained_assignment = None
 
@@ -226,7 +226,6 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp, tol=1e-4):
     ll = []
     sols = []
-    methods = ['Nelder-Mead', 'BFGS']
 
     def _func_caller(params, func_args, function):
         return function(params, *func_args)
@@ -237,23 +236,15 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
     total_count = 0
     while total_count < iterative_fitting:
-        fit_method = methods[total_count % len(methods)]
-        output = minimize(_func_caller, method=fit_method, tol=tol,
-                          x0=current_init_params, args=(minimizing_function_args, minimizing_function), options={'disp': disp})
-        sols.append(output.x)
-        ll.append((-1 if output.success else 1, output.fun))
-
-        if output.success:
-            current_init_params = output.x
+        xopt, fopt, _, _, _ = fmin(_func_caller, current_init_params, ftol=tol,
+                        args=(minimizing_function_args, minimizing_function), disp=disp, maxiter=2000, maxfun=2000, full_output=True)
+        sols.append(xopt)
+        ll.append(fopt)
 
         total_count += 1
-
-    if len(ll) == 0:
-        raise ValueError("None of the fit methods converged. Try increasing or decreasing the penalizer_coef.")
-
     argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
     minimizing_params = sols[argmin_ll]
-    return minimizing_params, min_ll[1]
+    return minimizing_params, min_ll
 
 
 def _scale_time(age):
@@ -267,10 +258,14 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
             raise ValueError("Some values in recency vector are larger than T vector.")
         if np.any(recency[frequency == 0] != 0):
             raise ValueError("There exist non-zero recency values when frequency is zero.")
+        if np.any(recency < 0):
+            raise ValueError("There exist negative recency (ex: last order set before first order)")
     if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
         raise ValueError("There exist non-integer values in the frequency vector.")
     if monetary_value is not None and np.any(monetary_value <= 0):
         raise ValueError("There exist non-positive values in the monetary_value vector.")
+    # TODO: raise warning if np.any(freqency > T) as this means that there are 
+    # more order-periods than periods.
 
 
 def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
