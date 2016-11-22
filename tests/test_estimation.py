@@ -395,7 +395,7 @@ class TestModifiedBetaGammaFitter():
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
         actual = mbfg.expected_number_of_purchases_up_to_time(times)
-        npt.assert_allclose(actual, expected, rtol=0.05) 
+        npt.assert_allclose(actual, expected, rtol=0.05)
 
     def test_conditional_probability_alive_returns_lessthan_1_if_no_repeat_purchases(self):
         mbfg = estimation.ModifiedBetaGeoFitter()
@@ -413,7 +413,6 @@ class TestModifiedBetaGammaFitter():
                 for k in range(j, 100, 10):
                     assert 0 <= mbfg.conditional_probability_alive(i, j, k) <= 1.0
 
-
     def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self):
         mbfg1 = estimation.ModifiedBetaGeoFitter()
         mbfg2 = estimation.ModifiedBetaGeoFitter()
@@ -424,7 +423,6 @@ class TestModifiedBetaGammaFitter():
         np.random.seed(0)
         mbfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
-
 
     def test_penalizer_term_will_shrink_coefs_to_0(self):
         mbfg_no_penalizer = estimation.ModifiedBetaGeoFitter()
@@ -441,7 +439,6 @@ class TestModifiedBetaGammaFitter():
         params_3 = np.array(list(mbfg_with_more_penalizer.params_.values()))
         assert params_3.sum() < params_2.sum()
 
-
     def test_conditional_probability_alive_matrix(self):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
@@ -452,7 +449,6 @@ class TestModifiedBetaGammaFitter():
             for x in range(Z.shape[1]):
                 assert Z[t_x][x] == mbfg.conditional_probability_alive(x, t_x, max_t)
 
-
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
         """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
         from collections import OrderedDict
@@ -461,14 +457,13 @@ class TestModifiedBetaGammaFitter():
         # probability that a customer will make 10 repeat transactions in the
         # time interval (0,2]
         expected = 1.07869e-07
-        actual = mbgf.probability_of_n_purchases_up_to_time(2,10)
+        actual = mbgf.probability_of_n_purchases_up_to_time(2, 10)
         assert abs(expected - actual) < 10e-5
         # PMF
         expected = np.array([0.0019995214, 0.0015170236, 0.0011633150, 0.0009003148, 0.0007023638,
                              0.0005517902, 0.0004361913, 0.0003467171, 0.0002769613, 0.0002222260])
-        actual = np.array([mbgf.probability_of_n_purchases_up_to_time(30,n) for n in range(11,21)])
+        actual = np.array([mbgf.probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
         npt.assert_allclose(expected, actual, rtol=0.5)
-
 
     def test_scaling_inputs_gives_same_or_similar_results(self):
         mbgf = estimation.ModifiedBetaGeoFitter()
@@ -493,21 +488,20 @@ class TestModifiedBetaGammaFitter():
         mbfg2.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'], iterative_fitting=10)
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
 
+    def test_purchase_predictions_do_not_differ_much_if_looking_at_hourly_or_daily_frequencies(self):
+        transaction_data = pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
+        daily_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='D')
+        hourly_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='h')
+        thirty_days = 30
+        hours_in_day = 24
+        mbfg = estimation.ModifiedBetaGeoFitter()
 
-def test_purchase_predictions_do_not_differ_much_if_looking_at_hourly_or_daily_frequencies():
-    transaction_data = pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
-    daily_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='D')
-    hourly_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='h')
-    thirty_days = 30
-    hours_in_day = 24
-    mbfg = estimation.ModifiedBetaGeoFitter()
+        np.random.seed(0)
+        mbfg.fit(daily_summary['frequency'], daily_summary['recency'], daily_summary['T'])
+        thirty_day_prediction_from_daily_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days)
 
-    np.random.seed(0)
-    mbfg.fit(daily_summary['frequency'], daily_summary['recency'], daily_summary['T'])
-    thirty_day_prediction_from_daily_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days)
+        np.random.seed(0)
+        mbfg.fit(hourly_summary['frequency'], hourly_summary['recency'], hourly_summary['T'])
+        thirty_day_prediction_from_hourly_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days * hours_in_day)
 
-    np.random.seed(0)
-    mbfg.fit(hourly_summary['frequency'], hourly_summary['recency'], hourly_summary['T'])
-    thirty_day_prediction_from_hourly_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days * hours_in_day)
-
-    npt.assert_almost_equal(thirty_day_prediction_from_daily_data, thirty_day_prediction_from_hourly_data)
+        npt.assert_almost_equal(thirty_day_prediction_from_daily_data, thirty_day_prediction_from_hourly_data)

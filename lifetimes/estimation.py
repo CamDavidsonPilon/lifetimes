@@ -32,8 +32,8 @@ class BaseFitter(object):
         return [self.params_[x] for x in args]
 
 
-
 class BetaGeoBetaBinomFitter(BaseFitter):
+
     """
     Also known as the Beta-Geometric/Beta-Binomial Model Model [1].
 
@@ -205,7 +205,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         x = asarray(x_counts.index)
 
         p1 = binom(n, x) * exp(betaln(alpha + x, beta + n - x) - betaln(alpha, beta) +
-                   betaln(gamma, delta + n) - betaln(gamma, delta))
+                               betaln(gamma, delta + n) - betaln(gamma, delta))
 
         I = np.arange(x.min(), n)
 
@@ -229,6 +229,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
 
 class GammaGammaFitter(BaseFitter):
+
     """
     Fitter for the gamma-gamma model, which is used to estimate the average monetary value of customer transactions.
 

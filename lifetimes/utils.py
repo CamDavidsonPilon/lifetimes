@@ -237,7 +237,7 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     total_count = 0
     while total_count < iterative_fitting:
         xopt, fopt, _, _, _ = fmin(_func_caller, current_init_params, ftol=tol,
-                        args=(minimizing_function_args, minimizing_function), disp=disp, maxiter=2000, maxfun=2000, full_output=True)
+                                   args=(minimizing_function_args, minimizing_function), disp=disp, maxiter=2000, maxfun=2000, full_output=True)
         sols.append(xopt)
         ll.append(fopt)
 
@@ -264,7 +264,7 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
         raise ValueError("There exist non-integer values in the frequency vector.")
     if monetary_value is not None and np.any(monetary_value <= 0):
         raise ValueError("There exist non-positive values in the monetary_value vector.")
-    # TODO: raise warning if np.any(freqency > T) as this means that there are 
+    # TODO: raise warning if np.any(freqency > T) as this means that there are
     # more order-periods than periods.
 
 
@@ -290,6 +290,6 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
         # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
         expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
         # sum up the CLV estimates of all of the periods
-        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate)**(i / 30)
+        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
 
     return df['clv']  # return as a series

@@ -25,8 +25,10 @@ def load_dataset(filename, **kwargs):
     '''
     return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)
 
+
 def load_donations(**kwargs):
     return load_dataset('donations.csv', **kwargs)
+
 
 def load_cdnow(**kwargs):
     return load_dataset('cdnow_customers.csv', **kwargs)
