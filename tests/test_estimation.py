@@ -475,11 +475,11 @@ class TestModifiedBetaGammaFitter():
         mbgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10.
         mbgf_with_large_inputs = estimation.ModifiedBetaGeoFitter()
-        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'], iterative_fitting=2)
+        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'], iterative_fitting=2)
         assert mbgf_with_large_inputs._scale < 1.
 
-        assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale*1, scale*2) - mbgf.conditional_probability_alive(1, 1, 2)) < 10e-2
-        assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale*2, scale*10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
+        assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - mbgf.conditional_probability_alive(1, 1, 2)) < 10e-2
+        assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
 
     def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self):
         reduced_dataset = cdnow_customers.ix[:2]
@@ -492,3 +492,22 @@ class TestModifiedBetaGammaFitter():
         np.random.seed(0)
         mbfg2.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'], iterative_fitting=10)
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
+
+
+def p():
+    transaction_data = pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
+    daily_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='D')
+    hourly_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='h')
+    thirty_days = 30
+    hours_in_day = 24
+    mbfg = estimation.ModifiedBetaGeoFitter()
+
+    np.random.seed(0)
+    mbfg.fit(daily_summary['frequency'], daily_summary['recency'], daily_summary['T'])
+    thirty_day_prediction_from_daily_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days)
+
+    np.random.seed(0)
+    mbfg.fit(hourly_summary['frequency'], hourly_summary['recency'], hourly_summary['T'])
+    thirty_day_prediction_from_hourly_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days * hours_in_day)
+
+    npt.assert_almost_equal(thirty_day_prediction_from_daily_data, thirty_day_prediction_from_hourly_data)
