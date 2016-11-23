@@ -65,7 +65,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         recency_T = T - tx - 1
 
-        J = np.arange(max(recency_T) + 1)
+        J = np.arange(recency_T.max() + 1)
 
         @np.vectorize
         def _sum(x, tx, recency_T):
