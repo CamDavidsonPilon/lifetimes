@@ -76,6 +76,10 @@ We'll use the **BG/NBD model** first. Interested in the model? See this [nice pa
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
 
+#### How to use the `penalizer_coef`
+
+For small samples sizes, the parameters can get implausibly large, so by adding a positive `penalizer_coef` to the call to `fit`, we can control how large these parameters can be. See this [blog article](https://dataorigami.net/blogs/napkin-folding/a-real-life-mistake-i-made-about-penalizer-terms) for more on the history of penalizers in lifetimes.
+
 #### Visualizing our Frequency/Recency Matrix
 
 Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the **Frequency/Recency matrix**, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
@@ -192,7 +196,7 @@ With this dataset, we can perform fitting on the `_cal` columns, and test on the
 
 ![holdout](http://imgur.com/LdSEYUwl.png)
 
-#### Customer Predicitions
+#### Customer Predictions
 
 Based on customer history, we can predict what an individuals future purchases might look like:
 
