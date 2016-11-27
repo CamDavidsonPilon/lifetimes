@@ -493,7 +493,7 @@ class TestModifiedBetaGammaFitter():
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
 
     def test_purchase_predictions_do_not_differ_much_if_looking_at_hourly_or_daily_frequencies(self):
-        transaction_data = load_transaction_data(parse_dates=['dates'])
+        transaction_data = load_transaction_data(parse_dates=['date'])
         daily_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='D')
         hourly_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='h')
         thirty_days = 30
@@ -509,4 +509,3 @@ class TestModifiedBetaGammaFitter():
         thirty_day_prediction_from_hourly_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days * hours_in_day)
 
         npt.assert_almost_equal(thirty_day_prediction_from_daily_data, thirty_day_prediction_from_hourly_data)
-
