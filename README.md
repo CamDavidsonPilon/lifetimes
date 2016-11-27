@@ -78,7 +78,7 @@ After fitting, we have lots of nice methods and properties attached to the fitte
 
 #### How to use the `penalizer_coef`
 
-For small samples sizes, the parameters can get implausibly large, so by adding a positive `penalizer_coef` to the call to `fit`, we can control how large these parameters can be. See this [blog article](https://dataorigami.net/blogs/napkin-folding/a-real-life-mistake-i-made-about-penalizer-terms) for more on the history of penalizers in lifetimes.
+For small samples sizes, the parameters can get implausibly large, so by adding a positive `penalizer_coef` to the call to `fit`, we can control how large these parameters can be. In typical applications, penalizers on the order of 0.001 to 0.1 are effective. See this [blog article](https://dataorigami.net/blogs/napkin-folding/a-real-life-mistake-i-made-about-penalizer-terms) for more on the history of penalizers in lifetimes. 
 
 #### Visualizing our Frequency/Recency Matrix
 
