@@ -7,9 +7,15 @@ import pytest
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
-from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value, load_donations
+from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value, load_donations,\
+    load_transaction_data
+from lifetimes.generate_data import modified_beta_geometric_nbd_model
 
-cdnow_customers = load_cdnow()
+
+@pytest.fixture
+def cdnow_customers():
+    return load_cdnow()
+
 cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
 donations = load_donations()
 
@@ -164,30 +170,29 @@ class TestParetoNBDFitter():
          
         ptf = estimation.ParetoNBDFitter()
         params = np.array([10.465, 7.98565181e-03, 3.0516, 2.820])
-        freq = np.array([400., 500., 500.] )
+        freq = np.array([400., 500., 500.])
         rec = np.array([5., 1., 4.])
         age = np.array([6., 37., 37.])
         assert all([r < 0 and not np.isinf(r) and not pd.isnull(r) 
                     for r in ptf._log_A_0(params, freq, rec, age)])
 
-
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         ptf = estimation.ParetoNBDFitter
-        x = np.array([1,3])
-        t_x = np.array([2,2])
-        t = np.array([5,6])
-        params = [1,1,1,1]
+        x = np.array([1, 3])
+        t_x = np.array([2, 2])
+        t = np.array([5, 6])
+        params = [1, 1, 1, 1]
         assert ptf()._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-             + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == ptf()._negative_log_likelihood(params, x, t_x, t, 0)
+            + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
+            == 2 * ptf()._negative_log_likelihood(params, x, t_x, t, 0)
 
-    def test_params_out_is_close_to_Hardie_paper(self):
+    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
 
-    def test_expectation_returns_same_value_as_R_BTYD(self):
+    def test_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
         """ From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
@@ -197,7 +202,7 @@ class TestParetoNBDFitter():
         actual = ptf.expected_number_of_purchases_up_to_time(range(10))
         npt.assert_allclose(expected, actual, atol=0.01)
 
-    def test_conditional_expectation_returns_same_value_as_R_BTYD(self):
+    def test_conditional_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
         """ From https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf """
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
@@ -209,7 +214,7 @@ class TestParetoNBDFitter():
         actual = ptf.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
         assert abs(expected - actual) < 0.01
 
-    def test_conditional_probability_alive_is_between_0_and_1(self):
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
@@ -218,7 +223,7 @@ class TestParetoNBDFitter():
                 for t in np.arange(recency, 100, 10.):
                     assert 0.0 <= ptf.conditional_probability_alive(freq, recency, t) <= 1.0
 
-    def test_conditional_probability_alive_matrix(self):
+    def test_conditional_probability_alive_matrix(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         Z = ptf.conditional_probability_alive_matrix()
@@ -233,21 +238,21 @@ class TestBetaGammaFitter():
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         bgf = estimation.BetaGeoFitter
-        x = np.array([1,3])
-        t_x = np.array([2,2])
-        t = np.array([5,6])
-        params = [1,1,1,1]
+        x = np.array([1, 3])
+        t_x = np.array([2, 2])
+        t = np.array([5, 6])
+        params = [1, 1, 1, 1]
         assert bgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-             + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == bgf._negative_log_likelihood(params, x, t_x, t, 0)
- 
-    def test_params_out_is_close_to_Hardie_paper(self):
+            + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
+            == 2 * bgf._negative_log_likelihood(params, x, t_x, t, 0)
+
+    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([0.243, 4.414, 0.793, 2.426])
         npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
-    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         x = 2
@@ -258,7 +263,7 @@ class TestBetaGammaFitter():
         actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
         assert abs(expected - actual) < 0.001
 
-    def test_expectation_returns_same_value_Hardie_excel_sheet(self):
+    def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
 
@@ -267,14 +272,14 @@ class TestBetaGammaFitter():
         actual = bfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_array_almost_equal(actual, expected, decimal=3)
 
-    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self):
+    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
         assert bfg.conditional_probability_alive(0, 1, 1) == 1.0
 
 
-    def test_conditional_probability_alive_is_between_0_and_1(self):
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
@@ -284,7 +289,7 @@ class TestBetaGammaFitter():
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
 
 
-    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self):
+    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
         bfg1 = estimation.BetaGeoFitter()
         bfg2 = estimation.BetaGeoFitter()
 
@@ -296,7 +301,7 @@ class TestBetaGammaFitter():
         assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
 
 
-    def test_penalizer_term_will_shrink_coefs_to_0(self):
+    def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         bfg_no_penalizer = estimation.BetaGeoFitter()
         bfg_no_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         params_1 = np.array(list(bfg_no_penalizer.params_.values()))
@@ -312,7 +317,7 @@ class TestBetaGammaFitter():
         assert np.all(params_3 < params_2)
 
 
-    def test_conditional_probability_alive_matrix(self):
+    def test_conditional_probability_alive_matrix(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         Z = bfg.conditional_probability_alive_matrix()
@@ -345,17 +350,16 @@ class TestBetaGammaFitter():
         actual = np.array([bgf.probability_of_n_purchases_up_to_time(30,n) for n in range(11,21)])
         npt.assert_array_almost_equal(expected, actual, decimal=5)
 
-
-    def test_scaling_inputs_gives_same_or_similar_results(self):
+    def test_scaling_inputs_gives_same_or_similar_results(self, cdnow_customers):
         bgf = estimation.BetaGeoFitter()
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10
         bgf_with_large_inputs = estimation.BetaGeoFitter()
-        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale*cdnow_customers['recency'], scale*cdnow_customers['T'], iterative_fitting=2)
+        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'], iterative_fitting=2)
         assert bgf_with_large_inputs._scale < 1.
 
-        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale*1, scale*2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
-        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale*2, scale*10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
+        assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
 
 
 class TestModifiedBetaGammaFitter():
@@ -367,17 +371,17 @@ class TestModifiedBetaGammaFitter():
         t = np.array([5, 6])
         params = [1, 1, 1, 1]
         assert mbgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-             + mbgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == mbgf._negative_log_likelihood(params, x, t_x, t, 0)
- 
-    def test_params_out_is_close_to_BTYDplus(self):
+            + mbgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
+            == 2 * mbgf._negative_log_likelihood(params, x, t_x, t, 0)
+
+    def test_params_out_is_close_to_BTYDplus(self, cdnow_customers):
         """ See https://github.com/mplatzer/BTYDplus """
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([0.525, 6.183, 0.891, 1.614])
         npt.assert_array_almost_equal(expected, np.array(mbfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
-    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         x = 2
@@ -385,10 +389,10 @@ class TestModifiedBetaGammaFitter():
         T = 38.86
         t = 39
         expected = 1.226
-        actual = mbfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
+        actual = mbfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
         assert abs(expected - actual) < 0.05
 
-    def test_expectation_returns_same_value_Hardie_excel_sheet(self):
+    def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6, iterative_fitting=3)
 
@@ -397,14 +401,14 @@ class TestModifiedBetaGammaFitter():
         actual = mbfg.expected_number_of_purchases_up_to_time(times)
         npt.assert_allclose(actual, expected, rtol=0.05)
 
-    def test_conditional_probability_alive_returns_lessthan_1_if_no_repeat_purchases(self):
+    def test_conditional_probability_alive_returns_lessthan_1_if_no_repeat_purchases(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
         assert mbfg.conditional_probability_alive(0, 1, 1) < 1.0
 
 
-    def test_conditional_probability_alive_is_between_0_and_1(self):
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
@@ -413,7 +417,7 @@ class TestModifiedBetaGammaFitter():
                 for k in range(j, 100, 10):
                     assert 0 <= mbfg.conditional_probability_alive(i, j, k) <= 1.0
 
-    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self):
+    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
         mbfg1 = estimation.ModifiedBetaGeoFitter()
         mbfg2 = estimation.ModifiedBetaGeoFitter()
 
@@ -424,7 +428,7 @@ class TestModifiedBetaGammaFitter():
         mbfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
 
-    def test_penalizer_term_will_shrink_coefs_to_0(self):
+    def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         mbfg_no_penalizer = estimation.ModifiedBetaGeoFitter()
         mbfg_no_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         params_1 = np.array(list(mbfg_no_penalizer.params_.values()))
@@ -439,7 +443,7 @@ class TestModifiedBetaGammaFitter():
         params_3 = np.array(list(mbfg_with_more_penalizer.params_.values()))
         assert params_3.sum() < params_2.sum()
 
-    def test_conditional_probability_alive_matrix(self):
+    def test_conditional_probability_alive_matrix(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         Z = mbfg.conditional_probability_alive_matrix()
@@ -465,7 +469,7 @@ class TestModifiedBetaGammaFitter():
         actual = np.array([mbgf.probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
         npt.assert_allclose(expected, actual, rtol=0.5)
 
-    def test_scaling_inputs_gives_same_or_similar_results(self):
+    def test_scaling_inputs_gives_same_or_similar_results(self, cdnow_customers):
         mbgf = estimation.ModifiedBetaGeoFitter()
         mbgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10.
@@ -476,7 +480,7 @@ class TestModifiedBetaGammaFitter():
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - mbgf.conditional_probability_alive(1, 1, 2)) < 10e-2
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
 
-    def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self):
+    def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self, cdnow_customers):
         reduced_dataset = cdnow_customers.ix[:2]
         mbfg1 = estimation.ModifiedBetaGeoFitter()
         mbfg2 = estimation.ModifiedBetaGeoFitter()
@@ -489,7 +493,7 @@ class TestModifiedBetaGammaFitter():
         assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
 
     def test_purchase_predictions_do_not_differ_much_if_looking_at_hourly_or_daily_frequencies(self):
-        transaction_data = pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
+        transaction_data = load_transaction_data(parse_dates=['date'])
         daily_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='D')
         hourly_summary = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end=max(transaction_data.date), freq='h')
         thirty_days = 30

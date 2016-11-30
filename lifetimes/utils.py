@@ -223,7 +223,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
-def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp, tol=1e-4):
+def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp, tol=1e-8):
     ll = []
     sols = []
 

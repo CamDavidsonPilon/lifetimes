@@ -82,7 +82,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(params, frequency, recency, n, n_custs, penalizer_coef=0):
         penalizer_term = penalizer_coef * sum(params)
-        return -np.sum(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
+        return -np.mean(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
 
     def fit(self, frequency, recency, n, n_custs, verbose=False, tol=1e-4, iterative_fitting=1):
         """
@@ -262,7 +262,7 @@ class GammaGammaFitter(BaseFitter):
                                           (p * x) * np.log(x) -
                                           (p * x + q) * np.log(x * m + v))
         penalizer_term = penalizer_coef * sum(params)
-        return -np.sum(negative_log_likelihood_values) + penalizer_term
+        return -np.mean(negative_log_likelihood_values) + penalizer_term
 
     def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
         """
@@ -419,7 +419,7 @@ class ParetoNBDFitter(BaseFitter):
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
 
         penalizer_term = penalizer_coef * sum(params)
-        return -(A_1 + A_2).sum() + penalizer_term
+        return -(A_1 + A_2).mean() + penalizer_term
 
     def conditional_probability_alive(self, frequency, recency, T):
         """
@@ -578,7 +578,7 @@ class BetaGeoFitter(BaseFitter):
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(params)
-        return -(A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d)).sum() + penalizer_term
+        return -(A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
@@ -732,7 +732,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
         penalizer_term = penalizer_coef * sum(params)
-        return -(A_1 + A_2 + A_3 + logaddexp(A_4, 0)).sum() + penalizer_term
+        return -(A_1 + A_2 + A_3 + logaddexp(A_4, 0)).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
