@@ -326,3 +326,15 @@ def ncr(n, r):
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom
+
+
+def normalize_positive_vector(v):
+    """
+    Normalizes a vector with positive coordinates to the sum of coordinates
+    """
+    for c in v:
+        if c < 0:
+            raise ValueError("Negative coordinate!")
+
+    norm = sum(v)
+    return [float(c) / norm for c in v]

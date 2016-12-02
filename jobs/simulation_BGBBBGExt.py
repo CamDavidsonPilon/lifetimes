@@ -13,11 +13,11 @@ from lifetimes.estimation import BGBBFitter, BGBBBGExtFitter
 
 @pytest.mark.sim_BGBBBBExt
 def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
-    T = 7
-    T_lagged = 6
+    T = 10
+    T_lagged = 0
     T0 = 52
 
-    sizes_installs = [500, 1000, 5000, 10000, 25000, 50000] # , 100000]  # [500, 1000]  #
+    sizes_installs = [500, 1000, 5000, 10000, 25000, 50000, 100000]  # [500, 1000]  #
     n_sim = 10
     iterative_fitting = 0
     penalizer_coef = 0.1
@@ -120,6 +120,7 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
             arpd = [(appd[i][0] * mv,
                      appd[i][0] * mv * math.sqrt((appd[i][1] / appd[i][0]) ** 2 + (mv_err / mv) ** 2)) for
                     i in range(len(appd))]
+
             print ts
             print lifetime
             print conversion_diff
@@ -261,4 +262,12 @@ def get_arpd_retention_with_error(model_conversion, model_arppu, t):
         e += err ** 2
     return v, e ** 0.5
 
-###test_BGBBBGExt_fitting_compressed_or_not()
+
+def get_arpd_with_error(model_conversion, model_arppu, t, mv, mv_err):
+
+    arpd_ret, arpd_ret_err = get_arpd_retention_with_error(model_conversion, model_arppu, t)
+
+    arpd = arpd_ret * mv
+    arpd_err = arpd *  math.sqrt((arpd_ret_err / arpd_ret) ** 2 + (mv_err / mv) ** 2)
+
+    return arpd, arpd_err

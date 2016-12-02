@@ -4,6 +4,8 @@ import pandas as pd
 import random
 import csv
 import os
+from utils import normalize_positive_vector
+
 
 def hello():
     print "hello from MM! :)"
@@ -508,6 +510,66 @@ def bgbbbgext_model(T, alpha, beta, gamma, delta, epsilon, zeta, c0, size=1, tim
         else:
             df.ix[i] = x, tx, T[i], s, p, theta, c, alive, i
 
+    return df.set_index('customer_id')
+
+
+def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
+    """
+    Generate artificial data according to the discrete BG extended model.
+    This models subscription-like data where a user renews subcription for a series of contiguous times
+    and then changes the state, either dieing (0) or going to another state 1,2,...
+    Of course the user can be still alive at the end of the observation period.
+
+    Parameters:
+        T: scalar, the length of time observing new customers.
+        alpha, beta : scalars, representing parameters of the unique Beta of the model.
+        probs: tuple normlized to unity representing the probabilities of ending up in a state different from
+        the subscription one. Its length defines the number of alternative states too.
+        size: the number of customers to generate, equal to size of T if T is an array.
+
+    Returns:
+        DataFrame, with index as customer_ids and the following columns:
+        'frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id'
+    """
+    if size < 1:
+        raise ValueError("size must be positive")
+
+    if alpha <= 0 or beta <= 0:
+        raise ValueError("Parameters of beta distribution must all be positive")
+
+    if type(T) in [int]:
+        T = T * np.ones(size)
+    else:
+        T = np.array(T)
+        size = len(T)
+
+    probs = normalize_positive_vector(probs)
+    n_alt_states = len(probs)
+
+    # Generate hidden parameters fo all costumers
+    thetas = stats.beta.rvs(alpha, beta, size=size)  # probability of churning
+    users = []
+    columns = ['frequency', 'T', 'alt_state', 'theta', 'customer_id']
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+
+    for i in range(size):
+
+        alt_state = -1 # alive
+        theta = thetas[i]  # probability of dying
+
+        # start testing from t = 1
+        t = 1
+        ts = []
+        while t <= T[i]:
+            alive = np.random.random() > theta
+            if alive:
+                ts.append(t)
+                t += 1
+            else:
+                alt_state = list(np.random.multinomial(1, probs)).index(1)
+                break
+
+        df.ix[i] = len(ts), T[i], alt_state, theta, i
     return df.set_index('customer_id')
 
 

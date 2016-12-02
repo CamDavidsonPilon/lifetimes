@@ -9,12 +9,13 @@ from scipy import special
 from scipy import misc
 from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value, ncr
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
-    bgbb_model, bgbbbg_model, bgbbbgext_model
+    bgbb_model, bgbbbg_model, bgbbbgext_model, bgext_model
 from lifetimes.formulas import gamma_ratio
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 B = special.beta
+
 
 class BaseFitter(object):
     def __repr__(self):
@@ -1204,3 +1205,203 @@ class BGBBBGExtFitter(BaseFitter):
         """
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)
+
+
+class BGFitter(BaseFitter):
+    """
+    BG discrete time model.
+    Used to model contractual settings as apps with subscriptions.
+    The probability of a user to churn at every time step is beta distributed.
+    """
+
+    def __init__(self, penalizer_coef=0.):
+        self.penalizer_coef = penalizer_coef
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, T, penalizer_coef, N=None):
+        """
+
+        Args:
+            params:
+            freq:
+            T:
+            penalizer_coef:
+            N:
+
+        Returns:
+
+        """
+
+        a = params[0]
+        b = params[1]
+        if npany(asarray([a, b]) <= 0.):
+            return np.inf
+
+        x = freq
+        if isinstance(x, float) or isinstance(x, int):
+            Ntot = 1
+        else:
+            Ntot = len(x)
+        if N is not None:
+            Ntot = np.array(N).sum()
+
+        if isinstance(x, float) or isinstance(x, int):
+            # x is a single number
+            numerator = 0
+            if x < T:
+                numerator += special.beta(a + 1, b + x)
+            elif x == T:
+                numerator += special.beta(a, b + x)
+
+        else:
+            # x is a vector
+            x = np.array(x)
+            T = np.array(T)
+            dead_ones_to_add = (x < T).astype(int)
+            numerator = special.beta(a + dead_ones_to_add, b + x)
+
+        Lj = numerator
+        llj = np.log(Lj)  # this converts the terms in a np object on which you can call sum()
+        penalizer_term = penalizer_coef * log(params).sum()
+
+        if N is not None:
+            ll = -(llj * N).sum()
+        else:
+            ll = -llj.sum()
+
+        return ll + Ntot * log(special.beta(a, b)) + penalizer_term
+
+    def fit(self, frequency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
+        """
+        This methods fits the data to the BG discrete-time model.
+
+        Parameters:
+            frequency: the frequency vector of customers' purchases (denoted x in literature).
+            T: the vector of customers' age (time since first purchase)
+            iterative_fitting: perform `iterative_fitting` additional fits to find the best
+                parameters for the model. Setting to 0 will improve performances but possibly
+                hurt estimates.
+            initial_params: set initial params for the iterative fitter.
+            verbose: set to true to print out convergence diagnostics.
+            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency, T
+
+        Returns:
+            self, with additional properties and methods like params_ and plot
+        """
+        frequency = asarray(frequency)
+        T = asarray(T)
+
+        if np.any(frequency > T):
+            raise ValueError(
+                """Some values in frequency vector are larger than T vector. This is impossible according to the model.""")
+        if np.any(frequency < 0):
+            raise ValueError("""Some values in frequency vector are < 0""")
+        if np.any(T < 0):
+            raise ValueError("""Some values in T vector are < 0""")
+
+        if N is not None:  # in this case it means you're handling compressed data
+            N = asarray(N)
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+                                                      [frequency, T, self.penalizer_coef, N],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      2,
+                                                      verbose)
+
+        self.params_ = OrderedDict(zip(['alpha', 'beta'], params))
+        self.data = DataFrame(vconcat[frequency, T], columns=['frequency', 'T'])
+        self.generate_new_data = lambda size=1: bgext_model(T, *params, size=size)
+
+        return self
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+
+        Returns: a scalar or array
+        """
+        a, b = self._unload_params('alpha', 'beta')
+        return BGFitter.static_expected_number_of_purchases_up_to_time(a, b, t)
+
+    @staticmethod
+    def static_expected_number_of_purchases_up_to_time(a, b, t):
+        if t == 0:
+            return 0
+        elif t == 1:
+            return special.beta(a, b + 1) / special.beta(a, b)
+        den = special.beta(a, b)
+        num = t * special.beta(a, b + t) + special.beta(a - 1, b + 2) - special.beta(a - 1, b + t - 1) \
+              - (t - 1) * special.beta(a, b + t - 2)
+        return num / den
+
+    def expected_number_of_purchases_up_to_time_error(self, t, C):
+        """
+        Calculate the error of expected number of repeat purchases up to time t for a randomly choose individual from
+        the population.
+
+        Parameters:
+            t: a scalar or array of times.
+            C: covariance matrix of parameters 'alpha', 'beta', 'gamma', 'delta'
+
+        Returns: a scalar
+        """
+        a, b = self._unload_params('alpha', 'beta')
+        return BGFitter.static_expected_number_of_purchases_up_to_time_error(a, b, t, C)
+
+    @staticmethod
+    def static_expected_number_of_purchases_up_to_time_error(a, b, t, C):
+
+        if t == 0:
+            return 0
+
+        if len(C) != 2 or len(C[0]) != 2:
+            raise ValueError("Covariance matrix: wrong dimensions. Must be 2x2 symmetric.")
+
+        def dx(x, y):
+            return special.beta(x, y) * (special.psi(x) - special.psi(x + y))
+
+        def dy(x, y):
+            return special.beta(x, y) * (special.psi(y) - special.psi(x + y))
+
+        E = BGFitter.static_expected_number_of_purchases_up_to_time(a, b, t)
+        B = special.beta(a, b)
+
+        dEda = (t * dx(a, b + t) + dx(a - 1, b + 2) - dx(a - 1, b + t + 1) - (t - 1) * dx(a, b + t - 2)) / B ** 2 \
+                                                                                                   - E / B * dx(a, b)
+        dEdb = (t * dy(a, b + t) + dy(a - 1, b + 2) - dy(a - 1, b + t + 1) - (t - 1) * dy(a, b + t - 2)) / B ** 2\
+                                                                                                   - E / B * dy(a, b)
+        Cov = np.matrix(C)
+        dE = np.array([[dEda], [dEdb]])
+
+        return math.sqrt(float(dE.transpose() * Cov * dE))
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        """
+        Compute the probability of
+
+        P( N(t) = n | model )
+
+        where N(t) is the number of repeat purchases a customer makes in t units of time.
+        """
+        a, b = self._unload_params('alpha', 'beta')
+
+        return BGFitter.static_probability_of_n_purchases_up_to_time(a, b, t, n)
+
+    @staticmethod
+    def static_probability_of_n_purchases_up_to_time(a, b, t, n):
+        if not (isinstance(n, int) and isinstance(t, int)):
+            raise TypeError("t and n must be integers")
+
+        den = special.beta(a, b)
+        if n == 0:
+            num = special.beta(a + 1, b)
+        elif n < t:
+            num = special.beta(a + 1, b + n)
+        else:
+            num = special.beta(a, b + n)
+
+        return num / den
