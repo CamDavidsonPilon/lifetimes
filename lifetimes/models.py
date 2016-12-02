@@ -489,7 +489,7 @@ class BGModel(object):
     def generateData(self, t, parameters, size):
         return gen.bgext_model(t, parameters['alpha'],
                               parameters['beta'],
-                              size)
+                              size=size)
 
     def fit(self, frequency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
