@@ -261,7 +261,7 @@ class GammaGammaFitter(BaseFitter):
                                           (p * x - 1) * np.log(m) +
                                           (p * x) * np.log(x) -
                                           (p * x + q) * np.log(x * m + v))
-        penalizer_term = penalizer_coef * sum(np.assaray(params) ** 2)
+        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -np.mean(negative_log_likelihood_values) + penalizer_term
 
     def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
