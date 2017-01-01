@@ -245,7 +245,7 @@ def test_calibration_and_holdout_data_with_monetary_value(large_transaction_leve
     assert (actual['monetary_value_holdout'] == [2, 0, 0, 3, 0]).all()
 
 
-def test_summary_data_from_transaction_data_squashes_period_purchases_to_one_purchase():
+def test_summary_data_from_transaction_data_does_not_squashes_period_purchases_to_one_purchase():
     transactions = pd.DataFrame([[1, '2015-01-01'],
                                  [1, '2015-01-01']], columns=['id', 't'])
     actual = utils.summary_data_from_transaction_data(transactions, 'id', 't', freq='W')
