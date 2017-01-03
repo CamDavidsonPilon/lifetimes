@@ -478,11 +478,11 @@ class ParetoNBDFitter(BaseFitter):
         params = self._unload_params('r', 'alpha', 's', 'beta')
         r, alpha, s, beta = params
 
-        likelihood = exp(-self._negative_log_likelihood(params, x, t_x, T, 0))
-        first_term = (gamma(r + x) / gamma(r)) * (alpha ** r * beta ** s) / (alpha + T) ** (r + x) / (beta + T) ** s
-        second_term = (r + x) * (beta + T) / (alpha + T) / (s - 1)
-        third_term = 1 - ((beta + T) / (beta + T + t)) ** (s - 1)
-        return first_term * second_term * third_term / likelihood
+        likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
+        first_term = gammaln(r + x) - gammaln(r) + r*log(alpha) + s*log(beta) - (r + x)*log(alpha + T) - s*log(beta + T)
+        second_term = log(r + x) + log(beta + T) - log(alpha + T)
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1))/(s - 1))
+        return exp(first_term + second_term + third_term - likelihood)
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
