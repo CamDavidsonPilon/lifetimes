@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import numpy.testing as npt
 import pytest
+from collections import OrderedDict
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
@@ -122,7 +123,6 @@ class TestGammaGammaFitter():
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
 
     def test_conditional_expected_average_profit(self):
-        from collections import OrderedDict
 
         ggf = estimation.GammaGammaFitter()
         ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
@@ -134,7 +134,6 @@ class TestGammaGammaFitter():
         npt.assert_allclose(estimates.values, expected, atol=0.1)
 
     def test_customer_lifetime_value_with_bgf(self):
-        from collections import OrderedDict
 
         ggf = estimation.GammaGammaFitter()
         ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
@@ -213,6 +212,24 @@ class TestParetoNBDFitter():
         expected =  25.46
         actual = ptf.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
         assert abs(expected - actual) < 0.01
+
+    def test_conditional_expectation_underflow(self):
+        """ Test a pair of inputs for the ParetoNBD ptf.conditional_expected_number_of_purchases_up_to_time().
+            For a small change in the input, the result shouldn't change dramatically -- however, if the
+            function doesn't guard against numeric underflow, this change in input will result in an
+            underflow error.
+        """
+        ptf = estimation.ParetoNBDFitter()
+        alpha = 10.58
+        beta = 11.67
+        r = 0.55
+        s = 0.61
+        ptf.params_ = OrderedDict({'alpha':alpha, 'beta':beta, 'r':r, 's':s})
+
+        # small change in inputs
+        left = ptf.conditional_expected_number_of_purchases_up_to_time(10, 132, 200, 200) # 6.2060517889632418
+        right = ptf.conditional_expected_number_of_purchases_up_to_time(10, 133, 200, 200) # 6.2528722475748113
+        assert abs(left - right) < 0.05
 
     def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
@@ -331,7 +348,6 @@ class TestBetaGammaFitter():
 
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
         """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
-        from collections import OrderedDict
         bgf = estimation.BetaGeoFitter()
         bgf.params_ = OrderedDict({'r':0.243, 'alpha':4.414, 'a':0.793, 'b':2.426})
         # probability that a customer will make 10 repeat transactions in the
@@ -455,7 +471,6 @@ class TestModifiedBetaGammaFitter():
 
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
         """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
-        from collections import OrderedDict
         mbgf = estimation.ModifiedBetaGeoFitter()
         mbgf.params_ = OrderedDict({'r':0.243, 'alpha':4.414, 'a':0.793, 'b':2.426})
         # probability that a customer will make 10 repeat transactions in the
