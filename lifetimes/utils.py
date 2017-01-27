@@ -111,7 +111,6 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
         select_columns.append(monetary_value_col)
 
     transactions = transactions[select_columns].copy()
-    transactions['orders'] = 1
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
@@ -120,8 +119,15 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
 
     transactions = transactions.ix[(transactions.index <= observation_period_end)].reset_index()
 
-    period_groupby = transactions.groupby([customer_id_col, datetime_col], sort=False, as_index=False)
-    period_transactions = period_groupby.sum()
+    period_groupby = transactions.groupby([datetime_col, customer_id_col], sort=False, as_index=False)
+
+    if monetary_value_col:
+        # when we have a monetary column, make sure to sum together any values in the same period
+        period_transactions = period_groupby.sum()
+    else:
+        # by calling head() on the groupby object, the datetime_col and customer_id_col columns
+        # will be reduced
+        period_transactions = period_groupby.head(1)
 
     # initialize a new column where we will indicate which are the first transactions
     period_transactions['first'] = False
@@ -129,7 +135,7 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     first_transactions = period_transactions.groupby(customer_id_col, sort=True, as_index=False).head(1).index
     # mark the initial transactions as True
     period_transactions.loc[first_transactions, 'first'] = True
-    select_columns.extend(['first', 'orders'])
+    select_columns.append('first')
 
     return period_transactions[select_columns]
 
@@ -166,13 +172,11 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         observation_period_end,
         freq
     )
-
-    # sum all orders by customer.
-    customers = repeated_transactions.groupby(customer_id_col, sort=False).agg({'orders': ['sum'], datetime_col: ['min', 'max']})
-    customers.columns = customers.columns.get_level_values(1)
+    # count all orders by customer.
+    customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(['min', 'max', 'count'])
 
     # subtract 1 from count, as we ignore their first order.
-    customers['frequency'] = customers['sum'] - 1
+    customers['frequency'] = customers['count'] - 1
 
     customers['T'] = (observation_period_end - customers['min'])
     customers['recency'] = (customers['max'] - customers['min'])
