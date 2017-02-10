@@ -272,7 +272,7 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
     """
     This method computes the average lifetime value for a group of one or more customers.
         transaction_prediction_model: the model to predict future transactions, literature uses
-            pareto/ndb but we can also use a different model like bg
+            pareto/nbd but we can also use a different model like bg
         frequency: the frequency vector of customers' purchases (denoted x in literature).
         recency: the recency vector of customers' purchases (denoted t_x in literature).
         T: the vector of customers' age (time since first purchase)
