@@ -8,16 +8,15 @@ from collections import OrderedDict
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
-from lifetimes.datasets import load_cdnow, load_summary_data_with_monetary_value, load_donations,\
+from lifetimes.datasets import load_cdnow_summary, load_cdnow_summary_data_with_monetary_value, load_donations,\
     load_transaction_data
-from lifetimes.generate_data import modified_beta_geometric_nbd_model
 
 
 @pytest.fixture
 def cdnow_customers():
-    return load_cdnow()
+    return load_cdnow_summary()
 
-cdnow_customers_with_monetary_value = load_summary_data_with_monetary_value()
+cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
 
 
