@@ -53,7 +53,7 @@ def load_transaction_data(**kwargs):
 
 
 def load_cdnow_summary_data_with_monetary_value(**kwargs):
-    df = load_dataset('cdnow_customers_summary_transactions.csv', **kwargs)
+    df = load_dataset('cdnow_customers_summary_with_transactions.csv', **kwargs)
     df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
     df = df.set_index('customer_id')
     return df
