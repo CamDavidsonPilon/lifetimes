@@ -110,7 +110,7 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     if monetary_value_col:
         select_columns.append(monetary_value_col)
 
-    transactions = transactions[select_columns].copy()
+    transactions = transactions[select_columns].sort(select_columns).copy()
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
@@ -189,7 +189,6 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         # by setting the monetary_value cells of all the first purchases to NaN,
         # those values will be excluded from the mean value calculation
         repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
-
         customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
         summary_columns.append('monetary_value')
 

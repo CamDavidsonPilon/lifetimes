@@ -6,9 +6,9 @@ from .. import utils
 from pkg_resources import resource_filename
 
 __all__ = [
-    'load_cdnow',
+    'load_cdnow_summary',
     'load_transaction_data',
-    'load_summary_data_with_monetary_value',
+    'load_cdnow_summary_data_with_monetary_value',
     'load_donations'
 ]
 
@@ -30,8 +30,8 @@ def load_donations(**kwargs):
     return load_dataset('donations.csv', **kwargs)
 
 
-def load_cdnow(**kwargs):
-    return load_dataset('cdnow_customers.csv', **kwargs)
+def load_cdnow_summary(**kwargs):
+    return load_dataset('cdnow_customers_summary.csv', **kwargs)
 
 
 def load_transaction_data(**kwargs):
@@ -52,8 +52,8 @@ def load_transaction_data(**kwargs):
     return load_dataset('example_transactions.csv', **kwargs)
 
 
-def load_summary_data_with_monetary_value(**kwargs):
-    df = load_dataset('cdnow_customers_transactions.csv', **kwargs)
+def load_cdnow_summary_data_with_monetary_value(**kwargs):
+    df = load_dataset('cdnow_customers_summary_with_transactions.csv', **kwargs)
     df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
     df = df.set_index('customer_id')
     return df

@@ -185,6 +185,46 @@ def test_summary_date_from_transaction_with_monetary_values(large_transaction_le
     assert_frame_equal(actual, expected)
 
 
+def test_summary_data_from_transaction_data_will_choose_the_correct_first_order_to_drop_in_monetary_transactions():
+    # this is the correct behaviour. See https://github.com/CamDavidsonPilon/lifetimes/issues/85
+    # and test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_aggregations
+    cust = pd.Series([2, 2, 2])
+    dates_ordered = pd.to_datetime(pd.Series([
+                  '2014-03-14 00:00:00',
+                  '2014-04-09 00:00:00',
+                  '2014-05-21 00:00:00']))
+    sales = pd.Series([10, 20, 25])
+    transaction_data = pd.DataFrame({'date': dates_ordered, 'id': cust, 'sales': sales})
+    summary_ordered_data = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', 'sales')
+
+    dates_unordered = pd.to_datetime(pd.Series([
+                  '2014-04-09 00:00:00',
+                  '2014-03-14 00:00:00',
+                  '2014-05-21 00:00:00']))
+    sales = pd.Series([20, 10, 25])
+    transaction_data = pd.DataFrame({'date': dates_unordered, 'id': cust, 'sales': sales})
+    summary_unordered_data = utils.summary_data_from_transaction_data(transaction_data, 'id', 'date', 'sales')
+
+    assert_frame_equal(summary_ordered_data, summary_unordered_data)
+    assert summary_ordered_data['monetary_value'].loc[2] == 22.5
+
+
+def test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_aggregations():
+    # see http://brucehardie.com/papers/rfm_clv_2005-02-16.pdf
+    # RFM and CLV: Using Iso-value Curves for Customer Base Analysis
+    df = pd.read_csv('lifetimes/datasets/CDNOW_sample.txt', sep='\s+', header=None, names=['_id', 'id', 'date', 'cds_bought', 'spent'])
+    df['date'] = pd.to_datetime(df['date'].astype(unicode))
+    df_train = df[df['date'] < '1997-10-01']
+    summary = utils.summary_data_from_transaction_data(df_train, 'id', 'date', 'spent')
+    results = summary[summary['frequency'] > 0]['monetary_value'].describe()
+    assert np.round(results.ix['mean']) == 35
+    assert np.round(results.ix['std']) == 30
+    assert np.round(results.ix['min']) == 3
+    assert np.round(results.ix['50%']) == 27
+    assert np.round(results.ix['max']) == 300
+    assert np.round(results.ix['count']) == 946
+
+
 def test_calibration_and_holdout_data(large_transaction_level_data):
     today = '2015-02-07'
     calibration_end = '2015-02-01'

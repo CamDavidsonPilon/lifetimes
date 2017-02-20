@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 
 from lifetimes import plotting
 from lifetimes import BetaGeoFitter, ParetoNBDFitter, ModifiedBetaGeoFitter
-from lifetimes.datasets import load_cdnow, load_transaction_data
+from lifetimes.datasets import load_cdnow_summary, load_transaction_data
 from lifetimes import utils
 
 bgf = BetaGeoFitter()
-cd_data = load_cdnow()
+cd_data = load_cdnow_summary()
 bgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
 
 @pytest.mark.plottest
