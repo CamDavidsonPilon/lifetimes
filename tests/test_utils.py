@@ -11,9 +11,11 @@ from lifetimes import utils, BetaGeoFitter
 def example_transaction_data():
     return pd.read_csv('lifetimes/datasets/example_transactions.csv', parse_dates=['date'])
 
+
 @pytest.fixture()
 def example_summary_data(example_transaction_data):
     return utils.summary_data_from_transaction_data(example_transaction_data, 'id', 'date', observation_period_end=max(example_transaction_data.date))
+
 
 @pytest.fixture()
 def fitted_bg(example_summary_data):
@@ -21,53 +23,56 @@ def fitted_bg(example_summary_data):
     bg.fit(example_summary_data['frequency'], example_summary_data['recency'], example_summary_data['T'], iterative_fitting=2, tol=1e-6)
     return bg
 
+
 @pytest.fixture()
 def transaction_level_data():
     d = [
-            [1, '2015-02-01'],
-            [1, '2015-02-06'],
-            [2, '2015-01-01'],
-            [3, '2015-01-01'],
-            [3, '2015-01-02'],
-            [3, '2015-01-05'],
+        [1, '2015-02-01'],
+        [1, '2015-02-06'],
+        [2, '2015-01-01'],
+        [3, '2015-01-01'],
+        [3, '2015-01-02'],
+        [3, '2015-01-05'],
     ]
     return pd.DataFrame(d, columns=['id', 'date'])
+
 
 @pytest.fixture()
 def large_transaction_level_data():
     d = [
-            [1, '2015-01-01'],
-            [1, '2015-02-06'],
-            [2, '2015-01-01'],
-            [3, '2015-01-01'],
-            [3, '2015-01-02'],
-            [3, '2015-01-05'],
-            [4, '2015-01-16'],
-            [4, '2015-02-02'],
-            [4, '2015-02-05'],
-            [5, '2015-01-16'],
-            [5, '2015-01-17'],
-            [5, '2015-01-18'],
-            [6, '2015-02-02'],
+        [1, '2015-01-01'],
+        [1, '2015-02-06'],
+        [2, '2015-01-01'],
+        [3, '2015-01-01'],
+        [3, '2015-01-02'],
+        [3, '2015-01-05'],
+        [4, '2015-01-16'],
+        [4, '2015-02-02'],
+        [4, '2015-02-05'],
+        [5, '2015-01-16'],
+        [5, '2015-01-17'],
+        [5, '2015-01-18'],
+        [6, '2015-02-02'],
     ]
     return pd.DataFrame(d, columns=['id', 'date'])
+
 
 @pytest.fixture()
 def large_transaction_level_data_with_monetary_value():
     d = [
-            [1, '2015-01-01', 1],
-            [1, '2015-02-06', 2],
-            [2, '2015-01-01', 2],
-            [3, '2015-01-01', 3],
-            [3, '2015-01-02', 1],
-            [3, '2015-01-05', 5],
-            [4, '2015-01-16', 6],
-            [4, '2015-02-02', 3],
-            [4, '2015-02-05', 3],
-            [5, '2015-01-16', 3],
-            [5, '2015-01-17', 1],
-            [5, '2015-01-18', 8],
-            [6, '2015-02-02', 5],
+        [1, '2015-01-01', 1],
+        [1, '2015-02-06', 2],
+        [2, '2015-01-01', 2],
+        [3, '2015-01-01', 3],
+        [3, '2015-01-02', 1],
+        [3, '2015-01-05', 5],
+        [4, '2015-01-16', 6],
+        [4, '2015-02-02', 3],
+        [4, '2015-02-05', 3],
+        [5, '2015-01-16', 3],
+        [5, '2015-01-17', 1],
+        [5, '2015-01-18', 8],
+        [6, '2015-02-02', 5],
     ]
     return pd.DataFrame(d, columns=['id', 'date', 'monetary_value'])
 
@@ -87,7 +92,7 @@ def test_find_first_transactions_returns_correct_results(large_transaction_level
                              [5, pd.Period('2015-01-16', 'D'), True],
                              [5, pd.Period('2015-01-17', 'D'), False],
                              [5, pd.Period('2015-01-18', 'D'), False],
-                             [6, pd.Period('2015-02-02', 'D'), True]], columns=['id','date','first'])
+                             [6, pd.Period('2015-02-02', 'D'), True]], columns=['id', 'date', 'first'])
     assert_frame_equal(actual, expected)
 
 
@@ -103,8 +108,8 @@ def test_find_first_transactions_with_specific_non_daily_frequency(large_transac
                              [4, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), False],
                              [5, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), True],
                              [6, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), True]],
-                            columns=['id','date','first'],
-                            index=actual.index) #we shouldn't really care about row ordering or indexing, but assert_frame_equals is strict about it
+                            columns=['id', 'date', 'first'],
+                            index=actual.index)  # we shouldn't really care about row ordering or indexing, but assert_frame_equals is strict about it
     assert_frame_equal(actual, expected)
 
 
@@ -123,7 +128,7 @@ def test_find_first_transactions_with_monetary_values(large_transaction_level_da
                              [5, pd.Period('2015-01-16', 'D'), 3, True],
                              [5, pd.Period('2015-01-17', 'D'), 1, False],
                              [5, pd.Period('2015-01-18', 'D'), 8, False],
-                             [6, pd.Period('2015-02-02', 'D'), 5, True]], columns=['id','date','monetary_value','first'])
+                             [6, pd.Period('2015-02-02', 'D'), 5, True]], columns=['id', 'date', 'monetary_value', 'first'])
     assert_frame_equal(actual, expected)
 
 
@@ -138,7 +143,7 @@ def test_find_first_transactions_with_monetary_values_with_specific_non_daily_fr
                              [4, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), 6, True],
                              [4, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 6, False],
                              [5, pd.Period('2015-01-12/2015-01-18', 'W-SUN'), 12, True],
-                             [6, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 5, True]], columns=['id','date','monetary_value','first'])
+                             [6, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 5, True]], columns=['id', 'date', 'monetary_value', 'first'])
     assert_frame_equal(actual, expected)
 
 
@@ -150,8 +155,36 @@ def test_summary_data_from_transaction_data_returns_correct_results(transaction_
                              [3, 2., 4., 37.]], columns=['id', 'frequency', 'recency', 'T']).set_index('id')
     assert_frame_equal(actual, expected)
 
+
+def test_summary_data_from_transaction_data_works_with_string_customer_ids(transaction_level_data):
+    d = [
+        ['X', '2015-02-01'],
+        ['X', '2015-02-06'],
+        ['Y', '2015-01-01'],
+        ['Y', '2015-01-01'],
+        ['Y', '2015-01-02'],
+        ['Y', '2015-01-05'],
+    ]
+    df = pd.DataFrame(d, columns=['id', 'date'])
+    actual = utils.summary_data_from_transaction_data(df, 'id', 'date')
+
+
+def test_summary_data_from_transaction_data_works_with_int_customer_ids_and_doesnt_coerce_to_float(transaction_level_data):
+    d = [
+        [1, '2015-02-01'],
+        [1, '2015-02-06'],
+        [1, '2015-01-01'],
+        [2, '2015-01-01'],
+        [2, '2015-01-02'],
+        [2, '2015-01-05'],
+    ]
+    df = pd.DataFrame(d, columns=['id', 'date'])
+    actual = utils.summary_data_from_transaction_data(df, 'id', 'date')
+    assert actual.index.dtype == 'int64'
+
+
 def test_summary_data_from_transaction_data_with_specific_datetime_format(transaction_level_data):
-    transaction_level_data['date'] = transaction_level_data['date'].map(lambda x: x.replace('-',''))
+    transaction_level_data['date'] = transaction_level_data['date'].map(lambda x: x.replace('-', ''))
     format = '%Y%m%d'
     today = '20150207'
     actual = utils.summary_data_from_transaction_data(transaction_level_data, 'id', 'date', observation_period_end=today, datetime_format=format)
@@ -233,7 +266,7 @@ def test_calibration_and_holdout_data(large_transaction_level_data):
     assert actual.ix[2]['frequency_holdout'] == 0
 
     with pytest.raises(KeyError):
-        actual.ix[6] 
+        actual.ix[6]
 
 
 def test_calibration_and_holdout_data_works_with_specific_frequency(large_transaction_level_data):
@@ -252,24 +285,24 @@ def test_calibration_and_holdout_data_works_with_specific_frequency(large_transa
 def test_calibration_and_holdout_data_gives_correct_date_boundaries():
 
     d = [
-            [1, '2015-01-01'],
-            [1, '2015-02-06'], # excluded from both holdout and calibration
-            [2, '2015-01-01'],
-            [3, '2015-01-01'],
-            [3, '2015-01-02'],
-            [3, '2015-01-05'],
-            [4, '2015-01-16'],
-            [4, '2015-02-02'],
-            [4, '2015-02-05'], # excluded from both holdout and calibration
-            [5, '2015-01-16'],
-            [5, '2015-01-17'],
-            [5, '2015-01-18'],
-            [6, '2015-02-02'],
+        [1, '2015-01-01'],
+        [1, '2015-02-06'],  # excluded from both holdout and calibration
+        [2, '2015-01-01'],
+        [3, '2015-01-01'],
+        [3, '2015-01-02'],
+        [3, '2015-01-05'],
+        [4, '2015-01-16'],
+        [4, '2015-02-02'],
+        [4, '2015-02-05'],  # excluded from both holdout and calibration
+        [5, '2015-01-16'],
+        [5, '2015-01-17'],
+        [5, '2015-01-18'],
+        [6, '2015-02-02'],
     ]
     transactions = pd.DataFrame(d, columns=['id', 'date'])
     actual = utils.calibration_and_holdout_data(transactions, 'id', 'date', calibration_period_end='2015-02-01', observation_period_end='2015-02-04')
-    assert actual['frequency_holdout'].ix[1] == 0 
-    assert actual['frequency_holdout'].ix[4] == 1 
+    assert actual['frequency_holdout'].ix[1] == 0
+    assert actual['frequency_holdout'].ix[4] == 1
 
 
 def test_calibration_and_holdout_data_with_monetary_value(large_transaction_level_data_with_monetary_value):
@@ -332,7 +365,7 @@ def test_summary_data_from_transaction_data_obeys_data_contraints(example_summar
 def test_scale_time():
     max_T = 200.
     T = np.arange(max_T)
-    assert utils._scale_time(T) == 10. / (max_T-1)
+    assert utils._scale_time(T) == 10. / (max_T - 1)
 
 
 def test_customer_lifetime_value_with_known_values(fitted_bg):
@@ -362,10 +395,10 @@ def test_customer_lifetime_value_with_known_values(fitted_bg):
     assert_almost_equal(clv_d0.values, expected, decimal=5)
     # discount_rate=1 means the clv will halve over a period
     clv_d1 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=1, discount_rate=1.)
-    assert_almost_equal(clv_d1.values, expected/2., decimal=5)
+    assert_almost_equal(clv_d1.values, expected / 2., decimal=5)
     # time=2, discount_rate=0 means the clv will be twice the initial
     clv_t2_d0 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=0)
-    assert_allclose(clv_t2_d0.values, expected*2., rtol=0.1)
+    assert_allclose(clv_t2_d0.values, expected * 2., rtol=0.1)
     # time=2, discount_rate=1 means the clv will be twice the initial
     clv_t2_d1 = utils.customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=1.)
-    assert_allclose(clv_t2_d1.values, expected/2. + expected/4., rtol=0.1)
+    assert_allclose(clv_t2_d1.values, expected / 2. + expected / 4., rtol=0.1)
