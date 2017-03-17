@@ -1220,16 +1220,6 @@ class BGFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(params, freq, T, penalizer_coef, N=None):
         """
-
-        Args:
-            params:
-            freq:
-            T:
-            penalizer_coef:
-            N:
-
-        Returns:
-
         """
 
         a = params[0]

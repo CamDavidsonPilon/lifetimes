@@ -529,7 +529,7 @@ def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
 
     Returns:
         DataFrame, with index as customer_ids and the following columns:
-        'frequency', 'recency', 'T', 'p', 'theta', 'alive', 'customer_id'
+        'customer_id', 'frequency', 'T', 'p', 'alt_state', 'theta'
     """
     if size < 1:
         raise ValueError("size must be positive")

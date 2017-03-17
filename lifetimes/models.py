@@ -496,7 +496,6 @@ class BGModel(object):
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
             frequency: the frequency vector of customers' sessions (denoted x in literature).
-            recency: the recency vector of customers' sessions (denoted t_x in literature).
             T: the vector of customers' age (time since first purchase)
             bootstrap_size: number of data-samplings used to address parameter uncertainty
             N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
