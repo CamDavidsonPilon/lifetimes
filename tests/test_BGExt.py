@@ -6,7 +6,7 @@ import lifetimes.estimation as est
 from lifetimes.data_compression import compress_data, compress_bgext_data
 from lifetimes import models
 from lifetimes.data_compression import compress_bgext_data
-
+import pandas as pd
 
 @pytest.mark.BGExt
 def test_BGExt_generation():
@@ -150,13 +150,58 @@ def test_BG_additional_functions():
 def test_BG_integration_in_models():
     T = 10
     size = 1000
-    params = {'alpha': 1.3, 'beta': 1.7}
+    params = {'alpha': 0.17, 'beta': 1.18}
 
-    data = gen.bgext_model(T, params['alpha'], params['beta'], size=size)
+    data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'], params['beta']) #, size=size)
 
     print data
 
     data = compress_bgext_data(data)
+
+    model = models.BGModel(penalizer_coef=0.1)
+
+    model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
+              initial_params=params.values())
+
+    print "Generation params"
+    print params
+
+    print "Fitted params"
+    print model.params
+    print model.params_C
+
+    print "E[X(t)] as a function of t"
+    for t in [0, 1, 10, 100, 1000, 10000]:
+        Ex, Ex_err = model.expected_number_of_purchases_up_to_time_with_errors(t)
+        print t, Ex, Ex_err
+        assert Ex >= 0
+        assert Ex_err >= 0
+
+    t = 10
+    print "E[X(t) = n] as a function of n, t = " + str(t)
+    tot_prob = 0.0
+    for n in range(t + 1):
+        prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
+        print n, prob
+        tot_prob += prob
+        assert 1 >= prob >= 0
+
+    assert math.fabs(tot_prob - 1.0) < 0.00001
+
+
+@pytest.mark.BGExt
+def test_BG_on_real_data():
+    T = 10
+    size = 1000
+    params = {'alpha': 0.17, 'beta': 1.18}
+
+    # let's take a case similar to Spy Calc Free:
+    # data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'], params['beta']) #, size=size)
+    data = gen.bgext_model([1] * 3000 + [2] * 2000 + [3] * 1800 + [4] * 370, params['alpha'], params['beta']) #, size=size)
+
+    #data = pd.read_csv("/Users/marcomeneghelli/Desktop/SCF_data.csv")
+    data = compress_bgext_data(data)
+
 
     model = models.BGModel(penalizer_coef=0.1)
 

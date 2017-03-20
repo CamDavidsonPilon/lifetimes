@@ -1324,8 +1324,8 @@ class BGFitter(BaseFitter):
         elif t == 1:
             return special.beta(a, b + 1) / special.beta(a, b)
         den = special.beta(a, b)
-        num = t * special.beta(a, b + t) + special.beta(a - 1, b + 2) - special.beta(a - 1, b + t - 1) \
-              - (t - 1) * special.beta(a, b + t - 2)
+        num = t * special.beta(a, b + t) + special.beta(a - 1, b + 1) - special.beta(a - 1, b + t) \
+              - (t - 1) * special.beta(a, b + t)
         return num / den
 
     def expected_number_of_purchases_up_to_time_error(self, t, C):
@@ -1360,10 +1360,9 @@ class BGFitter(BaseFitter):
         E = BGFitter.static_expected_number_of_purchases_up_to_time(a, b, t)
         B = special.beta(a, b)
 
-        dEda = (t * dx(a, b + t) + dx(a - 1, b + 2) - dx(a - 1, b + t + 1) - (t - 1) * dx(a, b + t - 2)) / B ** 2 \
-                                                                                                   - E / B * dx(a, b)
-        dEdb = (t * dy(a, b + t) + dy(a - 1, b + 2) - dy(a - 1, b + t + 1) - (t - 1) * dy(a, b + t - 2)) / B ** 2\
-                                                                                                   - E / B * dy(a, b)
+        dEda = (t * dx(a, b + t) + dx(a - 1, b + 1) - dx(a - 1, b + t) - (t - 1) * dx(a, b + t)) / B - E / (B**2) * dx(a, b)
+        dEdb = (t * dy(a, b + t) + dy(a - 1, b + 1) - dy(a - 1, b + t) - (t - 1) * dy(a, b + t)) / B - E / (B**2) * dy(a, b)
+
         Cov = np.matrix(C)
         dE = np.array([[dEda], [dEdb]])
 
@@ -1387,7 +1386,9 @@ class BGFitter(BaseFitter):
             raise TypeError("t and n must be integers")
 
         den = special.beta(a, b)
-        if n == 0:
+        if t < n:
+          raise ValueError("t must be >= n")
+        elif n == 0:
             num = special.beta(a + 1, b)
         elif n < t:
             num = special.beta(a + 1, b + n)
