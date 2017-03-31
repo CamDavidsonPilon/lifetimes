@@ -1140,7 +1140,7 @@ class BGBBBGExtFitter(BaseFitter):
         if t > 1:
             prev_value = BGBBBGExtFitter.static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t - 1)
 
-            if value < 0 or value > prev_value:
+            if value < 0.0 or value > prev_value or value < 0.000001 or value > 1.0:
                 return 0.0
         return value
 

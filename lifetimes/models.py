@@ -439,9 +439,10 @@ class BGBBBGExtModel(Model):
         return self.corrected_wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
 
     def expected_probability_of_converting_within_time(self, t):
-        uparams = self.uparams
-        a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
-        return self.wrapped_static_static_expected_probability_of_converting_within_time(a, b, g, d, e, z, c0, t)
+        res = 0.0
+        for ti in range(t + 1):
+            res += self.expected_probability_of_converting_at_time(ti)
+        return res
 
 
 class BGModel(object):

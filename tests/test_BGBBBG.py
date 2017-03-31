@@ -224,10 +224,10 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
         uc = model.expected_probability_of_converting_at_time(t)
         print t, uc
         assert is_almost_equal(c, uc.n)
-        assert is_same_order(c_e, uc.s, tol=50)
+        assert is_same_order(c_e, uc.s, tol=10)
 
     print "cumulative c(t) as a function of t"
-    for t in [0, 1, 10, 100]:
+    for t in [0, 1, 2, 3, 4, 5, 7, 10, 20, 50, 100]:
         c, c_e = model.expected_probability_of_converting_within_time_with_error(t)
         print t, c, c_e
         assert Ex >= -0.0001
@@ -236,4 +236,4 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
         uc = model.expected_probability_of_converting_within_time(t)
         print t, uc
         assert is_almost_equal(c, uc.n)
-        assert is_same_order(c_e, uc.s, tol=50)
+        assert is_same_order(c_e, uc.s, tol=10)
