@@ -21,17 +21,7 @@ class Model(object):
         self.param_names = None
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
-
-    @property
-    def uparams(self):
-        if self.param_names is None or self.params is None or self.params_C is None:
-            return None
-        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                       self.params_C)
-        res = {}
-        for i in range(len(self.param_names)):
-            res[self.param_names[i]] = par_values[i]
-        return res
+        self.uparams = None
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
@@ -108,6 +98,15 @@ class Model(object):
         cov = np.cov(x)
         self.params_C = cov
         self.sampled_parameters = par_estimates
+
+        # set uparams once for all
+        if self.param_names is None or self.params is None or self.params_C is None:
+            return None
+        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
+                                                       self.params_C)
+        self.uparams = {}
+        for i in range(len(self.param_names)):
+            self.uparams[self.param_names[i]] = par_values[i]
 
     def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag='frequency'):
         """
@@ -448,21 +447,11 @@ class BGModel(object):
         self.param_names = ['alpha', 'beta']
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
+        self.uparams = None
         self.wrapped_static_expected_number_of_purchases_up_to_time = \
             uncertainties.wrap(BGFitter.static_expected_number_of_purchases_up_to_time)
         self.wrapped_static_probability_of_n_purchases_up_to_time = \
             uncertainties.wrap(BGFitter.static_probability_of_n_purchases_up_to_time)
-
-    @property
-    def uparams(self):
-        if self.param_names is None or self.params is None or self.params_C is None:
-            return None
-        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                       self.params_C)
-        res = {}
-        for i in range(len(self.param_names)):
-            res[self.param_names[i]] = par_values[i]
-        return res
 
     def generateData(self, t, parameters, size):
         return gen.bgext_model(t, parameters['alpha'],
@@ -526,6 +515,16 @@ class BGModel(object):
         self.params_C = cov
         self.sampled_parameters = par_estimates
         self.par_lists = par_lists
+
+        # set uparams once for all
+        if self.param_names is None or self.params is None or self.params_C is None:
+            return None
+        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
+                                                       self.params_C)
+        self.uparams = {}
+        for i in range(len(self.param_names)):
+            self.uparams[self.param_names[i]] = par_values[i]
+
 
     def expected_number_of_purchases_up_to_time_with_errors(self, t):
         """
