@@ -10,6 +10,7 @@ import timeit
 from lifetimes.utils import is_almost_equal
 from scipy import special
 from lifetimes import models
+from uncertainties import correlation_matrix, ufloat
 
 
 @pytest.mark.BGBB
@@ -410,3 +411,38 @@ def test_BGBB_integration_in_models_with_uncertainties():
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+
+@pytest.mark.BGBB
+def test_BGBB_correlations_preserved():
+    T = 10
+    size = 100
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+
+    data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
+
+    data = compress_data(data)
+
+    model = models.BGBBModel()
+
+    model.fit(data['frequency'], data['recency'], data['T'], bootstrap_size=10, N=data['N'],
+              initial_params=params.values())
+
+    print "Generation params"
+    print params
+
+    print "Fitted params"
+    print model.params
+    print model.params_C
+
+    print "Uncertain parameters"
+    print model.uparams
+
+    assert is_almost_equal(correlation_matrix([model.uparams['alpha'], model.uparams['alpha']])[0, 1], 1.0)
+    assert 1.0 > correlation_matrix([model.uparams['alpha'] + ufloat(1, 1), model.uparams['alpha']])[0, 1] > 0.0
+
+    # stub of profile
+    p1 = model.expected_number_of_purchases_up_to_time(1)
+    p2 = model.expected_number_of_purchases_up_to_time(2)
+
+    assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0

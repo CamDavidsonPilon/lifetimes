@@ -6,6 +6,7 @@ import lifetimes.estimation as est
 from lifetimes import models
 from lifetimes.data_compression import compress_bgext_data
 from lifetimes.utils import is_almost_equal, is_same_order
+from uncertainties import correlation_matrix, ufloat
 
 
 @pytest.mark.BGExt
@@ -24,7 +25,7 @@ def test_BGExt_generation():
 
     print compress_bgext_data(gen_data)
 
-    gen_data = gen.bgext_model([5,5,1,1], params['alpha'], params['beta'], probs=probs, size=10)
+    gen_data = gen.bgext_model([5, 5, 1, 1], params['alpha'], params['beta'], probs=probs, size=10)
 
     assert len(gen_data) == 4
     assert 'T' in gen_data
@@ -127,9 +128,9 @@ def test_BG_additional_functions():
     print "E[X(t)] as a function of t"
     for t in [1, 10, 100, 1000, 10000]:
         Ex = fitter.expected_number_of_purchases_up_to_time(t)
-        covariance_matrix = np.cov(np.vstack([[(params['alpha']*0.1)**2, 0], [0, (params['beta']*0.1)**2]]))
+        covariance_matrix = np.cov(np.vstack([[(params['alpha'] * 0.1) ** 2, 0], [0, (params['beta'] * 0.1) ** 2]]))
         Ex_err = fitter.expected_number_of_purchases_up_to_time_error(t, covariance_matrix)
-        print t, Ex , Ex/t, Ex_err
+        print t, Ex, Ex / t, Ex_err
         assert Ex >= 0
         assert Ex_err >= 0
 
@@ -145,14 +146,14 @@ def test_BG_additional_functions():
     assert math.fabs(tot_prob - 1.0) < 0.00001
 
 
-
 @pytest.mark.BGExt
 def test_BG_integration_in_models():
     T = 10
     size = 1000
     params = {'alpha': 0.17, 'beta': 1.18}
 
-    data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'], params['beta']) #, size=size)
+    data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'],
+                           params['beta'])  # , size=size)
 
     print data
 
@@ -197,11 +198,11 @@ def test_BG_on_simil_real_data():
 
     # let's take a case similar to Spy Calc Free:
     # data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'], params['beta']) #, size=size)
-    data = gen.bgext_model([1] * 3000 + [2] * 2000 + [3] * 1800 + [4] * 370, params['alpha'], params['beta']) #, size=size)
+    data = gen.bgext_model([1] * 3000 + [2] * 2000 + [3] * 1800 + [4] * 370, params['alpha'],
+                           params['beta'])  # , size=size)
 
-    #data = pd.read_csv("/Users/marcomeneghelli/Desktop/SCF_data.csv")
+    # data = pd.read_csv("/Users/marcomeneghelli/Desktop/SCF_data.csv")
     data = compress_bgext_data(data)
-
 
     model = models.BGModel(penalizer_coef=0.1)
 
@@ -233,13 +234,15 @@ def test_BG_on_simil_real_data():
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
 
+
 @pytest.mark.BGExt
 def test_BG_integration_in_models_with_uncertainties():
     T = 10
     size = 1000
     params = {'alpha': 0.17, 'beta': 1.18}
 
-    data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'], params['beta']) #, size=size)
+    data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'],
+                           params['beta'])  # , size=size)
     data = gen.bgext_model(T, params['alpha'], params['beta'], size=size)
 
     data = compress_bgext_data(data)
@@ -280,8 +283,55 @@ def test_BG_integration_in_models_with_uncertainties():
         tot_prob += prob
         assert 1 >= prob >= 0
 
-        uprob  = model.probability_of_n_purchases_up_to_time(t, n)
+        uprob = model.probability_of_n_purchases_up_to_time(t, n)
         print uprob
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+
+@pytest.mark.BGExt
+def test_correlations_of_uparams_and_derivatives():
+    T = 10
+    size = 100
+    params = {'alpha': 0.17, 'beta': 1.18}
+
+    data = gen.bgext_model(T, params['alpha'], params['beta'], size=size)
+    data = compress_bgext_data(data)
+
+    model = models.BGModel(penalizer_coef=0.1)
+    model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
+              initial_params=params.values())
+
+    print "Generation params"
+    print params
+
+    print "Fitted params"
+    print model.params
+    print model.params_C
+
+    print "Uncertain parameters"
+    print model.uparams
+
+    assert is_almost_equal(correlation_matrix([model.uparams['alpha'], model.uparams['alpha']])[0, 1], 1.0)
+    assert 1.0 > correlation_matrix([model.uparams['alpha'] + ufloat(1, 1), model.uparams['alpha']])[0, 1] > 0.0
+
+    # stub of profile
+    p1 = model.expected_number_of_purchases_up_to_time(1)
+    p2 = model.expected_number_of_purchases_up_to_time(2)
+
+    assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
+
+    # stub of profile
+    p1 = model.expected_number_of_purchases_up_to_time(1)
+    p2 = model.expected_number_of_purchases_up_to_time(10)
+
+    assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
+
+    # stub of profile
+    p1 = model.expected_number_of_purchases_up_to_time(1)
+    p2 = model.expected_number_of_purchases_up_to_time(100)
+
+    assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
+
+    # print [correlation_matrix([p1, model.expected_number_of_purchases_up_to_time(t)])[0, 1] for t in range(1,100)]

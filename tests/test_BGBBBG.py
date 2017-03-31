@@ -9,6 +9,7 @@ from lifetimes.data_compression import filter_data_by_T
 from lifetimes import models
 import pandas as pd
 from lifetimes.utils import is_almost_equal, is_same_order
+from uncertainties import correlation_matrix, ufloat
 
 
 @pytest.mark.BGBBBB
@@ -146,17 +147,17 @@ def test_BGBBBG_fitting_compressed_or_not():
     # for par_name in params.keys():
     # assert math.fabs(fitter.params_[par_name] - fitter_compressed.params_[par_name]) < 0.00001
 
+
 @pytest.mark.BGBB
 def test_BGBBBGExt_integration_in_models_with_uncertainties():
-
     T = 10
     size = 100
 
     params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0, 'c0': 0.05}
 
     data = gen.bgbbbgext_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'],
-                            params['epsilon'],
-                            params['zeta'],params['c0'], size=size, time_first_purchase=True)
+                               params['epsilon'],
+                               params['zeta'], params['c0'], size=size, time_first_purchase=True)
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
@@ -165,7 +166,6 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
     model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
               frequency_before_conversion=compressed_data['frequency_before_conversion'],
               N=compressed_data['N'], initial_params=params.values())
-
 
     print "Generation params"
     print params
@@ -176,6 +176,16 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
     print "Uncertain parameters"
     print model.uparams
+
+    # test correlations preserved
+    assert is_almost_equal(correlation_matrix([model.uparams['alpha'], model.uparams['alpha']])[0, 1], 1.0)
+    assert 1.0 > correlation_matrix([model.uparams['alpha'] + ufloat(1, 1), model.uparams['alpha']])[0, 1] > 0.0
+
+    # stub of profile
+    p1 = model.expected_number_of_sessions_up_to_time(1)
+    p2 = model.expected_number_of_sessions_up_to_time(2)
+
+    assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
 
     print "E[X(t)] as a function of t"
     for t in [0, 1, 10, 100, 1000, 10000]:
@@ -198,7 +208,7 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
         tot_prob += prob
         assert 1 >= prob >= 0
 
-        uprob  = model.probability_of_n_sessions_up_to_time(t, n)
+        uprob = model.probability_of_n_sessions_up_to_time(t, n)
         print uprob
         assert is_almost_equal(uprob.n, prob)
 

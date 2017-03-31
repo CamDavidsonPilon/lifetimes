@@ -103,7 +103,7 @@ class Model(object):
         if self.param_names is None or self.params is None or self.params_C is None:
             return None
         par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                       self.params_C)
+                                                     self.params_C)
         self.uparams = {}
         for i in range(len(self.param_names)):
             self.uparams[self.param_names[i]] = par_values[i]
@@ -302,7 +302,6 @@ class BGBBBGExtModel(Model):
             uvalue = uncertainties.ufloat(uvalue.n, 0.0)
         return uvalue
 
-
     def generateData(self, t, parameters, size):
         return gen.bgbbbgext_model(t, parameters['alpha'],
                                    parameters['beta'],
@@ -383,6 +382,15 @@ class BGBBBGExtModel(Model):
         self.params_C = cov
         self.sampled_parameters = par_estimates
         self.par_lists = par_lists
+
+        # set uparams once for all
+        if self.param_names is None or self.params is None or self.params_C is None:
+            return None
+        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
+                                                     self.params_C)
+        self.uparams = {}
+        for i in range(len(self.param_names)):
+            self.uparams[self.param_names[i]] = par_values[i]
 
     def expected_probability_of_converting_at_time_with_error(self, t):
         value = self.fitter.expected_probability_of_converting_at_time(t)
@@ -520,11 +528,10 @@ class BGModel(object):
         if self.param_names is None or self.params is None or self.params_C is None:
             return None
         par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                       self.params_C)
+                                                     self.params_C)
         self.uparams = {}
         for i in range(len(self.param_names)):
             self.uparams[self.param_names[i]] = par_values[i]
-
 
     def expected_number_of_purchases_up_to_time_with_errors(self, t):
         """
@@ -550,7 +557,6 @@ class BGModel(object):
         uparams = self.uparams
         a, b = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, t, n)
-
 
     def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag='frequency'):
         """
