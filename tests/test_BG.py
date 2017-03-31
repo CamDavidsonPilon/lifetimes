@@ -3,10 +3,8 @@ import math
 import lifetimes.generate_data as gen
 import numpy as np
 import lifetimes.estimation as est
-from lifetimes.data_compression import compress_data, compress_bgext_data
 from lifetimes import models
 from lifetimes.data_compression import compress_bgext_data
-import pandas as pd
 from lifetimes.utils import is_almost_equal, is_same_order
 
 
@@ -271,7 +269,7 @@ def test_BG_integration_in_models_with_uncertainties():
         uEx = model.expected_number_of_purchases_up_to_time(t)
         print t, uEx
         assert is_almost_equal(Ex, uEx.n)
-        # assert is_same_order(Ex_err, uEx.s)
+        assert is_same_order(Ex_err, uEx.s)
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)

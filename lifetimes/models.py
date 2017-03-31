@@ -437,7 +437,6 @@ class BGBBBGExtModel(Model):
         return self.wrapped_static_static_expected_probability_of_converting_within_time(a, b, g, d, e, z, c0, t)
 
 
-
 class BGModel(object):
     """
     Fits a discrete-time BG to the data, and computes relevant metrics by mean of a simulation.
