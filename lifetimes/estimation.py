@@ -11,6 +11,8 @@ from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbg_model, bgbbbgext_model, bgext_model
 from lifetimes.formulas import gamma_ratio
+from uncertainties import UFloat, ufloat
+
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
@@ -1124,22 +1126,23 @@ class BGBBBGExtFitter(BaseFitter):
         return self
 
     def expected_probability_of_converting_at_time(self, t):
-
-        if t == 0:
-            return self._straight_expected_probability_of_converting_at_time(t)
-
-        value = self._straight_expected_probability_of_converting_at_time(t)
-
-        if t > 1:
-            prev_value = self._straight_expected_probability_of_converting_at_time(t - 1)
-            if value < 0 or value > prev_value:
-                return 0.0
-        return value
+        a, b, g, d, e, z, c0 = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0')
+        return BGBBBGExtFitter.static_regularized_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
 
     def _straight_expected_probability_of_converting_at_time(self, t):
         a, b, g, d, e, z, c0 = self._unload_params('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0')
-
         return BGBBBGExtFitter.static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+
+    @staticmethod
+    def static_regularized_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t):
+
+        value = BGBBBGExtFitter.static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+        if t > 1:
+            prev_value = BGBBBGExtFitter.static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t - 1)
+
+            if value < 0 or value > prev_value:
+                return 0.0
+        return value
 
     @staticmethod
     def static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t):
@@ -1162,10 +1165,18 @@ class BGBBBGExtFitter(BaseFitter):
             values.append(value)
         error = np.std(values)
         self.params_ = initial_params
+        if math.isnan(error) or error > 1.0:
+            error = 1.0
         return error
 
     def expected_probability_of_converting_within_time(self, t):
         return sum([self.expected_probability_of_converting_at_time(ti) for ti in range(t + 1)])
+
+    @staticmethod
+    def static_expected_probability_of_converting_within_time(a, b, g, d, e, z, c0, t):
+        return sum(
+            [BGBBBGExtFitter.static_regularized_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, ti) \
+             for ti in range(t + 1)])
 
     def expected_probability_of_converting_within_time_error(self, t, params_list):
         initial_params = self.params_.copy()
@@ -1177,6 +1188,8 @@ class BGBBBGExtFitter(BaseFitter):
             values.append(value)
         error = np.std(values)
         self.params_ = initial_params
+        if math.isnan(error) or error > 1.0:
+            error = 1.0
         return error
 
     def expected_number_of_sessions_up_to_time(self, t):
@@ -1190,7 +1203,7 @@ class BGBBBGExtFitter(BaseFitter):
         Returns: a scalar or array
         """
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
-        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+        return BGBBBGExtFitter.static_expected_number_of_sessions_up_to_time(a, b, g, d, t)
 
     def expected_number_of_sessions_up_to_time_error(self, t, C):
         """
@@ -1205,6 +1218,18 @@ class BGBBBGExtFitter(BaseFitter):
         """
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         return BGBBFitter.static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C)
+
+    @staticmethod
+    def static_expected_number_of_sessions_up_to_time(a, b, g, d, t):
+        return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+
+    def probability_of_n_sessions_up_to_time(self, t, n):
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBBGExtFitter.static_probability_of_n_sessions_up_to_time(a, b, g, d, t, n)
+
+    @staticmethod
+    def static_probability_of_n_sessions_up_to_time(a, b, g, d, t, n):
+        return BGBBFitter.static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
 
 
 class BGFitter(BaseFitter):
@@ -1357,11 +1382,13 @@ class BGFitter(BaseFitter):
         def dy(x, y):
             return special.beta(x, y) * (special.psi(y) - special.psi(x + y))
 
-        E = BGFitter.static_expected_number_of_purchases_up_to_time(a, b, t)
         B = special.beta(a, b)
+        E = BGFitter.static_expected_number_of_purchases_up_to_time(a, b, t) * B
 
-        dEda = (t * dx(a, b + t) + dx(a - 1, b + 1) - dx(a - 1, b + t) - (t - 1) * dx(a, b + t)) / B - E / (B**2) * dx(a, b)
-        dEdb = (t * dy(a, b + t) + dy(a - 1, b + 1) - dy(a - 1, b + t) - (t - 1) * dy(a, b + t)) / B - E / (B**2) * dy(a, b)
+        dEda = (t * dx(a, b + t) + dx(a - 1, b + 1) - dx(a - 1, b + t) - (t - 1) * dx(a, b + t)) / B - E / (
+            B ** 2) * dx(a, b)
+        dEdb = (t * dy(a, b + t) + dy(a - 1, b + 1) - dy(a - 1, b + t) - (t - 1) * dy(a, b + t)) / B - E / (
+            B ** 2) * dy(a, b)
 
         Cov = np.matrix(C)
         dE = np.array([[dEda], [dEdb]])
@@ -1387,7 +1414,7 @@ class BGFitter(BaseFitter):
 
         den = special.beta(a, b)
         if t < n:
-          raise ValueError("t must be >= n")
+            raise ValueError("t must be >= n")
         elif n == 0:
             num = special.beta(a + 1, b)
         elif n < t:

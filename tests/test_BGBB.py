@@ -6,6 +6,8 @@ import lifetimes.estimation as est
 from lifetimes.data_compression import compress_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
+
+from lifetimes.utils import is_almost_equal
 from scipy import special
 from lifetimes import models
 
@@ -354,3 +356,57 @@ def test_BGBB_generation_speedtest():
     t1 = timeit.default_timer() - start_time
     print "time required: " + str(t1)
 
+
+
+
+@pytest.mark.BGBB
+def test_BGBB_integration_in_models_with_uncertainties():
+    T = 10
+    size = 100
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7}
+
+    data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=size)
+
+    data = compress_data(data)
+
+    model = models.BGBBModel()
+
+    model.fit(data['frequency'], data['recency'], data['T'], bootstrap_size=10, N=data['N'],
+              initial_params=params.values())
+
+    print "Generation params"
+    print params
+
+    print "Fitted params"
+    print model.params
+    print model.params_C
+
+    print "Uncertain parameters"
+    print model.uparams
+
+    print "E[X(t)] as a function of t"
+    for t in [0, 1, 10, 100, 1000, 10000]:
+        Ex, Ex_err = model.expected_number_of_purchases_up_to_time_with_errors(t)
+        print t, Ex, Ex_err
+        assert Ex >= -0.0001
+        assert Ex_err >= -0.0001
+
+        uEx = model.expected_number_of_purchases_up_to_time(t)
+        print t, uEx
+        assert is_almost_equal(Ex, uEx.n)
+        assert is_almost_equal(Ex_err, uEx.s, tol=max(0.5 * Ex_err, 0.0001) )
+
+    t = 10
+    print "E[X(t) = n] as a function of n, t = " + str(t)
+    tot_prob = 0.0
+    for n in range(t + 1):
+        prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
+        print n, prob
+        tot_prob += prob
+        assert 1 >= prob >= 0
+
+        uprob  = model.probability_of_n_purchases_up_to_time(t, n)
+        print uprob
+        assert is_almost_equal(uprob.n, prob)
+
+    assert math.fabs(tot_prob - 1.0) < 0.00001

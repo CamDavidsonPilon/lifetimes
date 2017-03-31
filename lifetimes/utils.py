@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 import operator as op
+import math
 
 pd.options.mode.chained_assignment = None
 
@@ -338,3 +339,16 @@ def normalize_positive_vector(v):
 
     norm = sum(v)
     return [float(c) / norm for c in v]
+
+
+def is_almost_equal(v1, v2, tol = 0.0001):
+    return math.fabs(v1 - v2) < tol
+
+
+def is_same_order(v1, v2, tol=10):
+    if math.fabs(v2) > 0.0001:
+        return 1.0/tol < math.fabs(float(v1)/v2) < tol
+    elif math.fabs(v1) > 0.0001:
+        return 1.0/tol < math.fabs(float(v2)/v1) < tol
+    else:
+        return True

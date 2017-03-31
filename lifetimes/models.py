@@ -1,11 +1,14 @@
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGFitter, BGBBBGExtFitter, BGFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGFitter, BGBBBGExtFitter, \
+    BGFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
 import random
 import copy
 from abc import abstractmethod
+import uncertainties
+from lifetimes.utils import is_almost_equal
 
 
 class Model(object):
@@ -18,6 +21,17 @@ class Model(object):
         self.param_names = None
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
+
+    @property
+    def uparams(self):
+        if self.param_names is None or self.params is None or self.params_C is None:
+            return None
+        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
+                                                       self.params_C)
+        res = {}
+        for i in range(len(self.param_names)):
+            res[self.param_names[i]] = par_values[i]
+        return res
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
@@ -226,6 +240,10 @@ class BGBBModel(Model):
         super(BGBBModel, self).__init__()
         self.fitter = BGBBFitter(penalizer_coef)
         self.param_names = ['alpha', 'beta', 'gamma', 'delta']
+        self.wrapped_static_expected_number_of_purchases_up_to_time = \
+            uncertainties.wrap(BGBBFitter.static_expected_number_of_purchases_up_to_time)
+        self.wrapped_static_probability_of_n_purchases_up_to_time = \
+            uncertainties.wrap(BGBBFitter.static_probability_of_n_purchases_up_to_time)
 
     def generateData(self, t, parameters, size):
         return gen.bgbb_model(t, parameters['alpha'],
@@ -233,6 +251,16 @@ class BGBBModel(Model):
                               parameters['gamma'],
                               parameters['delta'],
                               size)
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        uparams = self.uparams
+        a, b, g, d = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        uparams = self.uparams
+        a, b, g, d = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
 
     def expected_number_of_purchases_up_to_time_with_errors(self, t):
         """
@@ -251,108 +279,6 @@ class BGBBModel(Model):
             t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
 
 
-# TODO: unify
-class BGBBBGModel(Model):
-    """
-       Fits a discrete-time BGBBBG to the data, and computes relevant metrics by mean of a simulation.
-     """
-
-    def __init__(self, penalizer_coef=0.):
-        super(BGBBBGModel, self).__init__()
-        self.fitter = BGBBBGFitter(penalizer_coef)
-        self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
-
-    def generateData(self, t, parameters, size):
-        return gen.bgbbbg_model(t, parameters['alpha'],
-                                parameters['beta'],
-                                parameters['gamma'],
-                                parameters['delta'],
-                                parameters['epsilon'],
-                                parameters['zeta'],
-                                size)
-
-    def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None,
-            iterative_fitting=0, frequency_before_conversion=None):
-        """
-        Fit the model to data, finding parameters and their errors, and assigning them to internal variables
-        Args:
-            frequency: the frequency vector of customers' sessions (denoted x in literature).
-            recency: the recency vector of customers' sessions (denoted t_x in literature).
-            T: the vector of customers' age (time since first purchase)
-            bootstrap_size: number of data-samplings used to address parameter uncertainty
-            N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
-            frequency_before_conversion:  the frequency vector of customers' sessions before first purchase--> Must be a valid array
-        """
-
-        if frequency_before_conversion is None:
-            raise ValueError("You must provide a valid vector of frequency_before_purchase")
-
-        self.fitter.fit(frequency=frequency, recency=recency, T=T,
-                        frequency_before_conversion=frequency_before_conversion, N=N,
-                        initial_params=initial_params,
-                        iterative_fitting=iterative_fitting)
-
-        self.params = self.fitter.params_
-
-        if N is None:
-            data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T,
-                 'frequency_before_conversion': frequency_before_conversion})
-            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
-        else:
-            data = pd.DataFrame(
-                {'frequency': frequency, 'recency': recency, 'T': T,
-                 'frequency_before_conversion': frequency_before_conversion, 'N': N})
-            self._estimate_uncertainties_with_bootstrap(data, bootstrap_size, compressed_data=True)
-
-    def _estimate_uncertainties_with_bootstrap(self, data, size=10, compressed_data=False):
-
-        if not all(column in data.columns for column in ['frequency', 'recency', 'T', 'frequency_before_conversion']):
-            raise ValueError("given data do not contain the 4 magic columns.")
-        if size < 2:
-            raise ValueError("Run at least 2 samplings to get a covariance.")
-
-        par_estimates = []
-
-        tmp_fitter = copy.deepcopy(self.fitter)
-        for i in range(size):
-            N = len(data)
-            if compressed_data is False:
-                sampled_data = data.sample(N, replace=True)
-                tmp_fitter.fit(sampled_data['frequency'], sampled_data['recency'], sampled_data['T'],
-                               sampled_data['frequency_before_conversion'])
-            else:
-                # in case of compressed data you've gotta sample a multinomial distribution
-                N = data['N']
-                N_sum = sum(N)
-                prob = [float(n) / N_sum for n in N]
-                sampled_N = np.random.multinomial(N_sum, prob, size=1)
-                tmp_fitter.fit(frequency=data['frequency'], recency=data['recency'], T=data['T'],
-                               frequency_before_conversion=data['frequency_before_conversion'], N=sampled_N[0])
-            par_estimates.append(tmp_fitter.params_)
-
-        par_lists = []
-        for par_name in self.param_names:
-            par_lists.append([par[par_name] for par in par_estimates])
-
-        par_lists = remove_outliers_from_fitted_params(par_lists)
-        x = np.vstack(par_lists)
-        cov = np.cov(x)
-        self.params_C = cov
-        self.sampled_parameters = par_estimates
-        self.par_lists = par_lists
-
-    def expected_probability_of_converting_at_time_with_error(self, t):
-        value = self.fitter.expected_probability_of_converting_at_time(t)
-        error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
-        return value, error
-
-    def expected_probability_of_converting_within_time_with_error(self, t):
-        value = self.fitter.expected_probability_of_converting_within_time(t)
-        error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
-        return value, error
-
-
 class BGBBBGExtModel(Model):
     """
        Fits a discrete-time BGBBBG to the data, and computes relevant metrics by mean of a simulation.
@@ -362,6 +288,21 @@ class BGBBBGExtModel(Model):
         super(BGBBBGExtModel, self).__init__()
         self.fitter = BGBBBGExtFitter(penalizer_coef)
         self.param_names = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0']
+        self.wrapped_static_expected_number_of_sessions_up_to_time = \
+            uncertainties.wrap(BGBBBGExtFitter.static_expected_number_of_sessions_up_to_time)
+        self.wrapped_static_probability_of_n_sessions_up_to_time = \
+            uncertainties.wrap(BGBBBGExtFitter.static_probability_of_n_sessions_up_to_time)
+        self.wrapped_static_expected_probability_of_converting_at_time = \
+            uncertainties.wrap(BGBBBGExtFitter.static_regularized_expected_probability_of_converting_at_time)
+        self.wrapped_static_static_expected_probability_of_converting_within_time = \
+            uncertainties.wrap(BGBBBGExtFitter.static_expected_probability_of_converting_within_time)
+
+    def corrected_wrapped_static_expected_probability_of_converting_at_time(self, a, b, g, d, e, z, c0, t):
+        uvalue = self.wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+        if math.isnan(uvalue.s) or uvalue.s > 1.0:
+            uvalue = uncertainties.ufloat(uvalue.n, 0.0)
+        return uvalue
+
 
     def generateData(self, t, parameters, size):
         return gen.bgbbbgext_model(t, parameters['alpha'],
@@ -447,6 +388,8 @@ class BGBBBGExtModel(Model):
     def expected_probability_of_converting_at_time_with_error(self, t):
         value = self.fitter.expected_probability_of_converting_at_time(t)
         error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
+        if is_almost_equal(value, 0.0, tol=0.00001):
+            error = 0.0
         return value, error
 
     def expected_probability_of_converting_within_time_with_error(self, t):
@@ -473,6 +416,27 @@ class BGBBBGExtModel(Model):
         return self.fitter.expected_number_of_sessions_up_to_time(
             t), self.fitter.expected_number_of_sessions_up_to_time_error(t, C)
 
+    def expected_number_of_sessions_up_to_time(self, t):
+        uparams = self.uparams
+        a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_expected_number_of_sessions_up_to_time(a, b, g, d, t)
+
+    def probability_of_n_sessions_up_to_time(self, t, n):
+        uparams = self.uparams
+        a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_probability_of_n_sessions_up_to_time(a, b, g, d, t, n)
+
+    def expected_probability_of_converting_at_time(self, t):
+        uparams = self.uparams
+        a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
+        return self.corrected_wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+
+    def expected_probability_of_converting_within_time(self, t):
+        uparams = self.uparams
+        a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_static_expected_probability_of_converting_within_time(a, b, g, d, e, z, c0, t)
+
+
 
 class BGModel(object):
     """
@@ -485,11 +449,26 @@ class BGModel(object):
         self.param_names = ['alpha', 'beta']
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
+        self.wrapped_static_expected_number_of_purchases_up_to_time = \
+            uncertainties.wrap(BGFitter.static_expected_number_of_purchases_up_to_time)
+        self.wrapped_static_probability_of_n_purchases_up_to_time = \
+            uncertainties.wrap(BGFitter.static_probability_of_n_purchases_up_to_time)
+
+    @property
+    def uparams(self):
+        if self.param_names is None or self.params is None or self.params_C is None:
+            return None
+        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
+                                                       self.params_C)
+        res = {}
+        for i in range(len(self.param_names)):
+            res[self.param_names[i]] = par_values[i]
+        return res
 
     def generateData(self, t, parameters, size):
         return gen.bgext_model(t, parameters['alpha'],
-                              parameters['beta'],
-                              size=size)
+                               parameters['beta'],
+                               size=size)
 
     def fit(self, frequency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
@@ -508,7 +487,7 @@ class BGModel(object):
         self.params = self.fitter.params_
 
         if N is None:
-            data = pd.DataFrame({'frequency': frequency,  'T': T})
+            data = pd.DataFrame({'frequency': frequency, 'T': T})
             self._estimate_uncertainties_with_bootstrap(data, bootstrap_size)
         else:
             data = pd.DataFrame({'frequency': frequency, 'T': T, 'N': N})
@@ -563,6 +542,17 @@ class BGModel(object):
 
         return self.fitter.expected_number_of_purchases_up_to_time(
             t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        uparams = self.uparams
+        a, b = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_expected_number_of_purchases_up_to_time(a, b, t)
+
+    def probability_of_n_purchases_up_to_time(self, t, n):
+        uparams = self.uparams
+        a, b = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, t, n)
+
 
     def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag='frequency'):
         """

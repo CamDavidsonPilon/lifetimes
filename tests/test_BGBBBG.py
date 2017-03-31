@@ -8,6 +8,7 @@ from lifetimes.data_compression import compress_data, compress_session_session_b
 from lifetimes.data_compression import filter_data_by_T
 from lifetimes import models
 import pandas as pd
+from lifetimes.utils import is_almost_equal, is_same_order
 
 
 @pytest.mark.BGBBBB
@@ -145,36 +146,84 @@ def test_BGBBBG_fitting_compressed_or_not():
     # for par_name in params.keys():
     # assert math.fabs(fitter.params_[par_name] - fitter_compressed.params_[par_name]) < 0.00001
 
+@pytest.mark.BGBB
+def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
-@pytest.mark.BGBBBB
-def test_BGBBBG_fitting_compressed_or_not():
     T = 10
     size = 100
 
-    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0}
+    params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0, 'c0': 0.05}
 
-    data = gen.bgbbbg_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'],
+    data = gen.bgbbbgext_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'],
                             params['epsilon'],
-                            params['zeta'], size=size, time_first_purchase=True)
+                            params['zeta'],params['c0'], size=size, time_first_purchase=True)
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
-    # fitter = est.BGBBBGFitter()
-    model = mod.BGBBBGModel()
-    # fitter.fit(data['frequency'], data['recency'], data['T'], data['frequency_before_conversion'],
-    #           initial_params=params.values())
+    model = mod.BGBBBGExtModel()
+
     model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
               frequency_before_conversion=compressed_data['frequency_before_conversion'],
               N=compressed_data['N'], initial_params=params.values())
 
+
+    print "Generation params"
     print params
-    # print fitter.params_
+
+    print "Fitted params"
     print model.params
-    tot = 0
-    fitted_conv = []
+    print model.params_C
 
-    for t in range(30):
-        print model.expected_probability_of_converting_at_time_with_error(t)
+    print "Uncertain parameters"
+    print model.uparams
 
+    print "E[X(t)] as a function of t"
+    for t in [0, 1, 10, 100, 1000, 10000]:
+        Ex, Ex_err = model.expected_number_of_sessions_up_to_time_with_errors(t)
+        print t, Ex, Ex_err
+        assert Ex >= -0.0001
+        assert Ex_err >= -0.0001
 
-###test_BGBBBGExt_fitting_compressed_or_not()
+        uEx = model.expected_number_of_sessions_up_to_time(t)
+        print t, uEx
+        assert is_almost_equal(Ex, uEx.n)
+        assert is_same_order(Ex_err, uEx.s)
+
+    t = 10
+    print "E[X(t) = n] as a function of n, t = " + str(t)
+    tot_prob = 0.0
+    for n in range(t + 1):
+        prob = model.fitter.probability_of_n_sessions_up_to_time(t, n)
+        print n, prob
+        tot_prob += prob
+        assert 1 >= prob >= 0
+
+        uprob  = model.probability_of_n_sessions_up_to_time(t, n)
+        print uprob
+        assert is_almost_equal(uprob.n, prob)
+
+    assert math.fabs(tot_prob - 1.0) < 0.00001
+
+    print "c(t) as a function of t"
+    for t in [0, 1, 10, 100, 1000]:
+        c, c_e = model.expected_probability_of_converting_at_time_with_error(t)
+        print t, c, c_e
+        assert Ex >= -0.0001
+        assert Ex_err >= -0.0001
+
+        uc = model.expected_probability_of_converting_at_time(t)
+        print t, uc
+        assert is_almost_equal(c, uc.n)
+        assert is_same_order(c_e, uc.s, tol=50)
+
+    print "cumulative c(t) as a function of t"
+    for t in [0, 1, 10, 100]:
+        c, c_e = model.expected_probability_of_converting_within_time_with_error(t)
+        print t, c, c_e
+        assert Ex >= -0.0001
+        assert Ex_err >= -0.0001
+
+        uc = model.expected_probability_of_converting_within_time(t)
+        print t, uc
+        assert is_almost_equal(c, uc.n)
+        assert is_same_order(c_e, uc.s, tol=50)
