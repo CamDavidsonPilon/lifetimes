@@ -164,6 +164,9 @@ def test_BG_integration_in_models():
     model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
               initial_params=params.values())
 
+    assert model.is_ready()
+    assert model.good_fit()
+
     print "Generation params"
     print params
 

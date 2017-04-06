@@ -1,6 +1,5 @@
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGFitter, BGBBBGExtFitter, \
-    BGFitter
+from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGExtFitter, BGFitter
 import numpy as np
 import pandas as pd
 import generate_data as gen
@@ -22,6 +21,24 @@ class Model(object):
         self.params, self.params_C = None, None
         self.sampled_parameters = None  # result of a bootstrap
         self.uparams = None
+
+    def is_ready(self):
+        return self.params is not None and  self.params_C is not None
+
+    def good_fit(self):
+        """
+        Decides if we have a good fit
+        :return:    bool
+        """
+        pars = self.params  # it's a dictionary
+        if pars is None:
+            raise ValueError("fit the data first")
+
+        if not np.all(np.array(pars.values()) >= 0):
+            return False
+        if not np.all(np.array(pars.values()) <= 500):
+            return False
+        return True
 
     def fit(self, frequency, recency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
@@ -96,8 +113,25 @@ class Model(object):
 
         x = np.vstack(par_lists)
         cov = np.cov(x)
-        self.params_C = cov
+
         self.sampled_parameters = par_estimates
+        self.set_parameters(self.params, cov)
+
+    def set_parameters(self, pars, cov):
+        """
+        Sets patameters and their covariance matrix
+        Args:
+            pars:   dictionary
+            cov:    np.cov
+        """
+        if len(pars) < len(self.param_names):
+            raise ValueError("Provide all parameters!")
+        if len(cov) < len(self.param_names) or len(cov[0]) < len(self.param_names):
+            raise ValueError("Wrong dimensions of covariance matrix")
+        self.params_C = cov
+        self.params = {}
+        for par_name in self.param_names:
+            self.params[par_name] = pars[par_name]
 
         # set uparams once for all
         if self.param_names is None or self.params is None or self.params_C is None:
@@ -261,7 +295,7 @@ class BGBBModel(Model):
         a, b, g, d = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
 
-    def expected_number_of_purchases_up_to_time_with_errors(self, t):
+    def expected_number_of_purchases_up_to_time_with_errors(self, t):   # DEPRECATED.. Only valid for cross check
         """
 
         Args:
@@ -379,32 +413,26 @@ class BGBBBGExtModel(Model):
         par_lists = remove_outliers_from_fitted_params(par_lists)
         x = np.vstack(par_lists)
         cov = np.cov(x)
-        self.params_C = cov
-        self.sampled_parameters = par_estimates
+
         self.par_lists = par_lists
 
-        # set uparams once for all
-        if self.param_names is None or self.params is None or self.params_C is None:
-            return None
-        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                     self.params_C)
-        self.uparams = {}
-        for i in range(len(self.param_names)):
-            self.uparams[self.param_names[i]] = par_values[i]
+        self.sampled_parameters = par_estimates
+        self.set_parameters(self.params, cov)
 
-    def expected_probability_of_converting_at_time_with_error(self, t):
+
+    def expected_probability_of_converting_at_time_with_error(self, t): # DEPRECATED
         value = self.fitter.expected_probability_of_converting_at_time(t)
         error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
         if is_almost_equal(value, 0.0, tol=0.00001):
             error = 0.0
         return value, error
 
-    def expected_probability_of_converting_within_time_with_error(self, t):
+    def expected_probability_of_converting_within_time_with_error(self, t): # DEPRECATED
         value = self.fitter.expected_probability_of_converting_within_time(t)
         error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
         return value, error
 
-    def expected_number_of_sessions_up_to_time_with_errors(self, t):
+    def expected_number_of_sessions_up_to_time_with_errors(self, t):    # DEPRECATED
         """
         The "number of purchases" is actually the number of sessions...
 
@@ -445,7 +473,7 @@ class BGBBBGExtModel(Model):
         return res
 
 
-class BGModel(object):
+class BGModel(Model):
     """
     Fits a discrete-time BG to the data, and computes relevant metrics by mean of a simulation.
     """
@@ -467,12 +495,13 @@ class BGModel(object):
                                parameters['beta'],
                                size=size)
 
-    def fit(self, frequency, T, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
+    def fit(self, frequency, T, recency=None,  bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
             frequency: the frequency vector of customers' sessions (denoted x in literature).
             T: the vector of customers' age (time since first purchase)
+            recency:    None and useless, inserted just the keep the inheritance from Model
             bootstrap_size: number of data-samplings used to address parameter uncertainty
             N:  count of users matching FRT (compressed data), if absent data are assumed to be non-compressed
         """
@@ -521,20 +550,11 @@ class BGModel(object):
         par_lists = remove_outliers_from_fitted_params(par_lists)
         x = np.vstack(par_lists)
         cov = np.cov(x)
-        self.params_C = cov
+
         self.sampled_parameters = par_estimates
-        self.par_lists = par_lists
+        self.set_parameters(self.params, cov)
 
-        # set uparams once for all
-        if self.param_names is None or self.params is None or self.params_C is None:
-            return None
-        par_values = uncertainties.correlated_values([self.params[par_name] for par_name in self.param_names],
-                                                     self.params_C)
-        self.uparams = {}
-        for i in range(len(self.param_names)):
-            self.uparams[self.param_names[i]] = par_values[i]
-
-    def expected_number_of_purchases_up_to_time_with_errors(self, t):
+    def expected_number_of_purchases_up_to_time_with_errors(self, t):       # DEPRECATED
         """
         Args:
             t: a scalar or array of times
@@ -558,47 +578,6 @@ class BGModel(object):
         uparams = self.uparams
         a, b = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, t, n)
-
-    def evaluate_metrics_with_simulation(self, N, t, N_sim=10, max_x=10, tag='frequency'):
-        """
-        Args:
-            N:      number of users you're referring to
-            t:      time horizon you're looking at
-            N_sim:        Number of simulations
-            max_x:         Maximum number of transactions you want to consider
-        Returns:    The numerical metrics
-        """
-
-        if self.params is None or self.params_C is None or self.sampled_parameters is None:
-            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
-
-        xs = range(max_x)
-
-        frequencies = {}
-        for x in xs:
-            frequencies[x] = []
-        p_x = [None] * max_x
-        p_x_err = [None] * max_x
-
-        for sim_i in range(N_sim):
-            par_s = self.sampled_parameters[
-                random.randint(0, len(self.sampled_parameters) - 1)]  # pick up a random outcome of the fit
-            data = self.generateData(t, par_s, N)
-            if tag not in data:
-                raise ValueError("Unreconized column: " + tag)
-            n = len(data)
-            for x in xs:
-                if x == max_x - 1:
-                    n_success = len(data[data[tag] >= x])  # the last bin is cumulative
-                else:
-                    n_success = len(data[data[tag] == x])
-                frequencies[x].append(float(n_success) / n)
-
-        for x in xs:
-            p_x_err[x] = np.std(frequencies[x])  # contain statistic + systematic errors, entangled
-            p_x[x] = np.mean(frequencies[x])
-
-        return NumericalMetrics(p_x, p_x_err)
 
 
 class NumericalMetrics(object):

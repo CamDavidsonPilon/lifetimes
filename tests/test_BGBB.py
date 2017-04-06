@@ -7,7 +7,7 @@ from lifetimes.data_compression import compress_data
 from lifetimes.data_compression import filter_data_by_T
 import timeit
 
-from lifetimes.utils import is_almost_equal
+from lifetimes.utils import is_almost_equal, is_same_order
 from scipy import special
 from lifetimes import models
 from uncertainties import correlation_matrix, ufloat
@@ -395,7 +395,7 @@ def test_BGBB_integration_in_models_with_uncertainties():
         uEx = model.expected_number_of_purchases_up_to_time(t)
         print t, uEx
         assert is_almost_equal(Ex, uEx.n)
-        assert is_almost_equal(Ex_err, uEx.s, tol=max(0.5 * Ex_err, 0.0001) )
+        assert is_same_order(Ex_err, uEx.s)
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
