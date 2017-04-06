@@ -35,7 +35,7 @@ def test_Pareto_expected_purchases_before_fitting():
     model = models.ParetoNBDModel()
     error_generated = False
     try:
-        _, _ = model.expected_number_of_purchases_up_to_time_with_errors(1)
+        _, _ = model.expected_number_of_purchases_up_to_time(1)
     except ValueError:
         error_generated = True
     assert error_generated

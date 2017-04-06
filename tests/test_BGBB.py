@@ -317,10 +317,10 @@ def test_BGBB_integration_in_models():
 
     print "E[X(t)] as a function of t"
     for t in [0, 1, 10, 100, 1000, 10000]:
-        Ex, Ex_err = model.expected_number_of_purchases_up_to_time_with_errors(t)
-        print t, Ex, Ex_err
-        assert Ex >= 0
-        assert Ex_err >= 0
+        Ex = model.expected_number_of_purchases_up_to_time(t)
+        print t, Ex
+        assert Ex.n >= 0
+        assert Ex.s >= 0
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
@@ -387,15 +387,10 @@ def test_BGBB_integration_in_models_with_uncertainties():
 
     print "E[X(t)] as a function of t"
     for t in [0, 1, 10, 100, 1000, 10000]:
-        Ex, Ex_err = model.expected_number_of_purchases_up_to_time_with_errors(t)
-        print t, Ex, Ex_err
-        assert Ex >= -0.0001
-        assert Ex_err >= -0.0001
-
         uEx = model.expected_number_of_purchases_up_to_time(t)
         print t, uEx
-        assert is_almost_equal(Ex, uEx.n)
-        assert is_same_order(Ex_err, uEx.s)
+        assert uEx.n >= -0.0001
+        assert uEx.s >= -0.0001
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)

@@ -161,7 +161,7 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
     compressed_data = compress_session_session_before_conversion_data(data)
 
-    model = mod.BGBBBGExtModel()
+    model = mod.BGBBBGExtModel(penalizer_coef=0.2)
 
     model.fit(frequency=compressed_data['frequency'], recency=compressed_data['recency'], T=compressed_data['T'],
               frequency_before_conversion=compressed_data['frequency_before_conversion'],
@@ -189,15 +189,10 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
     print "E[X(t)] as a function of t"
     for t in [0, 1, 10, 100, 1000, 10000]:
-        Ex, Ex_err = model.expected_number_of_sessions_up_to_time_with_errors(t)
-        print t, Ex, Ex_err
-        assert Ex >= -0.0001
-        assert Ex_err >= -0.0001
-
         uEx = model.expected_number_of_sessions_up_to_time(t)
         print t, uEx
-        assert is_almost_equal(Ex, uEx.n)
-        assert is_same_order(Ex_err, uEx.s)
+        assert uEx.n >= 0
+        assert uEx.s >= 0
 
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
@@ -216,24 +211,14 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
     print "c(t) as a function of t"
     for t in [0, 1, 10, 100, 1000]:
-        c, c_e = model.expected_probability_of_converting_at_time_with_error(t)
-        print t, c, c_e
-        assert Ex >= -0.0001
-        assert Ex_err >= -0.0001
-
         uc = model.expected_probability_of_converting_at_time(t)
         print t, uc
-        assert is_almost_equal(c, uc.n)
-        assert is_same_order(c_e, uc.s, tol=10)
+        assert uc.n >= 0.0 and uc.n <= 1.0
+        assert uc.s >= 0.0
 
     print "cumulative c(t) as a function of t"
     for t in [0, 1, 2, 3, 4, 5, 7, 10, 20, 50, 100]:
-        c, c_e = model.expected_probability_of_converting_within_time_with_error(t)
-        print t, c, c_e
-        assert Ex >= -0.0001
-        assert Ex_err >= -0.0001
-
         uc = model.expected_probability_of_converting_within_time(t)
         print t, uc
-        assert is_almost_equal(c, uc.n)
-        assert is_same_order(c_e, uc.s, tol=10)
+        assert uc.n >= 0.0 and uc.n <= 1.0
+        assert uc.s >= 0.0

@@ -241,15 +241,17 @@ class ParetoNBDModel(Model):
         super(ParetoNBDModel, self).__init__()
         self.fitter = ParetoNBDFitter(penalizer_coef)
         self.param_names = ['r', 'alpha', 's', 'beta']
+        self.wrapped_static_expected_number_of_purchases_up_to_time = \
+            uncertainties.wrap(ParetoNBDFitter.static_expected_number_of_purchases_up_to_time)
+
 
     def generateData(self, t, parameters, size):
         return gen.pareto_nbd_model(t, parameters['r'], parameters['alpha'], parameters['s'],
                                     parameters['beta'],
                                     size)
 
-    def expected_number_of_purchases_up_to_time_with_errors(self, t): # DEPRECATED
+    def expected_number_of_purchases_up_to_time(self, t):
         """
-
         Args:
             t: a scalar or array of times
 
@@ -257,11 +259,12 @@ class ParetoNBDModel(Model):
             a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
             associated to it (or an array of them)
         """
-        if self.params is None or self.params_C is None:
-            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
 
-        return self.fitter.expected_number_of_purchases_up_to_time(t), \
-               self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
+        uparams = self.uparams
+        r, a, s, b = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_expected_number_of_purchases_up_to_time(r, a, s, b, t)
 
 
 class BGBBModel(Model):
@@ -286,30 +289,20 @@ class BGBBModel(Model):
                               size)
 
     def expected_number_of_purchases_up_to_time(self, t):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b, g, d = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b, g, d = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
-
-    def expected_number_of_purchases_up_to_time_with_errors(self, t):   # DEPRECATED.. Only valid for cross check
-        """
-
-        Args:
-            t: a scalar or array of times
-
-        Returns:
-            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
-            associated to it (or an array of them)
-        """
-        if self.params is None or self.params_C is None:
-            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
-
-        return self.fitter.expected_number_of_purchases_up_to_time(
-            t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
 
 
 class BGBBBGExtModel(Model):
@@ -327,11 +320,11 @@ class BGBBBGExtModel(Model):
             uncertainties.wrap(BGBBBGExtFitter.static_probability_of_n_sessions_up_to_time)
         self.wrapped_static_expected_probability_of_converting_at_time = \
             uncertainties.wrap(BGBBBGExtFitter.static_regularized_expected_probability_of_converting_at_time)
-        self.wrapped_static_static_expected_probability_of_converting_within_time = \
-            uncertainties.wrap(BGBBBGExtFitter.static_expected_probability_of_converting_within_time)
 
     def corrected_wrapped_static_expected_probability_of_converting_at_time(self, a, b, g, d, e, z, c0, t):
         uvalue = self.wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
+        if math.isnan(uvalue.n) or uvalue.n > 1.0 or uvalue.n < 0.0:
+            uvalue = uncertainties.ufloat(0.0, 0.0)
         if math.isnan(uvalue.s) or uvalue.s > 1.0:
             uvalue = uncertainties.ufloat(uvalue.n, 0.0)
         return uvalue
@@ -414,59 +407,37 @@ class BGBBBGExtModel(Model):
         x = np.vstack(par_lists)
         cov = np.cov(x)
 
-        self.par_lists = par_lists
-
         self.sampled_parameters = par_estimates
         self.set_parameters(self.params, cov)
 
-
-    def expected_probability_of_converting_at_time_with_error(self, t): # DEPRECATED
-        value = self.fitter.expected_probability_of_converting_at_time(t)
-        error = self.fitter.expected_probability_of_converting_at_time_error(t, zip(*self.par_lists))
-        if is_almost_equal(value, 0.0, tol=0.00001):
-            error = 0.0
-        return value, error
-
-    def expected_probability_of_converting_within_time_with_error(self, t): # DEPRECATED
-        value = self.fitter.expected_probability_of_converting_within_time(t)
-        error = self.fitter.expected_probability_of_converting_within_time_error(t, zip(*self.par_lists))
-        return value, error
-
-    def expected_number_of_sessions_up_to_time_with_errors(self, t):    # DEPRECATED
-        """
-        The "number of purchases" is actually the number of sessions...
-
-        Args:
-            t: a scalar or array of times
-
-        Returns:
-            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
-            associated to it (or an array of them)
-        """
-        if self.params is None or self.params_C is None:
-            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
-
-        C = self.params_C[0:4, 0:4]
-
-        return self.fitter.expected_number_of_sessions_up_to_time(
-            t), self.fitter.expected_number_of_sessions_up_to_time_error(t, C)
-
     def expected_number_of_sessions_up_to_time(self, t):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_expected_number_of_sessions_up_to_time(a, b, g, d, t)
 
     def probability_of_n_sessions_up_to_time(self, t, n):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_sessions_up_to_time(a, b, g, d, t, n)
 
     def expected_probability_of_converting_at_time(self, t):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
         return self.corrected_wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
 
-    def expected_probability_of_converting_within_time(self, t):
+    def expected_probability_of_converting_within_time(self, t):  #TODO: unstable.. fix it
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         res = 0.0
         for ti in range(t + 1):
             res += self.expected_probability_of_converting_at_time(ti)
@@ -553,21 +524,6 @@ class BGModel(Model):
 
         self.sampled_parameters = par_estimates
         self.set_parameters(self.params, cov)
-
-    def expected_number_of_purchases_up_to_time_with_errors(self, t):       # DEPRECATED
-        """
-        Args:
-            t: a scalar or array of times
-
-        Returns:
-            a tuple of two elements: the first is the expected value (or an array of them) and the second is the error
-            associated to it (or an array of them)
-        """
-        if self.params is None or self.params_C is None:
-            raise ValueError("Model has not been fit yet. Please call the '.fit' method first.")
-
-        return self.fitter.expected_number_of_purchases_up_to_time(
-            t), self.fitter.expected_number_of_purchases_up_to_time_error(t, self.params_C)
 
     def expected_number_of_purchases_up_to_time(self, t):
         uparams = self.uparams

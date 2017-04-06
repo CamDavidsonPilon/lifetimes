@@ -2,13 +2,11 @@ import pytest
 import math
 import lifetimes.generate_data as gen
 import numpy as np
-import lifetimes.estimation as est
 import lifetimes.models as mod
 from lifetimes.data_compression import compress_data, compress_session_session_before_conversion_data
-from lifetimes.data_compression import filter_data_by_T
-from lifetimes import models
 import pandas as pd
 from lifetimes.estimation import BGBBFitter, BGBBBGExtFitter
+from uncertainties import ufloat, UFloat
 
 
 @pytest.mark.sim_BGBBBBExt
@@ -57,23 +55,23 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
                                                   params_conversion['gamma'], params_conversion['delta'],
                                                   params_conversion['epsilon'],
                                                   params_conversion['zeta'], params_conversion['c0'],
-                                                  size=size_installs/n_cohorts,
+                                                  size=size_installs / n_cohorts,
                                                   time_first_purchase=True)
 
             data_arppu = gen.bgbb_model(T, params_arppu['alpha'], params_arppu['beta'],
                                         params_arppu['gamma'], params_arppu['delta'],
-                                        size=size_purchasers/n_cohorts)
+                                        size=size_purchasers / n_cohorts)
 
             for Ti in range(T_lagged, T):
                 data_conversion_new = gen.bgbbbgext_model(Ti, params_conversion['alpha'], params_conversion['beta'],
-                                                      params_conversion['gamma'], params_conversion['delta'],
-                                                      params_conversion['epsilon'],
-                                                      params_conversion['zeta'], params_conversion['c0'],
-                                                      size=size_installs / n_cohorts,
-                                                      time_first_purchase=True)
+                                                          params_conversion['gamma'], params_conversion['delta'],
+                                                          params_conversion['epsilon'],
+                                                          params_conversion['zeta'], params_conversion['c0'],
+                                                          size=size_installs / n_cohorts,
+                                                          time_first_purchase=True)
                 data_arppu_new = gen.bgbb_model(Ti, params_arppu['alpha'], params_arppu['beta'],
-                                            params_arppu['gamma'], params_arppu['delta'],
-                                            size=size_purchasers / n_cohorts)
+                                                params_arppu['gamma'], params_arppu['delta'],
+                                                size=size_purchasers / n_cohorts)
                 data_conversion = pd.concat([data_conversion, data_conversion_new])
                 data_arppu = pd.concat([data_arppu, data_arppu_new])
 
@@ -95,31 +93,29 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
                             N=compressed_data_arppu['N'], initial_params=params_arppu.values(),
                             iterative_fitting=iterative_fitting)
 
-            mv, mv_err = np.mean(mv_values), np.std(mv_values) / math.sqrt(len(mv_values))
+            mv = ufloat(np.mean(mv_values), np.std(mv_values) / math.sqrt(len(mv_values)))
 
             print "Conversion parameters"
             print params_conversion
             print model_conversion.params
+            print model_conversion.uparams
 
             print "Arppu parameters"
             print params_arppu
             print model_arppu.params
+            print model_arppu.uparams
 
             print "Monetary values"
-            print mv, mv_err
+            print mv
 
             ts = range(T0)
-            lifetime = [model_conversion.expected_number_of_sessions_up_to_time_with_errors(t) for t in ts]
-            conversion_diff = [model_conversion.expected_probability_of_converting_at_time_with_error(t) for t in ts]
-            conversion = [model_conversion.expected_probability_of_converting_within_time_with_error(t) for t in ts]
-            apppu = [model_arppu.expected_number_of_purchases_up_to_time_with_errors(t) for t in ts]
-            arppu = [((1 + apppu[i][0]) * mv,
-                      (1 + apppu[i][0]) * mv * math.sqrt((apppu[i][1] / apppu[i][0]) ** 2 + (mv_err / mv) ** 2)) for
-                     i in range(len(apppu))]
-            appd = [get_arpd_retention_with_error(model_conversion, model_arppu, t) for t in ts]
-            arpd = [(appd[i][0] * mv,
-                     appd[i][0] * mv * math.sqrt((appd[i][1] / appd[i][0]) ** 2 + (mv_err / mv) ** 2)) for
-                    i in range(len(appd))]
+            lifetime = [ufloat_to_tuple(model_conversion.expected_number_of_sessions_up_to_time(t)) for t in ts]
+            conversion_diff = [ufloat_to_tuple(model_conversion.expected_probability_of_converting_at_time(t)) for t in ts]
+            conversion = [ufloat_to_tuple(model_conversion.expected_probability_of_converting_within_time(t)) for t in ts]
+            apppu = [ufloat_to_tuple(model_arppu.expected_number_of_purchases_up_to_time(t)) for t in ts]
+            arppu = [ufloat_to_tuple((1.0 + apppu[i][0]) * mv) for i in range(len(apppu))]
+            appd = [ufloat_to_tuple(get_arpd_retention(model_conversion, model_arppu, t)) for t in ts]
+            arpd = [ufloat_to_tuple(appd[i][0] * mv) for i in range(len(appd))]
 
             print ts
             print lifetime
@@ -158,7 +154,7 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
                 T) + "iterative_fitting" + str(iterative_fitting) + "_" + str(n) + ".txt", "w") as text_file:
                 text_file.write(str(model_conversion.params))
                 text_file.write(str(model_arppu.params))
-                text_file.write(str((mv, mv_err)))
+                text_file.write(str((mv)))
 
             summary_df.to_csv(
                 "/Users/marcomeneghelli/Desktop/arpd_simulations/" + str(size_installs) + "/arpd_simdata_" + str(
@@ -237,7 +233,7 @@ def get_true_arpd(a, b, g, d, e, z, c0, a2, b2, g2, d2, mv, t):
 true_mv = 8.46
 
 
-def get_arpd_retention_with_error(model_conversion, model_arppu, t):
+def get_arpd_retention(model_conversion, model_arppu, t):
     """
     Convolves model_conversion + model_arppu to get arpd retention
     Args:
@@ -250,24 +246,23 @@ def get_arpd_retention_with_error(model_conversion, model_arppu, t):
     v = 0
     e = 0
     for ti in range(t + 1):
-        vc, ec = model_conversion.expected_probability_of_converting_at_time_with_error(ti)
-        va, ea = model_arppu.expected_number_of_purchases_up_to_time_with_errors(t - ti)
+        vc = model_conversion.expected_probability_of_converting_at_time(ti)
+        va = model_arppu.expected_number_of_purchases_up_to_time(t - ti)
         if vc == 0:
             break
-        if va == 0:
-            err = ec
-        else:
-            err = (ea / va + ec / vc) * va * vc
         v += (va + 1) * vc
-        e += err ** 2
-    return v, e ** 0.5
+    return v
 
 
-def get_arpd_with_error(model_conversion, model_arppu, t, mv, mv_err):
-
-    arpd_ret, arpd_ret_err = get_arpd_retention_with_error(model_conversion, model_arppu, t)
+def get_arpd(model_conversion, model_arppu, t, mv):
+    arpd_ret = get_arpd_retention(model_conversion, model_arppu, t)
 
     arpd = arpd_ret * mv
-    arpd_err = arpd *  math.sqrt((arpd_ret_err / arpd_ret) ** 2 + (mv_err / mv) ** 2)
 
-    return arpd, arpd_err
+    return arpd
+
+
+def ufloat_to_tuple(f):
+    if not isinstance(f, UFloat):
+        f = ufloat(f, 0.0)
+    return f.n, f.s

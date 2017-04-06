@@ -13,7 +13,6 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
 from lifetimes.formulas import gamma_ratio
 from uncertainties import UFloat, ufloat
 
-
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 B = special.beta
@@ -137,7 +136,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -161,11 +160,11 @@ class ParetoNBDFitter(BaseFitter):
         _check_inputs(frequency, recency, T)
 
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, self.penalizer_coef],
-                                                          iterative_fitting,
-                                                          initial_params,
-                                                          4,
-                                                          verbose)
+                                                      [frequency, recency, T, self.penalizer_coef],
+                                                      iterative_fitting,
+                                                      initial_params,
+                                                      4,
+                                                      verbose)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -291,6 +290,11 @@ class ParetoNBDFitter(BaseFitter):
         Returns: a scalar or array
         """
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
+        return self.static_expected_number_of_purchases_up_to_time(r, alpha, s, beta, t)
+
+    @staticmethod
+    def static_expected_number_of_purchases_up_to_time(r, a, s, b, t):
+        r, alpha, s, beta = (r, a, s, b)
         first_term = r * beta / alpha / (s - 1)
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term

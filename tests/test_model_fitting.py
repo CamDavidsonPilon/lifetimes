@@ -29,10 +29,8 @@ def test_consistence_over_T():
                          filtered_data['T'], bootstrap_size=10)
 
         fitted_pars.append((pareto_model.params, pareto_model.params_C))
-        fitted_Ex.append(pareto_model.expected_number_of_purchases_up_to_time_with_errors(t))
-
-    print fitted_pars
-    print fitted_Ex
+        Ex = pareto_model.expected_number_of_purchases_up_to_time(t)
+        fitted_Ex.append( (Ex.n, Ex.s)  )
 
     ex_0, ex_err_0 = fitted_Ex[0]
     for ex, ex_err in fitted_Ex:
