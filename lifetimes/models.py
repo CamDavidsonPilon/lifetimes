@@ -247,7 +247,7 @@ class ParetoNBDModel(Model):
                                     parameters['beta'],
                                     size)
 
-    def expected_number_of_purchases_up_to_time_with_errors(self, t):
+    def expected_number_of_purchases_up_to_time_with_errors(self, t): # DEPRECATED
         """
 
         Args:

@@ -154,9 +154,8 @@ class TestParetoNBDFitter():
         compressed_frequency = [0, 1, 1, 2, 5, 6, 10]
         compressed_recency = [0, 1, 10, 8, 8, 9, 10]
         compressed_T = [10, 10, 10, 10, 10, 10, 10]
-        compressed_N = [5, 1, 1, 1, 1, 2, 1]
 
-        ptf.fit(compressed_frequency, compressed_recency, compressed_T, N=compressed_N, initial_params=[0.5, 2, 0.5, 0.5])
+        ptf.fit(compressed_frequency, compressed_recency, compressed_T, initial_params=[0.5, 2, 0.5, 0.5])
 
         t = 100
         C = [[0.02, 0, 0, 0],

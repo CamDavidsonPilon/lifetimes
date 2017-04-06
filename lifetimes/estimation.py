@@ -137,7 +137,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False, N=None):
+    def fit(self, frequency, recency, T, iterative_fitting=0, initial_params=None, verbose=False):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -150,7 +150,6 @@ class ParetoNBDFitter(BaseFitter):
                 hurt estimates.
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
-            N: in case of compressed data this parameter is a vector of the number of users with same recency, frequency,T
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -161,16 +160,7 @@ class ParetoNBDFitter(BaseFitter):
         T = asarray(T)
         _check_inputs(frequency, recency, T)
 
-        if N is not None:  # in this case it means you're handling compressed data
-            N = asarray(N)
-            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
-                                                          [frequency, recency, T, self.penalizer_coef, N],
-                                                          iterative_fitting,
-                                                          initial_params,
-                                                          4,
-                                                          verbose)
-        else:
-            params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
+        params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                           [frequency, recency, T, self.penalizer_coef],
                                                           iterative_fitting,
                                                           initial_params,
@@ -208,7 +198,7 @@ class ParetoNBDFitter(BaseFitter):
                - rsf * log(q_1 * q_2)
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None):
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -224,10 +214,7 @@ class ParetoNBDFitter(BaseFitter):
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
 
         penalizer_term = penalizer_coef * log(params).sum()
-        if N is not None:
-            return -((A_1 + A_2) * N).sum() + penalizer_term
-        else:
-            return -(A_1 + A_2).sum() + penalizer_term
+        return -(A_1 + A_2).sum() + penalizer_term
 
     def conditional_probability_alive(self, frequency, recency, T):
         """
