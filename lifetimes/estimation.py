@@ -211,7 +211,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         @np.vectorize
         def p2(j, x):
-            i = I[j:]
+            i = I[int(j):]
             return np.sum(
                 binom(i, x) *
                 exp(

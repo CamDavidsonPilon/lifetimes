@@ -110,14 +110,14 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     if monetary_value_col:
         select_columns.append(monetary_value_col)
 
-    transactions = transactions[select_columns].sort(select_columns).copy()
+    transactions = transactions[select_columns].sort_values(select_columns).copy()
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     transactions = transactions.set_index(datetime_col).to_period(freq)
 
-    transactions = transactions.ix[(transactions.index <= observation_period_end)].reset_index()
+    transactions = transactions.loc[(transactions.index <= observation_period_end)].reset_index()
 
     period_groupby = transactions.groupby([datetime_col, customer_id_col], sort=False, as_index=False)
 
@@ -136,7 +136,6 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     # mark the initial transactions as True
     period_transactions.loc[first_transactions, 'first'] = True
     select_columns.append('first')
-
     return period_transactions[select_columns]
 
 

@@ -91,7 +91,7 @@ class TestBetaGeoBetaBinomFitter():
         expected = 12884.2 # Sum of column F Exp Tot
         npt.assert_almost_equal(expected, pred_purchases.sum(), decimal=0)
 
-    def test_expected_purchases_in_n_periods_returns_same_value_as_Hardie_excel_sheet(selfself):
+    def test_expected_purchases_in_n_periods_returns_same_value_as_Hardie_excel_sheet(self):
         """Total expected from Hardie's In-Sample Fit sheet."""
 
         bbtf = estimation.BetaGeoBetaBinomFitter()
