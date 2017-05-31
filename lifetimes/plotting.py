@@ -14,7 +14,19 @@ __all__ = [
 ]
 
 
-def plot_period_transactions(model, max_frequency=7, **kwargs):
+def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat Transactions',
+                             xlabel='Number of Calibration Period Transactions', ylabel='Customers', **kwargs):
+    """
+    Plot a figure with period actual and predicted transactions
+
+    Parameters:
+        model: a fitted lifetimes model.
+        max_frequency: the maximum frequency to plot. 
+        title: figure title
+        xlabel: figure xlabel
+        ylabel: figure ylabel
+        kwargs: passed into the matplotlib.pyplot.plot command.
+    """
     from matplotlib import pyplot as plt
     labels = kwargs.pop('label', ['Actual', 'Model'])
 
@@ -26,12 +38,12 @@ def plot_period_transactions(model, max_frequency=7, **kwargs):
     combined_counts = model_counts.merge(simulated_counts, how='outer', left_index=True, right_index=True).fillna(0)
     combined_counts.columns = labels
 
-    ax = combined_counts.plot(kind='bar')
+    ax = combined_counts.plot(kind='bar', **kwargs)
 
     plt.legend()
-    plt.title('Frequency of Repeat Transactions')
-    plt.ylabel('Customers')
-    plt.xlabel('Number of Calibration Period Transactions')
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
     return ax
 
 
@@ -121,7 +133,10 @@ def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=No
     return ax
 
 
-def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, **kwargs):
+def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, 
+                                  title='Probability Customer is Alive,\nby Frequency and Recency of a Customer',
+                                  xlabel="Customer's Historical Frequency", ylabel="Customer's Recency",
+                                  **kwargs):
     """
     Plot a figure of the probability a customer is alive based on their
     frequency and recency.
@@ -131,6 +146,9 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, *
         max_frequency: the maximum frequency to plot. Default is max observed frequency.
         max_recency: the maximum recency to plot. This also determines the age of the customer.
             Default to max observed age.
+        title: figure title
+        xlabel: figure xlabel
+        ylabel: figure ylabel
         kwargs: passed into the matplotlib.imshow command.
     """
     from matplotlib import pyplot as plt
@@ -141,9 +159,9 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, *
 
     ax = plt.subplot(111)
     PCM = ax.imshow(z, interpolation=interpolation, **kwargs)
-    plt.xlabel("Customer's Historical Frequency")
-    plt.ylabel("Customer's Recency")
-    plt.title('Probability Customer is Alive,\nby Frequency and Recency of a Customer')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
 
     # turn matrix into square
     forceAspect(ax)
@@ -154,7 +172,18 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, *
     return ax
 
 
-def plot_expected_repeat_purchases(model, **kwargs):
+def plot_expected_repeat_purchases(model, title='Expected Number of Repeat Purchases per Customer', 
+                                   xlabel='Time Since First Purchase', **kwargs):
+    """
+    Plot expected repeat purchases on calibration period .
+
+    Parameters:
+        model: a fitted lifetimes model.
+        title: figure title
+        xlabel: figure xlabel
+        ylabel: figure ylabel
+        kwargs: passed into the matplotlib.pyplot.plot command.
+    """
     from matplotlib import pyplot as plt
 
     ax = kwargs.pop('ax', None) or plt.subplot(111)
@@ -175,8 +204,8 @@ def plot_expected_repeat_purchases(model, **kwargs):
     times = np.linspace(max_T, 1.5 * max_T, 100)
     plt.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
 
-    plt.title('Expected Number of Repeat Purchases per Customer')
-    plt.xlabel('Time Since First Purchase')
+    plt.title(title)
+    plt.xlabel(xlabel)
     plt.legend(loc='lower right')
     return ax
 
@@ -202,7 +231,7 @@ def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs)
 
     # Add transactions column
     customer_history['transactions'] = 1
-    customer_history = customer_history.resample(freq, how='sum').reset_index()
+    customer_history = customer_history.resample(freq).sum()
 
     # plot alive_path
     path = calculate_alive_path(model, transactions, datetime_col, t, freq)
