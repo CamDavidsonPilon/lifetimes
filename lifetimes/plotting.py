@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from lifetimes.utils import coalesce, calculate_alive_path, expected_cumulative_transactions
+from scipy import stats
 
 __all__ = [
     'plot_period_transactions',
@@ -10,7 +11,9 @@ __all__ = [
     'plot_expected_repeat_purchases',
     'plot_history_alive',
     'plot_cumulative_transactions',
-    'plot_incremental_transactions'
+    'plot_incremental_transactions',
+    'plot_transaction_rate_heterogeneity',
+    'plot_dropout_rate_heterogeneity'
 ]
 
 
@@ -342,6 +345,74 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     return ax
+
+def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transaction Rate',
+                                        xlabel='Transaction Rate', ylabel='Density', **kwargs):
+    """
+    Plot the estimated gamma distribution of lambda (customers' propensities to purchase). 
+
+    Parameters:
+        model: A fitted lifetimes model, for now only for BG/NBD
+        suptitle: figure suptitle
+        xlabel: figure xlabel
+        ylabel: figure ylabel
+        kwargs: passed into the matplotlib.pyplot.plot command.
+    """
+    from matplotlib import pyplot as plt
+
+    r, alpha = model._unload_params('r', 'alpha')
+    rate_mean = r/alpha
+    rate_var = r/alpha**2
+
+    rv = stats.gamma(r, scale=1/alpha)
+    lim = rv.ppf(0.99)
+    x = np.linspace(0, lim, 100)
+
+    fig, ax = plt.subplots(1)
+    fig.subplots_adjust(top=0.93)
+    fig.suptitle('Heterogeneity in Transaction Rate', fontsize=14, fontweight='bold')
+    
+    ax.set_title('mean: {:.3f}, var: {:.3f}'.format(rate_mean, rate_var))
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    
+    plt.plot(x, rv.pdf(x))
+    return ax
+
+
+def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Probability',
+                                   xlabel='Dropout Probability p', ylabel='Density', **kwargs):
+
+    """
+    Plot the estimated gamma distribution of p (customers' probability of dropping out immediately after a transaction). 
+    Parameters:
+        model: A fitted lifetimes model, for now only for BG/NBD
+        suptitle: figure suptitle
+        xlabel: figure xlabel
+        ylabel: figure ylabel
+        kwargs: passed into the matplotlib.pyplot.plot command.
+    """
+    from matplotlib import pyplot as plt
+
+    a, b = model._unload_params('a', 'b')
+    beta_mean = a/(a + b)
+    beta_var = a * b/((a + b)**2)/(a + b + 1)
+
+    rv = stats.beta(a, b)
+    lim = rv.ppf(0.99)
+    x = np.linspace(0, lim, 100)
+
+    fig, ax = plt.subplots(1)
+    fig.subplots_adjust(top=0.93)
+    fig.suptitle(suptitle, fontsize=14, fontweight='bold')
+    
+    ax.set_title('mean: {:.3f}, var: {:.3f}'.format(beta_mean, beta_var))
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    
+    plt.plot(x, rv.pdf(x), **kwargs)
+    return ax
+
 
 def forceAspect(ax, aspect=1):
     im = ax.get_images()
