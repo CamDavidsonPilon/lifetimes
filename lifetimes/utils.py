@@ -209,7 +209,12 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     customer_history = customer_history.set_index(datetime_col)
     # Add transactions column
     customer_history['transactions'] = 1
-    purchase_history = customer_history.resample(freq, how='sum').fillna(0)['transactions'].values
+    
+    # for some reason fillna(0) not working for resample in pandas with python 3.x, 
+    # changed to replace
+    purchase_history = (customer_history.resample(freq).sum().replace(np.nan, 0)
+        ['transactions'].values)
+
     extra_columns = t - len(purchase_history)
     customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=['transactions'])
     # add T column
@@ -343,7 +348,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
         final_date = start_date + t
         date_index = pd.date_range(start_date.to_timestamp(), final_date.to_timestamp(), freq=freq)
     else:
-        date_index = range(t)
+        date_index = range(t + 1)
         
     df_cum_transactions = pd.DataFrame({'actual':act_cum_transactions, 
                                         'predicted':pred_cum_transactions}, index=date_index)
