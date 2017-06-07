@@ -6,6 +6,7 @@ import pandas as pd
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
     isinf, isnan, ones_like
 from pandas import DataFrame
+import dill
 
 from scipy.special import gammaln, hyp2f1, beta, gamma, betaln, binom
 from scipy import misc
@@ -30,6 +31,14 @@ class BaseFitter(object):
         if not hasattr(self, 'params_'):
             raise ValueError("Model has not been fit yet. Please call the .fit method first.")
         return [self.params_[x] for x in args]
+
+    def save_model(self, path):
+        with open(path, 'wb') as out_file:
+            dill.dump(self, out_file)
+
+    def load_model(self, path):
+        with open(path, 'rb') as in_file:
+            self = dill.load(in_file)
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):

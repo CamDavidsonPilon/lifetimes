@@ -25,7 +25,7 @@ install:
   - conda info -a
 
   # Should match requirements.txt
-  - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas matplotlib nose pytest
+  - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas matplotlib nose pytest dill
   - source activate test-environment
   - python setup.py install
   - pip install coveralls

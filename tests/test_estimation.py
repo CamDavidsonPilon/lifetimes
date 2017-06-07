@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import numpy.testing as npt
 import pytest
+import os
 from collections import OrderedDict
+
 
 import lifetimes.estimation as estimation
 import lifetimes.utils as utils
@@ -18,6 +20,7 @@ def cdnow_customers():
 
 cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
+PATH_SAVE_MODEL = './base_fitter.pkl'
 
 
 class TestBaseFitter():
@@ -34,6 +37,19 @@ class TestBaseFitter():
             base_fitter._unload_params()
         base_fitter.params_ = dict(x=12.3, y=42)
         npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params('x', 'y'))
+
+
+    def test_save_load_model(self):
+        base_fitter = estimation.BaseFitter()
+        base_fitter.save_model(PATH_SAVE_MODEL)
+        assert os.path.exists(PATH_SAVE_MODEL) == True
+
+        base_fitter_saved = estimation.BaseFitter()
+        base_fitter_saved.load_model(PATH_SAVE_MODEL)
+
+        assert repr(base_fitter) == repr(base_fitter_saved)
+        os.remove(PATH_SAVE_MODEL)
+
 
 
 class TestBetaGeoBetaBinomFitter():
