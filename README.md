@@ -32,7 +32,7 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
     pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas (and optionally-but-seriously matplotlib).
+Requirements are only Numpy, Scipy, Pandas, [dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
 
 ## Quickstart
 
