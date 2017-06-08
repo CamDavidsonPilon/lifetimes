@@ -21,6 +21,7 @@ def cdnow_customers():
 cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
 PATH_SAVE_MODEL = './base_fitter.pkl'
+PATH_SAVE_BGNBD_MODEL = './betageo_fitter.pkl'
 
 
 class TestBaseFitter():
@@ -391,6 +392,23 @@ class TestBetaGammaFitter():
 
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
+
+    def test_save_load_bgnbd(self, cdnow_customers):
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert(bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef'])
+        assert(bgf_new.__dict__['_scale'] == bgf.__dict__['_scale'])
+        assert(bgf_new.__dict__['params_'] == bgf.__dict__['params_'])
+        assert(bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_'])
+        assert((bgf_new.__dict__['data'] == bgf.__dict__['data']).all().all())
+        assert(bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5))
+        assert(bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1))
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
 
 
 class TestModifiedBetaGammaFitter():
