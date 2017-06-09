@@ -465,13 +465,31 @@ class TestBetaGammaFitter():
 
         bgf_new = estimation.BetaGeoFitter()
         bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
-        assert(bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef'])
-        assert(bgf_new.__dict__['_scale'] == bgf.__dict__['_scale'])
-        assert(bgf_new.__dict__['params_'] == bgf.__dict__['params_'])
-        assert(bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_'])
-        assert((bgf_new.__dict__['data'] == bgf.__dict__['data']).all().all())
-        assert(bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5))
-        assert(bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1))
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert (bgf_new.__dict__['data'] == bgf.__dict__['data']).all().all()
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_data(self, cdnow_customers):
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert isinstance(bgf_new.__dict__['data'], list)
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 

@@ -32,9 +32,15 @@ class BaseFitter(object):
             raise ValueError("Model has not been fit yet. Please call the .fit method first.")
         return [self.params_[x] for x in args]
 
-    def save_model(self, path):
+    def save_model(self, path, save_data=True):
         with open(path, 'wb') as out_file:
-            dill.dump(self, out_file)
+            if save_data:
+                dill.dump(self, out_file)
+            else:
+                self_data = self.data.copy()
+                self.data = []
+                dill.dump(self, out_file)
+                self.data = self_data
 
     def load_model(self, path):
         with open(path, 'rb') as in_file:
