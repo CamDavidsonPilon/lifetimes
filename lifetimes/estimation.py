@@ -113,6 +113,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                     parameter represents the count of customers with a given purchase pattern. Instead of
                     calculating individual loglikelihood, the loglikelihood is calculated for each pattern and
                     multiplied by the number of customers with that pattern.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns: self
 
@@ -318,6 +319,7 @@ class GammaGammaFitter(BaseFitter):
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
             tol: tolerance for termination of the function minimization process.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns:
             self, fitted and with parameters estimated
@@ -378,6 +380,7 @@ class ParetoNBDFitter(BaseFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -556,6 +559,7 @@ class BetaGeoFitter(BaseFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
 
         Returns:
@@ -737,6 +741,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
 
         Returns:
