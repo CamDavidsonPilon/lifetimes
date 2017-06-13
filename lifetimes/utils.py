@@ -209,11 +209,11 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     customer_history = customer_history.set_index(datetime_col)
     # Add transactions column
     customer_history['transactions'] = 1
-    
-    # for some reason fillna(0) not working for resample in pandas with python 3.x, 
+
+    # for some reason fillna(0) not working for resample in pandas with python 3.x,
     # changed to replace
     purchase_history = (customer_history.resample(freq).sum().replace(np.nan, 0)
-        ['transactions'].values)
+                        ['transactions'].values)
 
     extra_columns = t - len(purchase_history)
     customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=['transactions'])
@@ -308,7 +308,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         customer_id_col: the column in transactions that denotes the customer_id
-        t: the number of time units since the begining of 
+        t: the number of time units since the begining of
             data for which we want to calculate cumulative transactions
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
@@ -318,39 +318,39 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
     Returns:
         A dataframe with columns actual, predicted
     """
-    
+
     transactions = transactions.copy()
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     transactions = transactions.set_index(datetime_col).to_period(freq).reset_index()
-    
+
     # find birth dates of users
     birth_dates = transactions.groupby(customer_id_col, sort=False, as_index=True)[datetime_col].min()
-    
+
     start_date = birth_dates.min()
     act_cum_transactions = []
-    pred_cum_transactions = [] 
-    
+    pred_cum_transactions = []
+
     for date_step in range(t + 1):
         date_end = start_date + date_step
         transactions_current = transactions[(transactions[datetime_col] <= date_end)]
         times = (date_end - birth_dates[birth_dates <= date_end])
         pred_transactions = model.expected_number_of_purchases_up_to_time(times.values.astype(float)).sum()
-        # actual repeated transactions of users 
+        # actual repeated transactions of users
         act_transactions = (transactions_current.groupby(customer_id_col).size() - 1).sum()
 
         pred_cum_transactions.append(pred_transactions)
-        act_cum_transactions.append(act_transactions)  
-    
+        act_cum_transactions.append(act_transactions)
+
     if set_index_date:
         final_date = start_date + t
         date_index = pd.date_range(start_date.to_timestamp(), final_date.to_timestamp(), freq=freq)
     else:
         date_index = range(t + 1)
-        
-    df_cum_transactions = pd.DataFrame({'actual':act_cum_transactions, 
-                                        'predicted':pred_cum_transactions}, index=date_index)
+
+    df_cum_transactions = pd.DataFrame({'actual': act_cum_transactions,
+                                        'predicted': pred_cum_transactions}, index=date_index)
 
     return df_cum_transactions

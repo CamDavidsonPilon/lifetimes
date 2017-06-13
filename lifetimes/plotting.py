@@ -24,7 +24,7 @@ def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat 
 
     Parameters:
         model: a fitted lifetimes model.
-        max_frequency: the maximum frequency to plot. 
+        max_frequency: the maximum frequency to plot.
         title: figure title
         xlabel: figure xlabel
         ylabel: figure ylabel
@@ -136,7 +136,7 @@ def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=No
     return ax
 
 
-def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None, 
+def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None,
                                   title='Probability Customer is Alive,\nby Frequency and Recency of a Customer',
                                   xlabel="Customer's Historical Frequency", ylabel="Customer's Recency",
                                   **kwargs):
@@ -175,7 +175,7 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None,
     return ax
 
 
-def plot_expected_repeat_purchases(model, title='Expected Number of Repeat Purchases per Customer', 
+def plot_expected_repeat_purchases(model, title='Expected Number of Repeat Purchases per Customer',
                                    xlabel='Time Since First Purchase', **kwargs):
     """
     Plot expected repeat purchases on calibration period .
@@ -254,8 +254,9 @@ def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs)
 
     return ax
 
+
 def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_col, t, t_cal,
-                                 datetime_format=None, freq='D', set_index_date=False, 
+                                 datetime_format=None, freq='D', set_index_date=False,
                                  title='Tracking Cumulative Transactions',
                                  xlabel='day', ylabel='Cumulative Transactions',
                                  **kwargs):
@@ -266,7 +267,7 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         customer_id_col: the column in transactions that denotes the customer_id
-        t: the number of time units since the begining of 
+        t: the number of time units since the begining of
             data for which we want to calculate cumulative transactions
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
@@ -279,19 +280,19 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
         kwargs: passed into the pandas.DataFrame.plot command.
     """
     from matplotlib import pyplot as plt
-    
+
     ax = kwargs.pop('ax', None) or plt.subplot(111)
-    
-    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col, 
+
+    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col,
                                                            customer_id_col, t,
-                                                           datetime_format=datetime_format, freq=freq, 
+                                                           datetime_format=datetime_format, freq=freq,
                                                            set_index_date=set_index_date)
-    
+
     ax = df_cum_transactions.plot(ax=ax, title=title, **kwargs)
-    
+
     if set_index_date:
         x_vline = df_cum_transactions.index[int(t_cal)]
-        xlabel='date'
+        xlabel = 'date'
     else:
         x_vline = t_cal
     ax.axvline(x=x_vline, color='r', linestyle='--')
@@ -299,8 +300,9 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
     ax.set_ylabel(ylabel)
     return ax
 
+
 def plot_incremental_transactions(model, transactions, datetime_col, customer_id_col, t, t_cal,
-                                  datetime_format=None, freq='D', set_index_date=False, 
+                                  datetime_format=None, freq='D', set_index_date=False,
                                   title='Tracking Daily Transactions',
                                   xlabel='day', ylabel='Transactions',
                                   **kwargs):
@@ -311,7 +313,7 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         customer_id_col: the column in transactions that denotes the customer_id
-        t: the number of time units since the begining of 
+        t: the number of time units since the begining of
             data for which we want to calculate cumulative transactions
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
@@ -324,21 +326,21 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
         kwargs: passed into the pandas.DataFrame.plot command.
     """
     from matplotlib import pyplot as plt
-    
+
     ax = kwargs.pop('ax', None) or plt.subplot(111)
-    
-    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col, 
+
+    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col,
                                                            customer_id_col, t,
-                                                           datetime_format=datetime_format, freq=freq, 
+                                                           datetime_format=datetime_format, freq=freq,
                                                            set_index_date=set_index_date)
-    
+
     # get incremental from cumulative transactions
     df_cum_transactions = df_cum_transactions.apply(lambda x: x - x.shift(1))
     ax = df_cum_transactions.plot(ax=ax, title=title, **kwargs)
-    
+
     if set_index_date:
         x_vline = df_cum_transactions.index[int(t_cal)]
-        xlabel='date'
+        xlabel = 'date'
     else:
         x_vline = t_cal
     ax.axvline(x=x_vline, color='r', linestyle='--')
@@ -346,10 +348,11 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
     ax.set_ylabel(ylabel)
     return ax
 
+
 def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transaction Rate',
                                         xlabel='Transaction Rate', ylabel='Density', **kwargs):
     """
-    Plot the estimated gamma distribution of lambda (customers' propensities to purchase). 
+    Plot the estimated gamma distribution of lambda (customers' propensities to purchase).
 
     Parameters:
         model: A fitted lifetimes model, for now only for BG/NBD
@@ -361,30 +364,29 @@ def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transa
     from matplotlib import pyplot as plt
 
     r, alpha = model._unload_params('r', 'alpha')
-    rate_mean = r/alpha
-    rate_var = r/alpha**2
+    rate_mean = r / alpha
+    rate_var = r / alpha**2
 
-    rv = stats.gamma(r, scale=1/alpha)
+    rv = stats.gamma(r, scale=1 / alpha)
     lim = rv.ppf(0.99)
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
     fig.subplots_adjust(top=0.93)
     fig.suptitle('Heterogeneity in Transaction Rate', fontsize=14, fontweight='bold')
-    
+
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(rate_mean, rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    
+
     plt.plot(x, rv.pdf(x))
     return ax
 
 
 def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Probability',
-                                   xlabel='Dropout Probability p', ylabel='Density', **kwargs):
-
+                                    xlabel='Dropout Probability p', ylabel='Density', **kwargs):
     """
-    Plot the estimated gamma distribution of p (customers' probability of dropping out immediately after a transaction). 
+    Plot the estimated gamma distribution of p (customers' probability of dropping out immediately after a transaction).
     Parameters:
         model: A fitted lifetimes model, for now only for BG/NBD
         suptitle: figure suptitle
@@ -395,8 +397,8 @@ def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Pr
     from matplotlib import pyplot as plt
 
     a, b = model._unload_params('a', 'b')
-    beta_mean = a/(a + b)
-    beta_var = a * b/((a + b)**2)/(a + b + 1)
+    beta_mean = a / (a + b)
+    beta_var = a * b / ((a + b)**2) / (a + b + 1)
 
     rv = stats.beta(a, b)
     lim = rv.ppf(0.99)
@@ -405,11 +407,11 @@ def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Pr
     fig, ax = plt.subplots(1)
     fig.subplots_adjust(top=0.93)
     fig.suptitle(suptitle, fontsize=14, fontweight='bold')
-    
+
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(beta_mean, beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    
+
     plt.plot(x, rv.pdf(x), **kwargs)
     return ax
 
@@ -418,5 +420,3 @@ def forceAspect(ax, aspect=1):
     im = ax.get_images()
     extent = im[0].get_extent()
     ax.set_aspect(abs((extent[1] - extent[0]) / (extent[3] - extent[2])) / aspect)
-
-

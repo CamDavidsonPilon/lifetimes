@@ -99,7 +99,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -np.mean(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
 
-    def fit(self, frequency, recency, n, n_custs, verbose=False, 
+    def fit(self, frequency, recency, n, n_custs, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None):
         """
         Fit the BG/BB model.
@@ -306,7 +306,7 @@ class GammaGammaFitter(BaseFitter):
         population_mean = v * p / (q - 1)
         return (1 - individual_weight) * population_mean + individual_weight * monetary_value
 
-    def fit(self, frequency, monetary_value, iterative_fitting=4, 
+    def fit(self, frequency, monetary_value, iterative_fitting=4,
             initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the Gamma/Gamma model.
@@ -366,7 +366,7 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, 
+    def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the Pareto/NBD model.
@@ -503,9 +503,9 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
-        first_term = gammaln(r + x) - gammaln(r) + r*log(alpha) + s*log(beta) - (r + x)*log(alpha + T) - s*log(beta + T)
+        first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
-        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1))/(s - 1))
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) / (s - 1))
         return exp(first_term + second_term + third_term - likelihood)
 
     def expected_number_of_purchases_up_to_time(self, t):
@@ -544,7 +544,7 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, 
+    def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the BG/NBD model.
@@ -725,7 +725,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def __init__(self, penalizer_coef=0.0):
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, 
+    def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the MBG/NBD model.
