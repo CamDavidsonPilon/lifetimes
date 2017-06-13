@@ -32,13 +32,19 @@ class BaseFitter(object):
             raise ValueError("Model has not been fit yet. Please call the .fit method first.")
         return [self.params_[x] for x in args]
 
-    def save_model(self, path):
+    def save_model(self, path, save_data=True):
         with open(path, 'wb') as out_file:
-            dill.dump(self, out_file)
+            if save_data:
+                dill.dump(self, out_file)
+            else:
+                self_data = self.data.copy()
+                self.data = []
+                dill.dump(self, out_file)
+                self.data = self_data
 
     def load_model(self, path):
         with open(path, 'rb') as in_file:
-            self = dill.load(in_file)
+            self.__dict__.update(dill.load(in_file).__dict__)
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
@@ -93,7 +99,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -np.mean(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
 
-    def fit(self, frequency, recency, n, n_custs, verbose=False, tol=1e-4, iterative_fitting=1):
+    def fit(self, frequency, recency, n, n_custs, verbose=False,
+            tol=1e-4, iterative_fitting=1, index=None):
         """
         Fit the BG/BB model.
 
@@ -106,6 +113,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                     parameter represents the count of customers with a given purchase pattern. Instead of
                     calculating individual loglikelihood, the loglikelihood is calculated for each pattern and
                     multiplied by the number of customers with that pattern.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns: self
 
@@ -127,6 +135,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, n, n_custs],
                               columns=['frequency', 'recency', 'n', 'n_custs'])
+        if index is not None:
+            self.data.index = index
 
         return self
 
@@ -297,7 +307,8 @@ class GammaGammaFitter(BaseFitter):
         population_mean = v * p / (q - 1)
         return (1 - individual_weight) * population_mean + individual_weight * monetary_value
 
-    def fit(self, frequency, monetary_value, iterative_fitting=4, initial_params=None, verbose=False, tol=1e-4):
+    def fit(self, frequency, monetary_value, iterative_fitting=4,
+            initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the Gamma/Gamma model.
 
@@ -308,6 +319,7 @@ class GammaGammaFitter(BaseFitter):
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
             tol: tolerance for termination of the function minimization process.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns:
             self, fitted and with parameters estimated
@@ -323,6 +335,8 @@ class GammaGammaFitter(BaseFitter):
                                                       tol)
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
+        if index is not None:
+            self.data.index = index
         self.params_ = OrderedDict(zip(['p', 'q', 'v'], params))
 
         return self
@@ -354,7 +368,8 @@ class ParetoNBDFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, tol=1e-4):
+    def fit(self, frequency, recency, T, iterative_fitting=1,
+            initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -365,6 +380,7 @@ class ParetoNBDFitter(BaseFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -385,6 +401,8 @@ class ParetoNBDFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        if index is not None:
+            self.data.index = index
         self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
@@ -488,9 +506,9 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
-        first_term = gammaln(r + x) - gammaln(r) + r*log(alpha) + s*log(beta) - (r + x)*log(alpha + T) - s*log(beta + T)
+        first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
-        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1))/(s - 1))
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) / (s - 1))
         return exp(first_term + second_term + third_term - likelihood)
 
     def expected_number_of_purchases_up_to_time(self, t):
@@ -529,7 +547,8 @@ class BetaGeoFitter(BaseFitter):
     def __init__(self, penalizer_coef=0.0):
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, tol=1e-4):
+    def fit(self, frequency, recency, T, iterative_fitting=1,
+            initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -540,6 +559,7 @@ class BetaGeoFitter(BaseFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
 
         Returns:
@@ -567,6 +587,8 @@ class BetaGeoFitter(BaseFitter):
         self.params_['alpha'] /= self._scale
 
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
+        if index is not None:
+            self.data.index = index
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
@@ -707,7 +729,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     def __init__(self, penalizer_coef=0.0):
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1, initial_params=None, verbose=False, tol=1e-4):
+    def fit(self, frequency, recency, T, iterative_fitting=1,
+            initial_params=None, verbose=False, tol=1e-4, index=None):
         """
         This methods fits the data to the MBG/NBD model.
 
@@ -718,13 +741,14 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             iterative_fitting: perform iterative_fitting fits over random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+            index: index for resulted DataFrame which is accessible via self.data
 
 
         Returns:
             self, with additional properties and methods like params_ and predict
 
         """
-        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose, tol)  # although the parent method is called, this class's _negative_log_likelihood is referenced
+        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose, tol, index=index)  # although the parent method is called, this class's _negative_log_likelihood is referenced
         self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)  # this needs to be reassigned from the parent method
         return self
 

@@ -21,6 +21,7 @@ def cdnow_customers():
 cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
 PATH_SAVE_MODEL = './base_fitter.pkl'
+PATH_SAVE_BGNBD_MODEL = './betageo_fitter.pkl'
 
 
 class TestBaseFitter():
@@ -121,6 +122,28 @@ class TestBetaGeoBetaBinomFitter():
         estimated = bbtf.expected_number_of_transactions_in_first_n_periods(6).loc[[0,6]].values.flatten()
         npt.assert_almost_equal(expected, estimated, decimal=0)
 
+    def test_fit_with_index(self):
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        index = range(len(donations), 0, -1)
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+            index=index
+        )
+        assert (bbtf.data.index == index).all() == True
+
+        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf.fit(
+            donations['frequency'],
+            donations['recency'],
+            donations['n'],
+            donations['n_custs'],
+            index=None
+        )
+        assert (bbtf.data.index == index).all() == False
 
 class TestGammaGammaFitter():
 
@@ -176,6 +199,30 @@ class TestGammaGammaFitter():
                                                         cdnow_customers_with_monetary_value['monetary_value'])
         )
         npt.assert_equal(ggf_clv.values, utils_clv.values)
+
+    def test_fit_with_index(self):
+        returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
+            cdnow_customers_with_monetary_value['frequency'] > 0
+        ]
+
+        ggf = estimation.GammaGammaFitter()
+        index = range(len(returning_cdnow_customers_with_monetary_value), 0, -1)
+        ggf.fit(
+            returning_cdnow_customers_with_monetary_value['frequency'],
+            returning_cdnow_customers_with_monetary_value['monetary_value'],
+            iterative_fitting=1,
+            index=index
+        )
+        assert (ggf.data.index == index).all() == True
+
+        ggf = estimation.GammaGammaFitter()
+        ggf.fit(
+            returning_cdnow_customers_with_monetary_value['frequency'],
+            returning_cdnow_customers_with_monetary_value['monetary_value'],
+            iterative_fitting=1,
+            index=None
+        )
+        assert (ggf.data.index == index).all() == False
 
 
 class TestParetoNBDFitter():
@@ -265,6 +312,25 @@ class TestParetoNBDFitter():
             for x in range(Z.shape[1]):
                 assert Z[t_x][x] == ptf.conditional_probability_alive(x, t_x, max_t)
 
+    def test_fit_with_index(self, cdnow_customers):
+        ptf = estimation.ParetoNBDFitter()
+        index = range(len(cdnow_customers), 0, -1)
+        ptf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=index
+        )
+        assert (ptf.data.index == index).all() == True
+
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=None
+        )
+        assert (ptf.data.index == index).all() == False
 
 class TestBetaGammaFitter():
 
@@ -391,6 +457,61 @@ class TestBetaGammaFitter():
 
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
+
+    def test_save_load_bgnbd(self, cdnow_customers):
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert (bgf_new.__dict__['data'] == bgf.__dict__['data']).all().all()
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_data(self, cdnow_customers):
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert isinstance(bgf_new.__dict__['data'], list)
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_fit_with_index(self, cdnow_customers):
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        index = range(len(cdnow_customers), 0, -1)
+        bgf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=index
+        )
+        assert (bgf.data.index == index).all() == True
+
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=None
+        )
+        assert (bgf.data.index == index).all() == False
 
 
 class TestModifiedBetaGammaFitter():
@@ -539,3 +660,23 @@ class TestModifiedBetaGammaFitter():
         thirty_day_prediction_from_hourly_data = mbfg.expected_number_of_purchases_up_to_time(thirty_days * hours_in_day)
 
         npt.assert_almost_equal(thirty_day_prediction_from_daily_data, thirty_day_prediction_from_hourly_data)
+
+    def test_fit_with_index(self, cdnow_customers):
+        mbgf = estimation.ModifiedBetaGeoFitter()
+        index = range(len(cdnow_customers), 0, -1)
+        mbgf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=index
+        )
+        assert (mbgf.data.index == index).all() == True
+
+        mbgf = estimation.ModifiedBetaGeoFitter()
+        mbgf.fit(
+            cdnow_customers['frequency'], 
+            cdnow_customers['recency'], 
+            cdnow_customers['T'],
+            index=None
+        )
+        assert (mbgf.data.index == index).all() == False
