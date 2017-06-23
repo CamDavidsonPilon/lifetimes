@@ -2,7 +2,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import fmin
+from scipy.optimize import minimize
 
 pd.options.mode.chained_assignment = None
 
@@ -227,7 +227,9 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
 
-def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initial_params, params_size, disp, tol=1e-8):
+def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
+         initial_params, params_size, disp, tol=1e-8, fit_method='Nelder-Mead',
+         maxiter=2000, **kwargs):
     ll = []
     sols = []
 
@@ -237,13 +239,22 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting, initi
     if iterative_fitting <= 0:
         raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
 
+    # set options for minimize, if specified in kwargs will be overwrittern
+    minimize_options = {}
+    minimize_options['disp'] = disp
+    minimize_options['maxiter'] = maxiter
+    minimize_options.update(kwargs)
+
     current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
     total_count = 0
+
     while total_count < iterative_fitting:
-        xopt, fopt, _, _, _ = fmin(_func_caller, current_init_params, ftol=tol,
-                                   args=(minimizing_function_args, minimizing_function), disp=disp, maxiter=2000, maxfun=2000, full_output=True)
-        sols.append(xopt)
-        ll.append(fopt)
+        output = minimize(_func_caller, method=fit_method, tol=tol,
+                          x0=current_init_params,
+                          args=(minimizing_function_args, minimizing_function),
+                          options=minimize_options)
+        sols.append(output.x)
+        ll.append(output.fun)
 
         total_count += 1
     argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
