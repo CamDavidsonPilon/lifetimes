@@ -249,6 +249,8 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
     total_count = 0
 
     while total_count < iterative_fitting:
+        if minimize_options['disp']:
+            print('Optimize function with {}'.format(fit_method))
         output = minimize(_func_caller, method=fit_method, tol=tol,
                           x0=current_init_params,
                           args=(minimizing_function_args, minimizing_function),
