@@ -11,8 +11,8 @@ import dill
 from scipy.special import gammaln, hyp2f1, beta, gamma, betaln, binom
 from scipy import misc
 
-from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
-from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
+from .utils import _fit, _scale_time, _check_inputs, customer_lifetime_value
+from .generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model
 
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter', 'BetaGeoBetaBinomFitter']
 
@@ -100,7 +100,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         return -np.mean(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n) * n_custs) + penalizer_term
 
     def fit(self, frequency, recency, n, n_custs, verbose=False,
-            tol=1e-4, iterative_fitting=1, index=None):
+            tol=1e-4, iterative_fitting=1, index=None,
+            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
         Fit the BG/BB model.
 
@@ -114,6 +115,11 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                     calculating individual loglikelihood, the loglikelihood is calculated for each pattern and
                     multiplied by the number of customers with that pattern.
             index: index for resulted DataFrame which is accessible via self.data
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: maximum iterations for optimizer in scipy.optimize.minimize
+                     will be overwritten if setted in kwargs.
+            kwargs: key word arguments to pass to the scipy.optimize.minimize
+                    function as options dict
 
         Returns: self
 
@@ -131,7 +137,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                                                       np.ones(4),
                                                       4,
                                                       verbose,
-                                                      tol)
+                                                      tol,
+                                                      fit_method,
+                                                      maxiter,
+                                                      **kwargs)
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, n, n_custs],
                               columns=['frequency', 'recency', 'n', 'n_custs'])
@@ -308,7 +317,8 @@ class GammaGammaFitter(BaseFitter):
         return (1 - individual_weight) * population_mean + individual_weight * monetary_value
 
     def fit(self, frequency, monetary_value, iterative_fitting=4,
-            initial_params=None, verbose=False, tol=1e-4, index=None):
+            initial_params=None, verbose=False, tol=1e-4, index=None,
+            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
         This methods fits the data to the Gamma/Gamma model.
 
@@ -320,6 +330,11 @@ class GammaGammaFitter(BaseFitter):
             verbose: set to true to print out convergence diagnostics.
             tol: tolerance for termination of the function minimization process.
             index: index for resulted DataFrame which is accessible via self.data
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: maximum iterations for optimizer in scipy.optimize.minimize
+                     will be overwritten if setted in kwargs.
+            kwargs: key word arguments to pass to the scipy.optimize.minimize
+                    function as options dict.
 
         Returns:
             self, fitted and with parameters estimated
@@ -332,7 +347,10 @@ class GammaGammaFitter(BaseFitter):
                                                       initial_params,
                                                       3,
                                                       verbose,
-                                                      tol)
+                                                      tol,
+                                                      fit_method,
+                                                      maxiter,
+                                                      **kwargs)
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=['frequency', 'monetary_value'])
         if index is not None:
@@ -369,7 +387,8 @@ class ParetoNBDFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     def fit(self, frequency, recency, T, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None):
+            initial_params=None, verbose=False, tol=1e-4, index=None,
+            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
         This methods fits the data to the Pareto/NBD model.
 
@@ -381,6 +400,11 @@ class ParetoNBDFitter(BaseFitter):
             initial_params: set initial params for the iterative fitter.
             verbose: set to true to print out convergence diagnostics.
             index: index for resulted DataFrame which is accessible via self.data
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: maximum iterations for optimizer in scipy.optimize.minimize
+                     will be overwritten if setted in kwargs.
+            kwargs: key word arguments to pass to the scipy.optimize.minimize
+                    function as options dict
 
         Returns:
             self, with additional properties and methods like params_ and plot
@@ -397,7 +421,10 @@ class ParetoNBDFitter(BaseFitter):
                                                       initial_params,
                                                       4,
                                                       verbose,
-                                                      tol)
+                                                      tol,
+                                                      fit_method,
+                                                      maxiter,
+                                                      **kwargs)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
@@ -548,7 +575,8 @@ class BetaGeoFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     def fit(self, frequency, recency, T, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None):
+            initial_params=None, verbose=False, tol=1e-4, index=None,
+            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
         This methods fits the data to the BG/NBD model.
 
@@ -560,6 +588,11 @@ class BetaGeoFitter(BaseFitter):
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
             index: index for resulted DataFrame which is accessible via self.data
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: maximum iterations for optimizer in scipy.optimize.minimize
+                     will be overwritten if setted in kwargs.
+            kwargs: key word arguments to pass to the scipy.optimize.minimize
+                    function as options dict
 
 
         Returns:
@@ -581,7 +614,10 @@ class BetaGeoFitter(BaseFitter):
                                                       initial_params,
                                                       4,
                                                       verbose,
-                                                      tol)
+                                                      tol,
+                                                      fit_method,
+                                                      maxiter,
+                                                      **kwargs)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
         self.params_['alpha'] /= self._scale
@@ -730,7 +766,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         super(self.__class__, self).__init__(penalizer_coef)
 
     def fit(self, frequency, recency, T, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None):
+            initial_params=None, verbose=False, tol=1e-4, index=None,
+            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
         This methods fits the data to the MBG/NBD model.
 
@@ -742,13 +779,27 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
             index: index for resulted DataFrame which is accessible via self.data
-
+            fit_method: fit_method to passing to scipy.optimize.minimize
+            maxiter: maximum iterations for optimizer in scipy.optimize.minimize
+                     will be overwritten if setted in kwargs.
+            kwargs: key word arguments to pass to the scipy.optimize.minimize
+                    function as options dict
 
         Returns:
             self, with additional properties and methods like params_ and predict
 
         """
-        super(self.__class__, self).fit(frequency, recency, T, iterative_fitting, initial_params, verbose, tol, index=index)  # although the parent method is called, this class's _negative_log_likelihood is referenced
+        super(self.__class__, self).fit(frequency,
+                                        recency,
+                                        T,
+                                        iterative_fitting,
+                                        initial_params,
+                                        verbose,
+                                        tol,
+                                        index=index,
+                                        fit_method=fit_method,
+                                        maxiter=maxiter,
+                                        **kwargs)  # although the parent method is called, this class's _negative_log_likelihood is referenced
         self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)  # this needs to be reassigned from the parent method
         return self
 
