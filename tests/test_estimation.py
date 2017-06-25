@@ -228,13 +228,13 @@ class TestGammaGammaFitter():
 class TestParetoNBDFitter():
 
     def test_overflow_error(self):
-         
+
         ptf = estimation.ParetoNBDFitter()
         params = np.array([10.465, 7.98565181e-03, 3.0516, 2.820])
         freq = np.array([400., 500., 500.])
         rec = np.array([5., 1., 4.])
         age = np.array([6., 37., 37.])
-        assert all([r < 0 and not np.isinf(r) and not pd.isnull(r) 
+        assert all([r < 0 and not np.isinf(r) and not pd.isnull(r)
                     for r in ptf._log_A_0(params, freq, rec, age)])
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
@@ -356,9 +356,9 @@ class TestBetaGammaFitter():
         x = 2
         t_x = 30.43
         T = 38.86
-        t = 39 
+        t = 39
         expected = 1.226
-        actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T) 
+        actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
         assert abs(expected - actual) < 0.001
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
@@ -632,7 +632,7 @@ class TestModifiedBetaGammaFitter():
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
 
     def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self, cdnow_customers):
-        reduced_dataset = cdnow_customers.ix[:2]
+        reduced_dataset = cdnow_customers.iloc[:2]
         mbfg1 = estimation.ModifiedBetaGeoFitter()
         mbfg2 = estimation.ModifiedBetaGeoFitter()
 

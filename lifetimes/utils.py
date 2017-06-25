@@ -56,7 +56,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     calibration_period_end = pd.to_datetime(calibration_period_end, format=datetime_format)
 
     # create calibration dataset
-    calibration_transactions = transactions.ix[transactions[datetime_col] <= calibration_period_end]
+    calibration_transactions = transactions.loc[transactions[datetime_col] <= calibration_period_end]
     calibration_summary_data = summary_data_from_transaction_data(calibration_transactions,
                                                                   customer_id_col,
                                                                   datetime_col,
@@ -67,8 +67,8 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
 
     # create holdout dataset
-    holdout_transactions = transactions.ix[(observation_period_end >= transactions[datetime_col]) &
-                                           (transactions[datetime_col] > calibration_period_end)]
+    holdout_transactions = transactions.loc[(observation_period_end >= transactions[datetime_col]) &
+                                            (transactions[datetime_col] > calibration_period_end)]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
     holdout_summary_data = holdout_transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)\
                                                .groupby(level=customer_id_col).agg(['count'])

@@ -36,8 +36,8 @@ def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat 
     n = model.data.shape[0]
     simulated_data = model.generate_new_data(size=n)
 
-    model_counts = pd.DataFrame(model.data['frequency'].value_counts().sort_index().ix[:max_frequency])
-    simulated_counts = pd.DataFrame(simulated_data['frequency'].value_counts().sort_index().ix[:max_frequency])
+    model_counts = pd.DataFrame(model.data['frequency'].value_counts().sort_index().iloc[:max_frequency])
+    simulated_counts = pd.DataFrame(simulated_data['frequency'].value_counts().sort_index().iloc[:max_frequency])
     combined_counts = model_counts.merge(simulated_counts, how='outer', left_index=True, right_index=True).fillna(0)
     combined_counts.columns = labels
 
@@ -79,9 +79,9 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
 
     if kind == "time_since_last_purchase":
         summary["time_since_last_purchase"] = summary["T_cal"] - summary["recency_cal"]
-        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
+        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().iloc[:n].plot(**kwargs)
     else:
-        ax = summary.groupby(kind)[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
+        ax = summary.groupby(kind)[['frequency_holdout', 'model_predictions']].mean().iloc[:n].plot(**kwargs)
 
     plt.title('Actual Purchases in Holdout Period vs Predicted Purchases')
     plt.xlabel(x_labels[kind])

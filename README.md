@@ -38,7 +38,7 @@ Requirements are only Numpy, Scipy, Pandas, [dill](https://github.com/uqfoundati
 
 For the following examples, we'll use a dataset from an ecommerce provider to analyze their customers' repeat purchases. The examples below are using the `cdnow_customers.csv` located in the `datasets/` directory.
 
-    from lifetimes.datasets import load_cdnow
+    from lifetimes.datasets import load_cdnow_summary
     data = load_cdnow(index_col=[0])
 
     print data.head()
@@ -88,7 +88,7 @@ Consider: a customer bought from you every day for three weeks straight, and we 
 
     plot_frequency_recency_matrix(bgf)
 
-![fr_matrix](http://i.imgur.com/oYfTH0Dl.png)
+![fr_matrix](http://imgur.com/Rw8PGcq.png)
 
 
 We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are your best customer (bottom-right). Your coldest customers are those that are in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks.
@@ -101,7 +101,7 @@ Another interesting matrix to look at is the probability of still being *alive*:
 
     plot_probability_alive_matrix(bgf)
 
-![prob](http://i.imgur.com/qjellK6l.png)
+![prob](http://imgur.com/di6MTic.png)
 
 #### Ranking customers from best to worst
 
@@ -129,7 +129,7 @@ Ok, we can predict and we can visualize our customers' behaviour, but is our mod
     from lifetimes.plotting import plot_period_transactions
     plot_period_transactions(bgf)
 
-![model_fit_1](http://imgur.com/4P6AfsQl.png)
+![model_fit_1](http://imgur.com/qlE4LDU.png)
 
 We can see that our actual data and our simulated data line up well. This proves that our model doesn't suck.
 
@@ -216,7 +216,7 @@ our trained model. For example:
 
     id = 35
     days_since_birth = 200
-    sp_trans = transaction_data.ix[transaction_data['id'] == id]
+    sp_trans = transaction_data.iloc[transaction_data['id'] == id]
     plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
 
 ![history](http://i.imgur.com/y45tum4.png)

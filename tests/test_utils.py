@@ -254,23 +254,23 @@ def test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_a
     df_train = df[df['date'] < '1997-10-01']
     summary = utils.summary_data_from_transaction_data(df_train, 'id', 'date', 'spent')
     results = summary[summary['frequency'] > 0]['monetary_value'].describe()
-    assert np.round(results.ix['mean']) == 35
-    assert np.round(results.ix['std']) == 30
-    assert np.round(results.ix['min']) == 3
-    assert np.round(results.ix['50%']) == 27
-    assert np.round(results.ix['max']) == 300
-    assert np.round(results.ix['count']) == 946
+    assert np.round(results.loc['mean']) == 35
+    assert np.round(results.loc['std']) == 30
+    assert np.round(results.loc['min']) == 3
+    assert np.round(results.loc['50%']) == 27
+    assert np.round(results.loc['max']) == 300
+    assert np.round(results.loc['count']) == 946
 
 
 def test_calibration_and_holdout_data(large_transaction_level_data):
     today = '2015-02-07'
     calibration_end = '2015-02-01'
     actual = utils.calibration_and_holdout_data(large_transaction_level_data, 'id', 'date', calibration_end, observation_period_end=today)
-    assert actual.ix[1]['frequency_holdout'] == 1
-    assert actual.ix[2]['frequency_holdout'] == 0
+    assert actual.loc[1]['frequency_holdout'] == 1
+    assert actual.loc[2]['frequency_holdout'] == 0
 
     with pytest.raises(KeyError):
-        actual.ix[6]
+        actual.loc[6]
 
 
 def test_calibration_and_holdout_data_works_with_specific_frequency(large_transaction_level_data):
@@ -305,8 +305,8 @@ def test_calibration_and_holdout_data_gives_correct_date_boundaries():
     ]
     transactions = pd.DataFrame(d, columns=['id', 'date'])
     actual = utils.calibration_and_holdout_data(transactions, 'id', 'date', calibration_period_end='2015-02-01', observation_period_end='2015-02-04')
-    assert actual['frequency_holdout'].ix[1] == 0
-    assert actual['frequency_holdout'].ix[4] == 1
+    assert actual['frequency_holdout'].loc[1] == 0
+    assert actual['frequency_holdout'].loc[4] == 1
 
 
 def test_calibration_and_holdout_data_with_monetary_value(large_transaction_level_data_with_monetary_value):
@@ -325,7 +325,7 @@ def test_calibration_and_holdout_data_with_monetary_value(large_transaction_leve
 def test_summary_data_from_transaction_data_squashes_period_purchases_to_one_purchase():
     transactions = pd.DataFrame([[1, '2015-01-01'], [1, '2015-01-01']], columns=['id', 't'])
     actual = utils.summary_data_from_transaction_data(transactions, 'id', 't', freq='W')
-    assert actual.ix[1]['frequency'] == 1. - 1.
+    assert actual.loc[1]['frequency'] == 1. - 1.
 
 
 def test_calculate_alive_path(example_transaction_data, example_summary_data, fitted_bg):
