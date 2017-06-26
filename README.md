@@ -32,16 +32,16 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
     pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas, [dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
+Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
 
 ## Quickstart
 
 For the following examples, we'll use a dataset from an ecommerce provider to analyze their customers' repeat purchases. The examples below are using the `cdnow_customers.csv` located in the `datasets/` directory.
 
     from lifetimes.datasets import load_cdnow_summary
-    data = load_cdnow(index_col=[0])
+    data = load_cdnow_summary(index_col=[0])
 
-    print data.head()
+    print(data.head())
     """
          frequency   recency      T
     ID
@@ -69,9 +69,9 @@ We'll use the **BG/NBD model** first. Interested in the model? See this [nice pa
     # similar API to scikit-learn and lifelines.
     bgf = BetaGeoFitter(penalizer_coef=0.0)
     bgf.fit(data['frequency'], data['recency'], data['T'])
-    print bgf
+    print(bgf)
     """
-    <lifetimes.BetaGeoFitter: fitted with 2357 subjects, a: 0.79, alpha: 4.41, r: 0.24, b: 2.43>
+    <lifetimes.BetaGeoFitter: fitted with 2357 subjects, a: 0.79, alpha: 4.41, b: 2.43, r: 0.24>
     """
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
@@ -141,7 +141,7 @@ Most often, the dataset you have at hand will be at the transaction level. Lifet
     from lifetimes.utils import summary_data_from_transaction_data
 
     transaction_data = load_transaction_data()
-    transaction_data.head()
+    print(transaction_data.head())
     """
                       date  id
     0  2014-03-08 00:00:00   0
@@ -153,19 +153,19 @@ Most often, the dataset you have at hand will be at the transaction level. Lifet
 
     summary = summary_data_from_transaction_data(transaction_data, 'id', 'date', observation_period_end='2014-12-31')
 
-    print summary.head()
+    print(summary.head())
     """
-        frequency  recency    T
+    frequency  recency      T
     id
-    0           0        0  298
-    1           0        0  224
-    2           6      142  292
-    3           0        0  147
-    4           2        9  183
+    0         0.0      0.0  298.0
+    1         0.0      0.0  224.0
+    2         6.0    142.0  292.0
+    3         0.0      0.0  147.0
+    4         2.0      9.0  183.0
     """
 
     bgf.fit(summary['frequency'], summary['recency'], summary['T'])
-    # <lifetimes.BetaGeoFitter: fitted with 5000 customers, a: 1.85, alpha: 1.86, r: 0.16, b: 3.18>
+    # <lifetimes.BetaGeoFitter: fitted with 5000 subjects, a: 1.85, alpha: 1.86, b: 3.18, r: 0.16>
 
 #### More model fitting
 
@@ -176,15 +176,15 @@ With transactional data, we can partition the dataset into a calibration period 
     summary_cal_holdout = calibration_and_holdout_data(transaction_data, 'id', 'date',
                                             calibration_period_end='2014-09-01',
                                             observation_period_end='2014-12-31' )   
-    print summary_cal_holdout.head()
+    print(summary_cal_holdout.head())
     """
         frequency_cal  recency_cal  T_cal  frequency_holdout  duration_holdout
     id
-    0               0            0    177                  0               121
-    1               0            0    103                  0               121
-    2               6          142    171                  0               121
-    3               0            0     26                  0               121
-    4               2            9     62                  0               121
+    0             0.0          0.0  177.0                0.0               121
+    1             0.0          0.0  103.0                0.0               121
+    2             6.0        142.0  171.0                0.0               121
+    3             0.0          0.0   26.0                0.0               121
+    4             2.0          9.0   62.0                0.0               121
     """
 
 With this dataset, we can perform fitting on the `_cal` columns, and test on the `_holdout` columns:
@@ -216,7 +216,7 @@ our trained model. For example:
 
     id = 35
     days_since_birth = 200
-    sp_trans = transaction_data.iloc[transaction_data['id'] == id]
+    sp_trans = transaction_data.loc[transaction_data['id'] == id]
     plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
 
 ![history](http://i.imgur.com/y45tum4.png)
@@ -227,13 +227,13 @@ For this whole time we didn't take into account the economic value of each trans
 transactions' occurrences. To estimate this we can use the Gamma-Gamma submodel. But first we need to create summary data
 from transactional data also containing economic values for each transaction (i.e. profits or revenues).
 
-    from lifetimes.datasets import load_summary_data_with_monetary_value
+    from lifetimes.datasets import load_cdnow_summary_data_with_monetary_value
 
-    summary_with_money_value = load_summary_data_with_monetary_value()
+    summary_with_money_value = load_cdnow_summary_data_with_monetary_value()
     summary_with_money_value.head()
     returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency']>0]
 
-    returning_customers_summary.head()
+    print(returning_customers_summary.head())
     """
                  frequency  recency      T  monetary_value
     customer_id
@@ -264,39 +264,39 @@ At this point we can train our Gamma-Gamma submodel and predict the conditional,
     ggf = GammaGammaFitter(penalizer_coef = 0)
     ggf.fit(returning_customers_summary['frequency'],
             returning_customers_summary['monetary_value'])
-    print ggf    
+    print(ggf)
     """
     <lifetimes.GammaGammaFitter: fitted with 946 subjects, p: 6.25, q: 3.74, v: 15.45>
     """
 
 We can now estimate the average transaction value:
 
-    print ggf.conditional_expected_average_profit(
+    print(ggf.conditional_expected_average_profit(
             summary_with_money_value['frequency'],
             summary_with_money_value['monetary_value']
-        ).head()
+        ).head(10))
     """
     customer_id
-    1     24.658616
-    2     18.911480
-    3     35.171003
-    4     35.171003
-    5     35.171003
-    6     71.462851
-    7     18.911480
-    8     35.171003
+    1     24.658619
+    2     18.911489
+    3     35.170981
+    4     35.170981
+    5     35.170981
+    6     71.462843
+    7     18.911489
+    8     35.170981
     9     27.282408
-    10    35.171003
+    10    35.170981
     dtype: float64
     """
 
-    print "Expected conditional average profit: %s, Average profit: %s" % (
+    print("Expected conditional average profit: %s, Average profit: %s" % (
         ggf.conditional_expected_average_profit(
             summary_with_money_value['frequency'],
             summary_with_money_value['monetary_value']
         ).mean(),
         summary_with_money_value[summary_with_money_value['frequency']>0]['monetary_value'].mean()
-    )
+    ))
     """
     Expected conditional average profit: 35.2529588256, Average profit: 35.078551797
     """
@@ -306,7 +306,7 @@ While for computing the total CLV using the DCF method (https://en.wikipedia.org
     # refit the BG model to the summary_with_money_value dataset
     bgf.fit(summary_with_money_value['frequency'], summary_with_money_value['recency'], summary_with_money_value['T'])
 
-    print ggf.customer_lifetime_value(
+    print(ggf.customer_lifetime_value(
         bgf, #the model to use to predict the number of future transactions
         summary_with_money_value['frequency'],
         summary_with_money_value['recency'],
@@ -314,7 +314,7 @@ While for computing the total CLV using the DCF method (https://en.wikipedia.org
         summary_with_money_value['monetary_value'],
         time=12, # months
         discount_rate=0.01 # monthly discount rate ~ 12.7% annually
-    ).head(10)
+    ).head(10))
     """
     customer_id
     1      140.096211
@@ -339,4 +339,4 @@ Drop me a line at [`@cmrn_dp`](https://twitter.com/Cmrn_DP)!
 
 1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
 2. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
-3. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy Til You Die*).
+3. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy 'Til You Die*).
