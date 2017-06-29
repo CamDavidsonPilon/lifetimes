@@ -860,8 +860,9 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     def conditional_probability_alive(self, frequency, recency, T):
         """
-        Compute the probability that a customer with history (frequency, recency, T) is currently
-        alive. From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
+        Compute the probability that a customer with history (frequency, recency, T) is currently alive.
+        From https://www.researchgate.net/publication/247219660_Empirical_validation_and_comparison_of_models_for_customer_base_analysis
+        Appendix A, eq. (5)
 
         Parameters:
             frequency: a scalar: historical frequency of customer.
