@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import numpy as np
 from numpy import log, logaddexp, asarray, any as npany
-
 from scipy.special import gammaln, hyp2f1, beta, gamma
 
 from .beta_geo_fitter import BetaGeoFitter
@@ -39,7 +38,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
-        This methods fits the data to the MBG/NBD model.
+        Fit the data to the MBG/NBD model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x
@@ -105,7 +104,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
-        Expected number of repeat purchases up to time t.
+        Return expected number of repeat purchases up to time t.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population.
@@ -114,6 +113,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             t: a scalar or array of times.
 
         Returns: a scalar or array
+
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         hyp = hyp2f1(r, b + 1, a + b, t / (alpha + t))
@@ -136,6 +136,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             T: a scalar: age of the customer.
 
         Returns: a scalar or array
+
         """
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -167,7 +168,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         Returns: a scalar
 
-        """ # noqa
+        """  # noqa
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         return 1. / (1 + (a / (b + frequency)) *
                      ((alpha + T) / (alpha + recency)) ** (r + frequency))
@@ -177,16 +178,17 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         Compute the probability alive matrix.
 
-        Parameters:
+        Parameters
             max_frequency: the maximum frequency to plot.
                            Default is max observed frequency.
             max_recency: the maximum recency to plot.
                          This also determines the age of the customer.
                          Default to max observed age.
 
-        Returns:
+        Returns
             A matrix of the form [t_x: historical recency,
                                   x: historical frequency]
+
         """
         return super(self.__class__, self) \
             .conditional_probability_alive_matrix(max_frequency, max_recency)

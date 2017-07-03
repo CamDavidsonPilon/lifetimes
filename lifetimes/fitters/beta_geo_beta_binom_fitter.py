@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from numpy import log, exp, logaddexp, asarray, c_ as vconcat
 from pandas import DataFrame
-
 from scipy.special import gammaln, betaln, binom
 
 from ..utils import _fit, _check_inputs
@@ -163,7 +162,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def conditional_probability_alive(self, m):
         """
-        Conditional probability customer is alive at transaction opportunity n + m.
+        Conditional probability alive.
+
+        Conditional probability customer is alive at transaction opportunity
+        n + m.
 
         P(alive at n + m|alpha, beta, gamma, delta, frequency, recency, n)
 
@@ -174,7 +176,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         Returns: scalar or array of alive probabilities
 
-        """ # noqa
+        """
         params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         alpha, beta, gamma, delta = params
 
@@ -190,8 +192,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def expected_number_of_transactions_in_first_n_periods(self, n):
         """
-        Expected number of transactions occurring across first n transaction opportunities.
+        Return expected number of transactions in first n periods.
 
+        Expected number of transactions occurring across first n transaction
+        opportunities.
         Used by Fader and Hardie to assess in-sample fit.
 
         Pr(X(n) = x|alpha, beta, gamma, delta)
@@ -203,7 +207,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         Returns: DataFrame of predicted values, indexed by x
 
-        """ # noqa
+        """
         params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         alpha, beta, gamma, delta = params
 

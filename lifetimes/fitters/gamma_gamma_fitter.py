@@ -5,7 +5,6 @@ from collections import OrderedDict
 import numpy as np
 from numpy import c_ as vconcat
 from pandas import DataFrame
-
 from scipy.special import gammaln
 
 from . import BaseFitter
@@ -70,6 +69,7 @@ class GammaGammaFitter(BaseFitter):
 
         Returns:
             the conditional expectation of the average profit per transaction
+
         """
         if monetary_value is None:
             monetary_value = self.data['monetary_value']
@@ -88,7 +88,7 @@ class GammaGammaFitter(BaseFitter):
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
-        This methods fits the data to the Gamma/Gamma model.
+        Fit the data to the Gamma/Gamma model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases
@@ -111,6 +111,7 @@ class GammaGammaFitter(BaseFitter):
 
         Returns:
             self, fitted and with parameters estimated
+
         """
         _check_inputs(frequency, monetary_value=monetary_value)
 
@@ -138,7 +139,7 @@ class GammaGammaFitter(BaseFitter):
                                 recency, T, monetary_value, time=12,
                                 discount_rate=0.01):
         """
-        Customer lifetime value.
+        Return customer lifetime value.
 
         This method computes the average lifetime value for a group of one
         or more customers.
@@ -161,6 +162,7 @@ class GammaGammaFitter(BaseFitter):
         Returns:
             Series object with customer ids as index and the estimated customer
             lifetime values as values
+
         """
         # use the Gamma-Gamma estimates for the monetary_values
         adjusted_monetary_value = self.conditional_expected_average_profit(

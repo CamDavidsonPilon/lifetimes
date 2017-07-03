@@ -5,7 +5,6 @@ from collections import OrderedDict
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
-
 from scipy.special import gammaln, hyp2f1
 from scipy import misc
 
@@ -128,11 +127,14 @@ class ParetoNBDFitter(BaseFitter):
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -(A_1 + A_2).mean() + penalizer_term
 
-    def conditional_probability_alive(self, frequency, recency, T): # noqa
+    def conditional_probability_alive(self, frequency, recency, T):
         """
+        Conditional probability alive.
+
         Compute the probability that a customer with history
         (frequency, recency, T) is currently alive.
-        From http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
+        From paper:
+        http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
         Parameters:
             frequency: a scalar: historical frequency of customer.
@@ -140,7 +142,8 @@ class ParetoNBDFitter(BaseFitter):
             T: a scalar: age of the customer.
 
         Returns: a scalar value representing a probability
-        """ # noqa
+
+        """
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
@@ -176,9 +179,11 @@ class ParetoNBDFitter(BaseFitter):
 
         return Z
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, # noqa
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
         """
+        Conditional expected number of purchases up to time.
+
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
         purchase history (frequency, recency, T)
@@ -190,6 +195,7 @@ class ParetoNBDFitter(BaseFitter):
             T: a scalar: age of the customer.
 
         Returns: a scalar or array
+
         """
         x, t_x = frequency, recency
         params = self._unload_params('r', 'alpha', 's', 'beta')
@@ -199,11 +205,14 @@ class ParetoNBDFitter(BaseFitter):
         first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * \
             log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
-        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) / (s - 1)) # noqa
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) /
+                         (s - 1))
         return exp(first_term + second_term + third_term - likelihood)
 
-    def expected_number_of_purchases_up_to_time(self, t): # noqa
+    def expected_number_of_purchases_up_to_time(self, t):
         """
+        Return expected number of repeat purchases up to time t.
+
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population.
 
@@ -211,6 +220,7 @@ class ParetoNBDFitter(BaseFitter):
             t: a scalar or array of times.
 
         Returns: a scalar or array
+
         """
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
         first_term = r * beta / alpha / (s - 1)

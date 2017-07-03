@@ -6,7 +6,6 @@ import numpy as np
 from numpy import log, asarray, any as npany, c_ as vconcat, isinf, isnan
 from numpy import ones_like
 from pandas import DataFrame
-
 from scipy.special import gammaln, hyp2f1, beta, gamma
 from scipy import misc
 
@@ -43,7 +42,7 @@ class BetaGeoFitter(BaseFitter):
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
-        Method for fit the data to the BG/NBD model.
+        Fit the data to the BG/NBD model.
 
         Parameters:
             frequency: the frequency vector of customers' purchases (denoted x
@@ -121,8 +120,8 @@ class BetaGeoFitter(BaseFitter):
         A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return (-(A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d)).mean() + # noqa
-                penalizer_term)
+        return -(A_1 + A_2 + misc.logsumexp(
+            vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
@@ -135,14 +134,17 @@ class BetaGeoFitter(BaseFitter):
             t: a scalar or array of times.
 
         Returns: a scalar or array
+
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, # noqa
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
         """
+        Conditional expected number of purchases up to time.
+
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
         purchase history (frequency, recency, T)
@@ -154,21 +156,26 @@ class BetaGeoFitter(BaseFitter):
             T: a scalar: age of the customer.
 
         Returns: a scalar or array
+
         """
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
         hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x)) # noqa
+        second_term = (1 - hyp_term *
+                       ((alpha + T) / (alpha + t + T)) ** (r + x))
         numerator = first_term * second_term
 
-        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x) # noqa
+        denominator = 1 + (x > 0) * (a / (b + x - 1)) * \
+            ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, frequency, recency, T): # noqa
+    def conditional_probability_alive(self, frequency, recency, T):
         """
+        Compute conditional probability alive.
+
         Compute the probability that a customer with history
         (frequency, recency, T) is currently alive.
 

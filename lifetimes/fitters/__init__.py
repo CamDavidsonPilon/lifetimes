@@ -24,7 +24,8 @@ class BaseFitter(object):
         return [self.params_[x] for x in args]
 
     def save_model(self, path, save_data=True):
-        """Save model with dill package.
+        """
+        Save model with dill package.
 
         Parameters:
             path: Path where to save model.
