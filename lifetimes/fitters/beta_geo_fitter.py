@@ -55,6 +55,8 @@ class BetaGeoFitter(BaseFitter):
                                random/warm-started initial params
             initial_params: set the initial parameters for the fitter.
             verbose: set to true to print out convergence diagnostics.
+            tol: tolerance for termination of the function minimization
+                 process.
             index: index for resulted DataFrame which is accessible via
                    self.data
             fit_method: fit_method to passing to scipy.optimize.minimize
