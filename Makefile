@@ -5,3 +5,9 @@ lint:
 	flake8 lifetimes
 
 autolint: autopep8 lint
+
+pycodestyle:
+	pycodestyle lifetimes
+
+pydocstyle:
+	pydocstyle lifetimes

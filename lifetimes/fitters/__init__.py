@@ -42,7 +42,8 @@ class BaseFitter(object):
                 self.data = self_data
 
     def load_model(self, path):
-        """Save model with dill package.
+        """
+        Save model with dill package.
 
         Parameters:
             path: From what path load model.
