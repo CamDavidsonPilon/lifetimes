@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat,\
-    isinf, isnan, ones_like
+    isinf, isnan, ones_like, where
 from pandas import DataFrame
 import dill
 
@@ -642,7 +642,7 @@ class BetaGeoFitter(BaseFitter):
         A_3 = -(r + freq) * log(alpha + T)
 
         d = vconcat[ones_like(freq), (freq > 0)]
-        A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
+        A_4 = log(a) - log(b + where(freq == 0, 1, freq) - 1) - (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -(A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
@@ -677,9 +677,18 @@ class BetaGeoFitter(BaseFitter):
         x = frequency
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        hyp_term = hyp2f1(r + x, b + x, a + b + x - 1, t / (alpha + T + t))
+        _a = r + x
+        _b = b + x
+        _c = a + b + x - 1
+        _z = t / (alpha + T + t)
+        ln_hyp_term = np.log(hyp2f1(_a, _b, _c, _z))
+        # if the value is inf, we are using a different but equivalent
+        # formula to compute the function evaluation.
+        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + \
+                      (_c - _a - _b) * np.log(1 - _z)
+        ln_hyp_term = where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
+        second_term = (1 - exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T))))
         numerator = first_term * second_term
 
         denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
@@ -699,8 +708,16 @@ class BetaGeoFitter(BaseFitter):
         Returns: a scalar
 
         """
+        ln_exp_max = 300.0
+
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        return 1. / (1 + (frequency > 0) * (a / (b + frequency - 1)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
+        log_div = (r + frequency) * log(
+            (alpha + T) / (alpha + recency)) + log(
+            a / (b + where(frequency == 0, 1, frequency) - 1))
+
+        return where(frequency == 0, 1.,
+                     where(log_div > ln_exp_max, 0.,
+                           1. / (1 + exp(np.clip(log_div, None, ln_exp_max)))))
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
