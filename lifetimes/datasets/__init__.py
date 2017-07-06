@@ -14,29 +14,35 @@ __all__ = [
 
 
 def load_dataset(filename, **kwargs):
-    '''
-    Load a dataset from lifetimes.datasets
+    """
+    Load a dataset from lifetimes.datasets.
 
     Parameters:
-    filename : for example "larynx.csv"
-    usecols : list of columns in file to use
+        filename: for example "larynx.csv"
+        usecols: list of columns in file to use
 
-    Returns : Pandas dataframe
-    '''
+    Returns:
+        Pandas dataframe
+
+    """
     return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)
 
 
 def load_donations(**kwargs):
+    """Load donations dataset as pandas DataFrame."""
     return load_dataset('donations.csv', **kwargs)
 
 
 def load_cdnow_summary(**kwargs):
+    """Load cdnow customers summary pandas DataFrame."""
     return load_dataset('cdnow_customers_summary.csv', **kwargs)
 
 
 def load_transaction_data(**kwargs):
     """
-    Returns a Pandas dataframe of transactional data. Looks like:
+    Return a Pandas dataframe of transactional data.
+
+    Looks like:
 
                       date  id
     0  2014-03-08 00:00:00   0
@@ -53,6 +59,7 @@ def load_transaction_data(**kwargs):
 
 
 def load_cdnow_summary_data_with_monetary_value(**kwargs):
+    """Load cdnow customers summary with monetary value as pandas DataFrame."""
     df = load_dataset('cdnow_customers_summary_with_transactions.csv', **kwargs)
     df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
     df = df.set_index('customer_id')

@@ -43,6 +43,7 @@ setup(name='Lifetimes',
               "../README.txt",
               "../LICENSE",
               "../MANIFEST.in",
+              "fitters/*"
           ]
       }
       )

@@ -6,8 +6,9 @@ import pandas as pd
 
 def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     """
-    Generate artificial data according to the BG/NBD model. See [1] for model details
+    Generate artificial data according to the BG/NBD model.
 
+    See [1] for model details
 
     Parameters:
         T: scalar or array, the length of time observing new customers.
@@ -54,8 +55,9 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
 
 def pareto_nbd_model(T, r, alpha, s, beta, size=1):
     """
-    Generate artificial data according to the Pareto/NBD model. See [2] for model details
+    Generate artificial data according to the Pareto/NBD model.
 
+    See [2] for model details
 
     Parameters:
         T: scalar or array, the length of time observing new customers.
@@ -102,11 +104,15 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
 
 def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     """
-    Generate artificial data according to the MBG/NBD model. See [1,2] for model details
+    Generate artificial data according to the MBG/NBD model.
+
+    See [1,2] for model details
+
     Parameters:
         T: scalar or array, the length of time observing new customers.
         r, alpha, a, b: scalars, represening parameters in the model. See [1,2]
         size: the number of customers to generate
+
     Returns:
         DataFrame, with index as customer_ids and the following columns:
         'frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id'
@@ -115,6 +121,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     [2] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
         "Empirical validation and comparison of models for customer base analysis,"
         International Journal of Research in Marketing, 24 (3), 201-209.
+
     """
     if type(T) in [float, int]:
         T = T * np.ones(size)

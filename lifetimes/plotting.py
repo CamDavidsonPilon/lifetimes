@@ -20,7 +20,7 @@ __all__ = [
 def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat Transactions',
                              xlabel='Number of Calibration Period Transactions', ylabel='Customers', **kwargs):
     """
-    Plot a figure with period actual and predicted transactions
+    Plot a figure with period actual and predicted transactions.
 
     Parameters:
         model: a fitted lifetimes model.
@@ -29,6 +29,7 @@ def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat 
         xlabel: figure xlabel
         ylabel: figure ylabel
         kwargs: passed into the matplotlib.pyplot.plot command.
+
     """
     from matplotlib import pyplot as plt
     labels = kwargs.pop('label', ['Actual', 'Model'])
@@ -52,6 +53,8 @@ def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat 
 
 def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs):
     """
+    Plot calibration purchases vs holdout.
+
     This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
 
     Parameters:
@@ -93,8 +96,9 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
 
 def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=None, **kwargs):
     """
-    Plot a figure of expected transactions in T next units of time by a customer's
-    frequency and recency.
+    Plot recency frequecy matrix as heatmap.
+
+    Plot a figure of expected transactions in T next units of time by a customer's frequency and recency.
 
     Parameters:
         model: a fitted lifetimes model.
@@ -141,6 +145,8 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None,
                                   xlabel="Customer's Historical Frequency", ylabel="Customer's Recency",
                                   **kwargs):
     """
+    Plot probability alive matrix as heatmap.
+
     Plot a figure of the probability a customer is alive based on their
     frequency and recency.
 
@@ -153,6 +159,7 @@ def plot_probability_alive_matrix(model, max_frequency=None, max_recency=None,
         xlabel: figure xlabel
         ylabel: figure ylabel
         kwargs: passed into the matplotlib.imshow command.
+
     """
     from matplotlib import pyplot as plt
 
@@ -186,6 +193,7 @@ def plot_expected_repeat_purchases(model, title='Expected Number of Repeat Purch
         xlabel: figure xlabel
         ylabel: figure ylabel
         kwargs: passed into the matplotlib.pyplot.plot command.
+
     """
     from matplotlib import pyplot as plt
 
@@ -215,14 +223,16 @@ def plot_expected_repeat_purchases(model, title='Expected Number of Repeat Purch
 
 def plot_history_alive(model, t, transactions, datetime_col, freq='D', **kwargs):
     """
-    Draws a graph showing the probablility of being alive for a customer in time
-    :param model: A fitted lifetimes model
-    :param t: the number of time units since the birth we want to draw the p_alive
-    :param transactions: a Pandas DataFrame containing the transactions history of the customer_id
-    :param datetime_col: the column in the transactions that denotes the datetime the purchase was made
-    :param freq: Default 'D' for days. Other examples= 'W' for weekly
-    """
+    Draw a graph showing the probablility of being alive for a customer in time.
 
+    Parameters:
+        model: A fitted lifetimes model
+        t: the number of time units since the birth we want to draw the p_alive
+        transactions: a Pandas DataFrame containing the transactions history of the customer_id
+        datetime_col: the column in the transactions that denotes the datetime the purchase was made
+        freq: Default 'D' for days. Other examples= 'W' for weekly
+
+    """
     from matplotlib import pyplot as plt
 
     start_date = kwargs.pop('start_date', min(transactions[datetime_col]))
@@ -261,7 +271,8 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
                                  xlabel='day', ylabel='Cumulative Transactions',
                                  **kwargs):
     """
-    Plot a figure of the predicted and actual cumulative transactions of users
+    Plot a figure of the predicted and actual cumulative transactions of users.
+
     Parameters:
         model: A fitted lifetimes model
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
@@ -278,6 +289,7 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
         xlabel: figure xlabel, if set_index_date is True will be overwrited to date
         ylabel: figure ylabel
         kwargs: passed into the pandas.DataFrame.plot command.
+
     """
     from matplotlib import pyplot as plt
 
@@ -307,7 +319,8 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
                                   xlabel='day', ylabel='Transactions',
                                   **kwargs):
     """
-    Plot a figure of the predicted and actual cumulative transactions of users
+    Plot a figure of the predicted and actual cumulative transactions of users.
+
     Parameters:
         model: A fitted lifetimes model
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
@@ -324,6 +337,7 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
         xlabel: figure xlabel, if set_index_date is True will be overwrited to date
         ylabel: figure ylabel
         kwargs: passed into the pandas.DataFrame.plot command.
+
     """
     from matplotlib import pyplot as plt
 
@@ -360,6 +374,7 @@ def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transa
         xlabel: figure xlabel
         ylabel: figure ylabel
         kwargs: passed into the matplotlib.pyplot.plot command.
+
     """
     from matplotlib import pyplot as plt
 
@@ -386,13 +401,17 @@ def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transa
 def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Probability',
                                     xlabel='Dropout Probability p', ylabel='Density', **kwargs):
     """
-    Plot the estimated gamma distribution of p (customers' probability of dropping out immediately after a transaction).
+    Plot the estimated gamma distribution of p.
+
+    p - (customers' probability of dropping out immediately after a transaction).
+
     Parameters:
         model: A fitted lifetimes model, for now only for BG/NBD
         suptitle: figure suptitle
         xlabel: figure xlabel
         ylabel: figure ylabel
         kwargs: passed into the matplotlib.pyplot.plot command.
+
     """
     from matplotlib import pyplot as plt
 
