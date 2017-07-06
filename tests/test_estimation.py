@@ -513,6 +513,20 @@ class TestBetaGammaFitter():
         )
         assert (bgf.data.index == index).all() == False
 
+    def test_no_runtime_warnings_high_frequency(self, cdnow_customers):
+        old_settings = np.seterr(all='raise')
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
+            cdnow_customers['T'],
+            index=None
+        )
+
+        p_alive = bgf.conditional_probability_alive(frequency=1000, recency=10, T=100)
+        np.seterr(**old_settings)
+        assert p_alive == 0.
+
 
 class TestModifiedBetaGammaFitter():
 
