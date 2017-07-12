@@ -25,6 +25,14 @@ import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+# Convert package README.md to README.rst to include in index.rst for docs
+try:
+    import pypandoc
+    long_description = pypandoc.convert_file('../README.md', 'rst',
+                                             outputfile='README.rst')
+except(ImportError):
+    print('Install pypandoc to convert README.md to README.rst')
+
 
 # -- General configuration ------------------------------------------------
 
@@ -44,6 +52,11 @@ extensions = [
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# for parsing markdown files
+source_parsers = {
+    '.md': 'recommonmark.parser.CommonMarkParser',
+}
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -162,6 +175,3 @@ texinfo_documents = [
      author, 'lifetimes', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-
