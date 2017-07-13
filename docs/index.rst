@@ -11,6 +11,8 @@
    :maxdepth: 2
    :caption: Contents:
 
+   Quickstart
+
 
 Indices and tables
 ==================
