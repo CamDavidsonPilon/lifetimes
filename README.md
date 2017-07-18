@@ -1,4 +1,4 @@
-![logo](http://i.imgur.com/7s3jqZM.png)
+![](http://i.imgur.com/7s3jqZM.png)
 
 #### Measuring users is hard. Lifetimes makes it easy.
 [![Latest Version](https://pypip.in/v/lifetimes/badge.png)](https://pypi.python.org/pypi/lifetimes/)
@@ -12,7 +12,7 @@ Lifetimes can be used to analyze your users based on a few assumption:
 1. Users interact with you when they are "alive".
 2. Users under study may "die" after some period of time.
 
-I've quoted "alive" and "die" as these are the most abstract terms: feel free to use your own defintion of "alive" and "die" (they are used similarly to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand user behaviour.
+I've quoted "alive" and "die" as these are the most abstract terms: feel free to use your own definition of "alive" and "die" (they are used similarly to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand user behaviour.
 
 ### Applications
 
@@ -207,7 +207,7 @@ Based on customer history, we can predict what an individuals future purchases m
     # 0.0576511
 
 
-### Customer Probability Histories
+#### Customer Probability Histories
 
 Given a customer transaction history, we can calculate their historical probability of being alive, according to
 our trained model. For example:
@@ -219,9 +219,9 @@ our trained model. For example:
     sp_trans = transaction_data.loc[transaction_data['id'] == id]
     plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
 
-![history](http://i.imgur.com/y45tum4.png)
+![history](http://i.imgur.com/y45tum4l.png)
 
-### Estimating Customers' Lifetime Value
+#### Estimating Customers' Lifetime Value
 
 For this whole time we didn't take into account the economic value of each transaction and we focused mainly on
 transactions' occurrences. To estimate this we can use the Gamma-Gamma submodel. But first we need to create summary data
