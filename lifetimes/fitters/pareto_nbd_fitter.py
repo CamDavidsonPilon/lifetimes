@@ -136,6 +136,9 @@ class ParetoNBDFitter(BaseFitter):
         From paper:
         http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
+        Numerical optimization authored by Ricardo Pereira,
+        https://github.com/theofilos/BTYD/blob/master/pnbd.R#L284
+
         Parameters:
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
@@ -147,9 +150,19 @@ class ParetoNBDFitter(BaseFitter):
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = np.exp(self._log_A_0([r, alpha, s, beta], x, t_x, T))
-        return 1. / (1. + (s / (r + s + x)) *
-                     (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
+        A_0 = 0
+        if alpha >= beta:
+            F1 = hyp2f1(r + s + x, s + 1, r + s + x + 1, (alpha - beta)/(alpha + t_x))
+            F2 = hyp2f1(r + s + x, s + 1, r + s + x + 1, (alpha - beta)/(alpha + T))
+            X1 = F1 * ((alpha + T)/(alpha + t_x))**(r + x) * ((beta + T)/(alpha + t_x))**s
+            X2 = F2 * ((beta + T)/(alpha + T))**s
+        else:
+            F1 = hyp2f1(r + s + x, r + x, r + s + x + 1, (alpha - beta)/(beta + t_x))
+            F2 = hyp2f1(r + s + x, r + x, r + s + x + 1, (alpha - beta)/(beta + T))
+            X1 = F1 * ((alpha + T)/(beta + t_x))**(r + x) * ((beta + T)/(beta + t_x))**s
+            X2 = F2 * ((alpha + T)/(beta + T))**(r + x)
+            return (1 + s/(r + s + x) * (X1-X2))**(-1)
+        return (1 + s/(r + s + x) * (X1-X2))**(-1)
 
     def conditional_probability_alive_matrix(self, max_frequency=None,
                                              max_recency=None):
