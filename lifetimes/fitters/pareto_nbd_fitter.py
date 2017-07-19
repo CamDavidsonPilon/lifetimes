@@ -136,6 +136,9 @@ class ParetoNBDFitter(BaseFitter):
         From paper:
         http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
+        Numerical optimization authored by Ricardo Pereira,
+        https://github.com/theofilos/BTYD/blob/master/pnbd.R#L284
+
         Parameters:
             frequency: a scalar: historical frequency of customer.
             recency: a scalar: historical recency of customer.
@@ -147,9 +150,19 @@ class ParetoNBDFitter(BaseFitter):
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = np.exp(self._log_A_0([r, alpha, s, beta], x, t_x, T))
-        return 1. / (1. + (s / (r + s + x)) *
-                     (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
+        maxab = max(alpha, beta)
+        absab = abs(alpha - beta)
+        if alpha < beta:
+            param2 = r + x
+        else:
+            param2 = s + 1.
+
+        F0 = ((alpha + T)**(r + x)) * ((beta + T)**s)
+        F1 = hyp2f1(r + s + x, param2, r + s + x + 1., absab / (maxab + t_x)) / \
+            ((maxab + t_x)**(r + s + x))
+        F2 = hyp2f1(r + s + x, param2, r + s + x + 1., absab / (maxab + t_x)) / \
+            ((maxab + T)**(r + s + x))
+        return 1./(1. + (s/(r + s + x)) * F0 * (F1 - F2))
 
     def conditional_probability_alive_matrix(self, max_frequency=None,
                                              max_recency=None):
