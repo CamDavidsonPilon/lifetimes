@@ -314,6 +314,17 @@ class TestParetoNBDFitter():
         p_alive = ptf.conditional_probability_alive(26.00, 30.86, 31.00)
         assert abs(p_alive - 0.9979) < 0.001
 
+    def test_conditional_probability_alive_overflow_error(self):
+        ptf = estimation.ParetoNBDFitter()
+        ptf.params_ = OrderedDict(
+            zip(['r', 'alpha', 's', 'beta'],
+            [10.465, 7.98565181e-03, 3.0516, 2.820]))
+        freq = np.array([400., 500., 500.])
+        rec = np.array([5., 1., 4.])
+        age = np.array([6., 37., 37.])
+        assert all([r <= 1 and r >= 0 and not np.isinf(r) and not pd.isnull(r)
+                    for r in ptf.conditional_probability_alive(freq, rec, age)])
+
     def test_conditional_probability_alive_matrix(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
