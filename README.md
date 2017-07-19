@@ -1,10 +1,12 @@
 ![](http://i.imgur.com/7s3jqZM.png)
 
-# Lifetimes
+# [Lifetimes](http://lifetimes.readthedocs.io/en/latest/)
 #### Measuring users is hard. Lifetimes makes it easy.
 [![PyPI version](https://badge.fury.io/py/Lifetimes.svg)](https://badge.fury.io/py/Lifetimes)
+[![Documentation Status](https://readthedocs.org/projects/lifetimes/badge/?version=latest)](http://lifetimes.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 [![Coverage Status](https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master)](https://coveralls.io/r/CamDavidsonPilon/lifetimes?branch=master)
+
 
 ## Introduction
 

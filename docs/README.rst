@@ -1,13 +1,13 @@
 .. figure:: http://i.imgur.com/7s3jqZM.png
    :alt: 
 
-Lifetimes
-=========
+`Lifetimes <http://lifetimes.readthedocs.io/en/latest/>`__
+==========================================================
 
 Measuring users is hard. Lifetimes makes it easy.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-|PyPI version| |Build Status| |Coverage Status|
+|PyPI version| |Documentation Status| |Build Status| |Coverage Status|
 
 Introduction
 ------------
@@ -79,6 +79,8 @@ More Information
 
 .. |PyPI version| image:: https://badge.fury.io/py/Lifetimes.svg
    :target: https://badge.fury.io/py/Lifetimes
+.. |Documentation Status| image:: https://readthedocs.org/projects/lifetimes/badge/?version=latest
+   :target: http://lifetimes.readthedocs.io/en/latest/?badge=latest
 .. |Build Status| image:: https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master
    :target: https://travis-ci.org/CamDavidsonPilon/lifetimes
 .. |Coverage Status| image:: https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master
