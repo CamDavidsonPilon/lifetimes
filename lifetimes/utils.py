@@ -298,6 +298,8 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
             raise ValueError("There exist non-zero recency values when frequency is zero.")
         if np.any(recency < 0):
             raise ValueError("There exist negative recency (ex: last order set before first order)")
+        if any(len(x) == 0 for x in [recency, frequency, T]):
+            raise ValueError("There exists a zero length vector in one of frequency, recency or T.")
     if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
         raise ValueError("There exist non-integer values in the frequency vector.")
     if monetary_value is not None and np.any(monetary_value <= 0):
