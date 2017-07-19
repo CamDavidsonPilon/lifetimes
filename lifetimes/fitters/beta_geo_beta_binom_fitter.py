@@ -15,7 +15,7 @@ from . import BaseFitter
 
 class BetaGeoBetaBinomFitter(BaseFitter):
     """
-    Also known as the Beta-Geometric/Beta-Binomial Model Model [1].
+    Also known as the Beta-Geometric/Beta-Binomial Model [1].
 
     Future purchases opportunities are treated as discrete points in time.
     In the literature, the model provides a better fit than the Pareto/NBD

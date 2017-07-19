@@ -2,7 +2,7 @@
 
 # Lifetimes
 #### Measuring users is hard. Lifetimes makes it easy.
-[![Latest Version](https://pypip.in/v/lifetimes/badge.png)](https://pypi.python.org/pypi/lifetimes/)
+[![PyPI version](https://badge.fury.io/py/Lifetimes.svg)](https://badge.fury.io/py/Lifetimes)
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 [![Coverage Status](https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master)](https://coveralls.io/r/CamDavidsonPilon/lifetimes?branch=master)
 
@@ -13,7 +13,7 @@ Lifetimes can be used to analyze your users based on a few assumption:
 1. Users interact with you when they are "alive".
 2. Users under study may "die" after some period of time.
 
-I've quoted "alive" and "die" as these are the most abstract terms: feel free to use your own defintion of "alive" and "die" (they are used similarly to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand user behaviour.
+I've quoted "alive" and "die" as these are the most abstract terms: feel free to use your own definition of "alive" and "die" (they are used similarly to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand user behaviour.
 
 ### Applications
 
@@ -34,6 +34,7 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
     pip install lifetimes
 
 Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
+
 
 ## Questions? Comments?
 

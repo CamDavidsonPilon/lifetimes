@@ -7,7 +7,7 @@ Lifetimes
 Measuring users is hard. Lifetimes makes it easy.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-|Latest Version| |Build Status| |Coverage Status|
+|PyPI version| |Build Status| |Coverage Status|
 
 Introduction
 ------------
@@ -18,7 +18,7 @@ Lifetimes can be used to analyze your users based on a few assumption:
 2. Users under study may "die" after some period of time.
 
 I've quoted "alive" and "die" as these are the most abstract terms: feel
-free to use your own defintion of "alive" and "die" (they are used
+free to use your own definition of "alive" and "die" (they are used
 similarly to "birth" and "death" in survival analysis). Whenever we have
 individuals repeating occurrences, we can use Lifetimes to help
 understand user behaviour.
@@ -77,8 +77,8 @@ More Information
    `BTYD <http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf>`__
    (for, *Buy 'Til You Die*).
 
-.. |Latest Version| image:: https://pypip.in/v/lifetimes/badge.png
-   :target: https://pypi.python.org/pypi/lifetimes/
+.. |PyPI version| image:: https://badge.fury.io/py/Lifetimes.svg
+   :target: https://badge.fury.io/py/Lifetimes
 .. |Build Status| image:: https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master
    :target: https://travis-ci.org/CamDavidsonPilon/lifetimes
 .. |Coverage Status| image:: https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master
