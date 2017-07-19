@@ -302,6 +302,18 @@ class TestParetoNBDFitter():
                 for t in np.arange(recency, 100, 10.):
                     assert 0.0 <= ptf.conditional_probability_alive(freq, recency, t) <= 1.0
 
+    def test_conditional_probability_alive(self, cdnow_customers):
+        """
+        Target taken from page 8,
+        https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf
+        """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.params_ = OrderedDict(
+            zip(['r', 'alpha', 's', 'beta'],
+            [0.5534, 10.5802, 0.6061, 11.6562]))
+        p_alive = nbd.conditional_probability_alive(26.00, 30.86, 31.00)
+        assert abs(p_alive - 0.9979) < 0.001
+
     def test_conditional_probability_alive_matrix(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
