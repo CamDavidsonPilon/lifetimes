@@ -311,7 +311,7 @@ class TestParetoNBDFitter():
         ptf.params_ = OrderedDict(
             zip(['r', 'alpha', 's', 'beta'],
             [0.5534, 10.5802, 0.6061, 11.6562]))
-        p_alive = nbd.conditional_probability_alive(26.00, 30.86, 31.00)
+        p_alive = ptf.conditional_probability_alive(26.00, 30.86, 31.00)
         assert abs(p_alive - 0.9979) < 0.001
 
     def test_conditional_probability_alive_matrix(self, cdnow_customers):
