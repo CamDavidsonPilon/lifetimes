@@ -134,8 +134,8 @@ def plot_frequency_recency_matrix(
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     if title is None:
-        title = 'Expected Number of Future Purchases for %d Unit%s of Time,' + \
-        '\nby Frequency and Recency of a Customer' % (T, "s"[T == 1:])
+        title = 'Expected Number of Future Purchases for {} Unit{} of Time,'. \
+            format(T, "s"[T == 1:]) + '\nby Frequency and Recency of a Customer'
     plt.title(title)
 
     # turn matrix into square
