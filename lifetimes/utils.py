@@ -148,7 +148,7 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
 
 
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                                       observation_period_end=datetime.today(), freq='D'):
+                                       observation_period_end=None, freq='D'):
     """
     Return summary data from transactions.
 
@@ -175,6 +175,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
             customer_id, frequency, recency, T [, monetary_value]
 
     """
+    if observation_period_end is None:
+        observation_period_end = transactions[datetime_col].max()
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
 
     # label all of the repeated transactions
