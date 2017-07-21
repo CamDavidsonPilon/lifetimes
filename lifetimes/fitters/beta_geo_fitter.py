@@ -29,9 +29,9 @@ class BetaGeoFitter(BaseFitter):
     4) After each purchase, an individual has a p_i probability of dieing
        (never buying again).
 
-    [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
-        "Counting Your Customers the Easy Way: An Alternative to the
-        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
+    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+       "Counting Your Customers the Easy Way: An Alternative to the
+       Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
     Parameters
     ----------
@@ -46,6 +46,7 @@ class BetaGeoFitter(BaseFitter):
         The fitted parameters of the model
     data: :obj: DataFrame
         A DataFrame with the columns given in the call to `fit`
+
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -61,13 +62,16 @@ class BetaGeoFitter(BaseFitter):
         Parameters
         ----------
         frequency:
-            the frequency vector of customers' purchases (denoted x in literature).
+            the frequency vector of customers' purchases
+            (denoted x in literature).
         recency:
-            the recency vector of customers' purchases (denoted t_x in literature).
+            the recency vector of customers' purchases
+            (denoted t_x in literature).
         T:
             the vector of customers' age (time since first purchase)
-        iterative_fitting:
-            perform iterative_fitting fits over random/warm-started initial params
+        iterative_fitting: int
+            perform iterative_fitting fits over random/warm-started initial
+            params
         initial_params:
             set the initial parameters for the fitter.
         verbose : bool
@@ -79,15 +83,17 @@ class BetaGeoFitter(BaseFitter):
         fit_method : string
             fit_method to passing to scipy.optimize.minimize
         maxiter : int
-            max iterations for optimizer in scipy.optimize.minimize will be overwritten if setted in kwargs.
+            max iterations for optimizer in scipy.optimize.minimize will be
+            overwritten if setted in kwargs.
         kwargs:
-            key word arguments to pass to the scipy.optimize.minimize function as options dict
+            key word arguments to pass to the scipy.optimize.minimize
+            function as options dict
 
 
         Returns
         ----------
-            BetaGeoFitter
-                with additional properties and methods like params_ and predict
+        BetaGeoFitter
+            with additional properties and methods like params_ and predict
 
         """
         frequency = asarray(frequency)
@@ -174,18 +180,19 @@ class BetaGeoFitter(BaseFitter):
 
         Parameters
         ----------
-        t:
-            a scalar or array of times.
-        frequency:
+        t: a scalar or array
+            a scalar or array times.
+        frequency: a scalar or array
             historical frequency of customer.
-        recency:
+        recency: a scalar or array
             historical recency of customer.
-        T:
+        T: a scalar or array
             age of the customer.
 
         Returns
         ----------
-            a scalar or array
+        a scalar or array
+
 
         """
         x = frequency
@@ -223,12 +230,20 @@ class BetaGeoFitter(BaseFitter):
         From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
 
         Parameters:
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
-            ln_exp_max: to what value clip log_div equation
+        ----------
+        frequency: a scalar
+            historical frequency of customer.
+        recency: a scalar
+            historical recency of customer.
+        T: a scalar
+            age of the customer.
+        ln_exp_max: int
+            to what value clip log_div equation
 
-        Returns: a scalar
+        Returns:
+        ----------
+        a scalar
+            value representing a probability
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -247,12 +262,16 @@ class BetaGeoFitter(BaseFitter):
         Compute the probability alive matrix.
 
         Parameters:
-            max_frequency: the maximum frequency to plot. Default is max
-                           observed frequency.
-            max_recency: the maximum recency to plot. This also determines
-                         the age of the customer. Default to max observed age.
+        ----------
+        max_frequency: a scalar or None
+            the maximum frequency to plot. Default is max observed frequency.
+        max_recency: a scalar or None
+            the maximum recency to plot. This also determines the age of the
+            customer. Default to max observed age.
 
         Returns:
+        ----------
+        matrix:
             A matrix of the form [t_x: historical recency,
                                     x: historical frequency]
 
@@ -272,6 +291,18 @@ class BetaGeoFitter(BaseFitter):
 
         where N(t) is the number of repeat purchases a customer makes in t
         units of time.
+
+        Parameters:
+        ----------
+        t: int
+            number units of time
+        n: int
+            number of purchases
+
+        Returns:
+        ----------
+        float:
+            Probability to have n purchasess up to t units of time
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
