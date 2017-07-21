@@ -29,7 +29,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 try:
     import pypandoc
     long_description = pypandoc.convert_file('../README.md', 'rst',
-                                             outputfile='README.rst')
+                                             outputfile='intro.rst')
 except(ImportError):
     print('Install pypandoc to convert README.md to README.rst')
 

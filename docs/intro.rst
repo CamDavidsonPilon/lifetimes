@@ -59,10 +59,11 @@ Requirements are only Numpy, Scipy, Pandas,
 `Dill <https://github.com/uqfoundation/dill>`__ (and
 optionally-but-seriously matplotlib).
 
-Questions? Comments?
---------------------
+Questions? Comments? Requests?
+------------------------------
 
-Drop me a line at [@cmrn\_dp](https://twitter.com/Cmrn\_DP)!
+Please leave an issue in the `lifetimes
+repository <https://github.com/CamDavidsonPilon/lifetimes>`__.
 
 More Information
 ----------------
