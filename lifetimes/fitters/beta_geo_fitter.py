@@ -33,6 +33,19 @@ class BetaGeoFitter(BaseFitter):
         "Counting Your Customers the Easy Way: An Alternative to the
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
+    Parameters
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+
+    Attributes
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: OrderedDict
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the columns given in the call to `fit`
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -45,30 +58,36 @@ class BetaGeoFitter(BaseFitter):
         """
         Fit the data to the BG/NBD model.
 
-        Parameters:
-            frequency: the frequency vector of customers' purchases (denoted x
-                       in literature).
-            recency: the recency vector of customers' purchases (denoted t_x in
-                     literature).
-            T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform iterative_fitting fits over
-                               random/warm-started initial params
-            initial_params: set the initial parameters for the fitter.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
-            index: index for resulted DataFrame which is accessible via
-                   self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
-            kwargs: key word arguments to pass to the scipy.optimize.minimize
-                    function as options dict
+        Parameters
+        ----------
+        frequency:
+            the frequency vector of customers' purchases (denoted x in literature).
+        recency:
+            the recency vector of customers' purchases (denoted t_x in literature).
+        T:
+            the vector of customers' age (time since first purchase)
+        iterative_fitting:
+            perform iterative_fitting fits over random/warm-started initial params
+        initial_params:
+            set the initial parameters for the fitter.
+        verbose : bool
+            set to true to print out convergence diagnostics.
+        tol : int
+            tolerance for termination of the function minimization process.
+        index:
+            index for resulted DataFrame which is accessible via self.data
+        fit_method : string
+            fit_method to passing to scipy.optimize.minimize
+        maxiter : int
+            max iterations for optimizer in scipy.optimize.minimize will be overwritten if setted in kwargs.
+        kwargs:
+            key word arguments to pass to the scipy.optimize.minimize function as options dict
 
 
-        Returns:
-            self, with additional properties and methods like params_ and
-            predict
+        Returns
+        ----------
+            BetaGeoFitter
+                with additional properties and methods like params_ and predict
 
         """
         frequency = asarray(frequency)
@@ -126,16 +145,19 @@ class BetaGeoFitter(BaseFitter):
             vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
-        """
-        Calculate the expected number of repeat purchases up to time t.
+        """Calculate the expected number of repeat purchases up to time t.
 
         Calculate repeat purchases for a randomly choose individual from the
         population.
 
-        Parameters:
-            t: a scalar or array of times.
+        Parameters
+        ----------
+        t:
+            a scalar or array of times.
 
-        Returns: a scalar or array
+        Returns:
+        ----------
+        a scalar or array
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -144,20 +166,26 @@ class BetaGeoFitter(BaseFitter):
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
-        """
-        Conditional expected number of purchases up to time.
+        """Conditional expected number of purchases up to time.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
         purchase history (frequency, recency, T)
 
-        Parameters:
-            t: a scalar or array of times.
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
+        Parameters
+        ----------
+        t:
+            a scalar or array of times.
+        frequency:
+            historical frequency of customer.
+        recency:
+            historical recency of customer.
+        T:
+            age of the customer.
 
-        Returns: a scalar or array
+        Returns
+        ----------
+            a scalar or array
 
         """
         x = frequency

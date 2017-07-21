@@ -41,7 +41,7 @@ We'll use the **BG/NBD model** first. There are other models which we will explo
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
 
-For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the call to `fit`. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
+For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the intialization of the model. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
 
 ##### Visualizing our Frequency/Recency Matrix
 

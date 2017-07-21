@@ -14,8 +14,7 @@ from . import BaseFitter
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
-    """
-    Also known as the Beta-Geometric/Beta-Binomial Model [1].
+    """Also known as the Beta-Geometric/Beta-Binomial Model [1].
 
     Future purchases opportunities are treated as discrete points in time.
     In the literature, the model provides a better fit than the Pareto/NBD
@@ -28,6 +27,19 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
         Marketing Science, 29 (6), 1086-1108.
 
+    Parameters
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+
+    Attributes
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: OrderedDict
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the columns given in the call to `fit`
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -74,28 +86,37 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         """
         Fit the BG/BB model.
 
-        Parameters:
-            frequency: Total periods with observed transactions
-            recency: Period of most recent transaction
-            n: Number of transaction opportunities
-            n_custs: Number of customers with given frequency/recency/T. Fader
-                     and Hardie condense the individual RFM matrix into all
-                     observed combinations of frequency/recency/T. This
-                     parameter represents the count of customers with a given
-                     purchase pattern. Instead of calculating individual
-                     loglikelihood, the loglikelihood is calculated for each
-                     pattern and multiplied by the number of customers with
-                     that pattern.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
-            index: index for resulted DataFrame which is accessible via
-                   self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
-            kwargs: key word arguments to pass to the scipy.optimize.minimize
-                    function as options dict
+        Parameters
+        ----------
+        frequency:
+            Total periods with observed transactions
+        recency:
+            Period of most recent transaction
+        n:
+            Number of transaction opportunities.
+        n_custs:
+            Number of customers with given frequency/recency/T. Fader
+            and Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/recency/T. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
+        verbose: boolean
+            Set to true to print out convergence diagnostics.
+        tol: float
+            Tolerance for termination of the function minimization process.
+        index:
+            Index for resulted DataFrame which is accessible via self.data
+        fit_method: string
+            Fit_method to passing to scipy.optimize.minimize
+        maxiter: int
+            Max iterations for optimizer in scipy.optimize.minimize
+            will be overwritten if setted in kwargs.
+        kwargs:
+            Key word arguments to pass to the scipy.optimize.minimize
+            function as options dict
 
         Returns: self
 
@@ -138,10 +159,13 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         See (13) in Fader & Hardie 2010.
 
-        Parameters:
+        Parameters
+        ----------
             t: scalar or array of time periods (n+t)
 
-        Returns: scalar or array of predicted transactions
+        Returns
+        ----------
+        scalar or array of predicted transactions
 
         """
         x = self.data['frequency']
