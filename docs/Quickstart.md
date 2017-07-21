@@ -16,17 +16,18 @@ For the following examples, we'll use a dataset from an ecommerce provider to an
     5    0            0.00       38.86
     """
 
-#### What do these columns represent?
+#### The shape of your data
+For all models, the following nomenclature is used:
 
-- `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases.   
+- `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases. This is actually slightly wrong. It's the count time periods the customer had a purchase in. So if using days as units, then it's the count of days the customer had a purchase on.   
 - `T` represents the age of the customer in whatever time units chosen (weekly above). This is equal to the duration between a customer's first purchase and the end of the period under study.
 - `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
 
 If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifetimes to transform your data to look like this.
 
-#### Fitting models to our data
+#### Basic Frequency/Recency analysis using the BG/NBD model
 
-We'll use the **BG/NBD model** first. Interested in the model? See this [nice paper here](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf).
+We'll use the **BG/NBD model** first. There are other models which we will explore in these docs, but this is the simplest to start with. 
 
     from lifetimes import BetaGeoFitter
 
@@ -40,11 +41,9 @@ We'll use the **BG/NBD model** first. Interested in the model? See this [nice pa
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
 
-#### How to use the `penalizer_coef`
+For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the call to `fit`. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
 
-For small samples sizes, the parameters can get implausibly large, so by adding a positive `penalizer_coef` to the call to `fit`, we can control how large these parameters can be. In typical applications, penalizers on the order of 0.001 to 0.1 are effective. See this [blog article](https://dataorigami.net/blogs/napkin-folding/a-real-life-mistake-i-made-about-penalizer-terms) for more on the history of penalizers in lifetimes. 
-
-#### Visualizing our Frequency/Recency Matrix
+##### Visualizing our Frequency/Recency Matrix
 
 Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the **Frequency/Recency matrix**, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
 
@@ -67,7 +66,7 @@ Another interesting matrix to look at is the probability of still being *alive*:
 
 ![prob](http://imgur.com/di6MTic.png)
 
-#### Ranking customers from best to worst
+##### Ranking customers from best to worst
 
 Let's return to our customers and rank them from "highest expected purchases in the next period" to lowest. Models expose a method that will predict a customer's expected purchases in the next period using their history.
 
@@ -86,7 +85,7 @@ Let's return to our customers and rank them from "highest expected purchases in 
 
 Great, we can see that the customer who has made 26 purchases, and bought very recently from us, is probably going to buy again in the next period.
 
-#### Assessing model fit
+##### Assessing model fit
 
 Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artifical data simulated with your fitted model's parameters.
 
@@ -97,7 +96,7 @@ Ok, we can predict and we can visualize our customers' behaviour, but is our mod
 
 We can see that our actual data and our simulated data line up well. This proves that our model doesn't suck.
 
-#### Example using transactional datasets
+##### Example using transactional datasets
 
 Most often, the dataset you have at hand will be at the transaction level. Lifetimes has some utility functions to transform that transactional data (one row per purchase) into summary data (a frequency, recency and age dataset).
 
@@ -131,7 +130,7 @@ Most often, the dataset you have at hand will be at the transaction level. Lifet
     bgf.fit(summary['frequency'], summary['recency'], summary['T'])
     # <lifetimes.BetaGeoFitter: fitted with 5000 subjects, a: 1.85, alpha: 1.86, b: 3.18, r: 0.16>
 
-#### More model fitting
+##### More model fitting
 
 With transactional data, we can partition the dataset into a calibration period dataset and a holdout dataset. This is important as we want to test how our model performs on data not yet seen (think cross-validation in standard machine learning literature). Lifetimes has a function to partition our dataset like this:
 
@@ -160,7 +159,7 @@ With this dataset, we can perform fitting on the `_cal` columns, and test on the
 
 ![holdout](http://imgur.com/LdSEYUwl.png)
 
-#### Customer Predictions
+##### Customer Predictions
 
 Based on customer history, we can predict what an individuals future purchases might look like:
 
@@ -171,7 +170,7 @@ Based on customer history, we can predict what an individuals future purchases m
     # 0.0576511
 
 
-### Customer Probability Histories
+##### Customer Probability Histories
 
 Given a customer transaction history, we can calculate their historical probability of being alive, according to
 our trained model. For example:
@@ -185,7 +184,7 @@ our trained model. For example:
 
 ![history](http://i.imgur.com/y45tum4.png)
 
-### Estimating Customers' Lifetime Value
+### Estimating customer lifetime value using the Gamma-Gamma model
 
 For this whole time we didn't take into account the economic value of each transaction and we focused mainly on
 transactions' occurrences. To estimate this we can use the Gamma-Gamma submodel. But first we need to create summary data
