@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from lifetimes.utils import coalesce, calculate_alive_path, expected_cumulative_transactions
+from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
 from scipy import stats
 
 __all__ = [
@@ -15,6 +15,10 @@ __all__ = [
     'plot_transaction_rate_heterogeneity',
     'plot_dropout_rate_heterogeneity'
 ]
+
+
+def coalesce(*args):
+    return next(s for s in args if s is not None)
 
 
 def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat Transactions',

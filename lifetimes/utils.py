@@ -7,14 +7,9 @@ from scipy.optimize import minimize
 pd.options.mode.chained_assignment = None
 
 __all__ = ['calibration_and_holdout_data',
-           'find_first_transactions',
            'summary_data_from_transaction_data',
            'calculate_alive_path',
            'expected_cumulative_transactions']
-
-
-def coalesce(*args):
-    return next(s for s in args if s is not None)
 
 
 def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, calibration_period_end,
@@ -27,20 +22,31 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     holdout period (training and testing, respectively).
     It accepts transition data, and returns a Dataframe of sufficient statistics.
 
-    Parameters:
-        transactions: a Pandas DataFrame of at least two cols.
-        customer_id_col: the column in transactions that denotes the customer_id
-        datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        calibration_period_end: a period to limit the calibration to, inclusive.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated, inclusive.
-        freq: Default 'D' for days. Other examples: 'W' for weekly.
-        datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
-            the provided format.
-        monetary_value_col: the column in transactions that denotes the monetary value of the transaction.
-            Optional, only needed for customer lifetime value estimation models.
+    Parameters
+    ----------
+    transactions: :obj: DataFrame
+        a Pandas DataFrame that contains the customer_id col and the datetime col.
+    customer_id_col: string
+        the column in transactions DataFrame that denotes the customer_id
+    datetime_col:  string
+        the column in transactions that denotes the datetime the purchase was made.
+    calibration_period_end: :obj: datetime
+        a period to limit the calibration to, inclusive.
+    observation_period_end: :obj: datetime, optional
+        a string or datetime to denote the final date of the study. Events
+        after this date are truncated, inclusive.
+    freq: string, optional
+        Default 'D' for days. Other examples: 'W' for weekly.
+    datetime_format: string, optional
+        a string that represents the timestamp format. Useful if Pandas can't understand
+        the provided format.
+    monetary_value_col: string, optional
+        the column in transactions that denotes the monetary value of the transaction.
+        Optional, only needed for customer lifetime value estimation models.
 
-    Returns:
+    Returns
+    -------
+    :obj: DataFrame
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
         If monetary_value_col isn't None, the dataframe will also have the columns monetary_value_cal and
         monetary_value_holdout.
@@ -89,7 +95,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     return combined_data
 
 
-def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
+def _find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
                             observation_period_end=datetime.today(), freq='D'):
     """
     Return dataframe with first transactions.
@@ -99,18 +105,26 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
     and appends a column named 'repeated' to the transaction log which indicates which rows
     are repeated transactions for that customer_id.
 
-    Parameters:
-        transactions: a Pandas DataFrame.
-        customer_id_col: the column in transactions that denotes the customer_id
-        datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        monetary_value_col: the column in transactions that denotes the monetary value of the transaction.
-            Optional, only needed for customer lifetime value estimation models.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated.
-        datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
-            the provided format.
-        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+    Parameters
+    ----------
+    transactions: :obj: DataFrame
+        a Pandas DataFrame that contains the customer_id col and the datetime col.
+    customer_id_col: string
+        the column in transactions DataFrame that denotes the customer_id
+    datetime_col:  string
+        the column in transactions that denotes the datetime the purchase was made.
+    monetary_value_col: string, optional
+        the column in transactions that denotes the monetary value of the transaction.
+        Optional, only needed for customer lifetime value estimation models.
+    observation_period_end: :obj: datetime
+        a string or datetime to denote the final date of the study. Events
+        after this date are truncated.
+    datetime_format: string, optional
+        a string that represents the timestamp format. Useful if Pandas can't understand
+        the provided format.
+    freq: string, optional
+        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
 
     """
     select_columns = [customer_id_col, datetime_col]
@@ -157,28 +171,37 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     to a Dataframe of the form:
         customer_id, frequency, recency, T [, monetary_value]
 
-    Parameters:
-        transactions: a Pandas DataFrame.
-        customer_id_col: the column in transactions that denotes the customer_id
-        datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        monetary_value_col: the columns in the transactions that denotes the monetary value of the transaction.
-            Optional, only needed for customer lifetime value estimation models.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated.
-        datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
-            the provided format.
-        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+    Parameters
+    ----------
+    transactions: :obj: DataFrame
+        a Pandas DataFrame that contains the customer_id col and the datetime col.
+    customer_id_col: string
+        the column in transactions DataFrame that denotes the customer_id
+    datetime_col:  string
+        the column in transactions that denotes the datetime the purchase was made.
+    monetary_value_col: string, optional
+        the columns in the transactions that denotes the monetary value of the transaction.
+        Optional, only needed for customer lifetime value estimation models.
+    observation_period_end: datetime, optional
+        a string or datetime to denote the final date of the study. Events
+        after this date are truncated.
+    datetime_format: string, optional
+        a string that represents the timestamp format. Useful if Pandas can't understand
+        the provided format.
+    freq: string
+        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
 
-    Returns:
-        Dataframe of the form:
-            customer_id, frequency, recency, T [, monetary_value]
+    Returns
+    -------
+    :obj: Dataframe:
+        customer_id, frequency, recency, T [, monetary_value]
 
     """
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
 
     # label all of the repeated transactions
-    repeated_transactions = find_first_transactions(
+    repeated_transactions = _find_first_transactions(
         transactions,
         customer_id_col,
         datetime_col,
@@ -214,14 +237,22 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     """
     Calculate alive path for plotting alive history of user.
 
-    Parameters:
-        model: A fitted lifetimes model
-        transactions: a Pandas DataFrame containing the transactions history of the customer_id
-        datetime_col: the column in the transactions that denotes the datetime the purchase was made
-        t: the number of time units since the birth for which we want to draw the p_alive
-        freq: Default 'D' for days. Other examples= 'W' for weekly
+    Parameters
+    ----------
+    model:
+        A fitted lifetimes model
+    transactions: :obj: dataframe
+        a Pandas DataFrame containing the transactions history of the customer_id
+    datetime_col: string
+        the column in the transactions that denotes the datetime the purchase was made
+    t: array_like
+        the number of time units since the birth for which we want to draw the p_alive
+    freq: string
+        Default 'D' for days. Other examples= 'W' for weekly
 
-    Returns:
+    Returns
+    -------
+    :obj: Series
         A pandas Series containing the p_alive as a function of T (age of the customer)
 
     """
@@ -312,18 +343,27 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
 
     This method computes the average lifetime value for a group of one or more customers.
 
-    Parameters:
-        transaction_prediction_model: the model to predict future transactions, literature uses
-            pareto/nbd but we can also use a different model like bg
-        frequency: the frequency vector of customers' purchases (denoted x in literature).
-        recency: the recency vector of customers' purchases (denoted t_x in literature).
-        T: the vector of customers' age (time since first purchase)
-        monetary_value: the monetary value vector of customer's purchases (denoted m in literature).
-        time: the lifetime expected for the user in months. Default: 12
-        discount_rate: the monthly adjusted discount rate. Default: 1
+    Parameters
+    ----------
+    transaction_prediction_model:
+        the model to predict future transactions, literature uses pareto/nbd but we can also use a different model like bg
+    frequency: array_like
+        the frequency vector of customers' purchases (denoted x in literature).
+    recency: array_like
+        the recency vector of customers' purchases (denoted t_x in literature).
+    T: array_like
+        the vector of customers' age (time since first purchase)
+    monetary_value: array_like
+        the monetary value vector of customer's purchases (denoted m in literature).
+    time: int, optional
+        the lifetime expected for the user in months. Default: 12
+    discount_rate: float, optional
+        the monthly adjusted discount rate. Default: 1
 
-    Returns:
-        Series object with customer ids as index and the estimated customer lifetime values as values
+    Returns
+    -------
+    :obj: Series
+        series with customer ids as index and the estimated customer lifetime values as values
 
     """
     df = pd.DataFrame(index=frequency.index)
@@ -343,20 +383,31 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
     """
     Get expected and actual repeated cumulative transactions.
 
-    Parameters:
-        model: A fitted lifetimes model
-        transactions: a Pandas DataFrame containing the transactions history of the customer_id
-        datetime_col: the column in transactions that denotes the datetime the purchase was made.
-        customer_id_col: the column in transactions that denotes the customer_id
-        t: the number of time units since the begining of
-            data for which we want to calculate cumulative transactions
-        datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
-            the provided format.
-        freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-            http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
-        set_index_date: when True set date as Pandas DataFrame index, default False - number of time units
+    Parameters
+    ----------
+    model:
+        A fitted lifetimes model
+    transactions: :obj: DataFrame
+        a Pandas DataFrame containing the transactions history of the customer_id
+    datetime_col: string
+        the column in transactions that denotes the datetime the purchase was made.
+    customer_id_col: string
+        the column in transactions that denotes the customer_id
+    t: int
+        the number of time units since the begining of
+        data for which we want to calculate cumulative transactions
+    datetime_format: string, optional
+        a string that represents the timestamp format. Useful if Pandas can't understand
+        the provided format.
+    freq: string, optional
+        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
+        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+    set_index_date: bool, optional
+        when True set date as Pandas DataFrame index, default False - number of time units
 
-    Returns:
+    Returns
+    -------
+    :obj: DataFrame
         A dataframe with columns actual, predicted
 
     """

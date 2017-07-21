@@ -57,32 +57,31 @@ class BetaGeoFitter(BaseFitter):
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
-        Fit the data to the BG/NBD model.
+        Fit a dataset to the BG/NBD model.
 
         Parameters
         ----------
-        frequency:
+        frequency: array_like
             the frequency vector of customers' purchases
             (denoted x in literature).
-        recency:
+        recency: array_like
             the recency vector of customers' purchases
             (denoted t_x in literature).
-        T:
-            the vector of customers' age (time since first purchase)
-        iterative_fitting: int
-            perform iterative_fitting fits over random/warm-started initial
-            params
-        initial_params:
+        T: array_like
+            customers' age (time units since first purchase)
+        iterative_fitting: int, optional
+            perform iterative_fitting fits over random/warm-started initial params
+        initial_params: array_like, optional
             set the initial parameters for the fitter.
-        verbose : bool
+        verbose : bool, optional
             set to true to print out convergence diagnostics.
-        tol : int
+        tol : int, optional
             tolerance for termination of the function minimization process.
-        index:
+        index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
-        fit_method : string
+        fit_method : string, optional
             fit_method to passing to scipy.optimize.minimize
-        maxiter : int
+        maxiter : int, optional
             max iterations for optimizer in scipy.optimize.minimize will be
             overwritten if setted in kwargs.
         kwargs:
@@ -91,9 +90,9 @@ class BetaGeoFitter(BaseFitter):
 
 
         Returns
-        ----------
+        -------
         BetaGeoFitter
-            with additional properties and methods like params_ and predict
+            with additional properties like params_ and methods like expected_number_of_purchases_up_to_time
 
         """
         frequency = asarray(frequency)
@@ -151,19 +150,20 @@ class BetaGeoFitter(BaseFitter):
             vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
-        """Calculate the expected number of repeat purchases up to time t.
+        """
+        Calculate the expected number of repeat purchases up to time t.
 
         Calculate repeat purchases for a randomly choose individual from the
         population.
 
         Parameters
         ----------
-        t:
-            a scalar or array of times.
+        t: array_like
+            times to calculate the expection for
 
-        Returns:
-        ----------
-        a scalar or array
+        Returns
+        -------
+        array_like
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -172,7 +172,8 @@ class BetaGeoFitter(BaseFitter):
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
-        """Conditional expected number of purchases up to time.
+        """
+        Conditional expected number of purchases up to time.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
@@ -180,19 +181,18 @@ class BetaGeoFitter(BaseFitter):
 
         Parameters
         ----------
-        t: a scalar or array
-            a scalar or array times.
-        frequency: a scalar or array
+        t: array_like
+            times to calculate the expectation for.
+        frequency: array_like
             historical frequency of customer.
-        recency: a scalar or array
+        recency: array_like
             historical recency of customer.
-        T: a scalar or array
+        T: array_like
             age of the customer.
 
         Returns
-        ----------
-        a scalar or array
-
+        -------
+        array_like
 
         """
         x = frequency
@@ -229,7 +229,7 @@ class BetaGeoFitter(BaseFitter):
 
         From http://www.brucehardie.com/notes/021/palive_for_BGNBD.pdf
 
-        Parameters:
+        Parameters
         ----------
         frequency: a scalar
             historical frequency of customer.
@@ -240,8 +240,8 @@ class BetaGeoFitter(BaseFitter):
         ln_exp_max: int
             to what value clip log_div equation
 
-        Returns:
-        ----------
+        Returns
+        -------
         a scalar
             value representing a probability
 
@@ -261,16 +261,16 @@ class BetaGeoFitter(BaseFitter):
         """
         Compute the probability alive matrix.
 
-        Parameters:
+        Parameters
         ----------
-        max_frequency: a scalar or None
+        max_frequency: float, optional
             the maximum frequency to plot. Default is max observed frequency.
-        max_recency: a scalar or None
+        max_recency: float, optional
             the maximum recency to plot. This also determines the age of the
             customer. Default to max observed age.
 
-        Returns:
-        ----------
+        Returns
+        -------
         matrix:
             A matrix of the form [t_x: historical recency,
                                     x: historical frequency]
@@ -284,25 +284,26 @@ class BetaGeoFitter(BaseFitter):
                                T=max_recency).T
 
     def probability_of_n_purchases_up_to_time(self, t, n):
-        """
+        r"""
         Compute the probability of n purchases.
 
-        P( N(t) = n | model )
+         .. math::  P( N(t) = n | \text{model} )
 
         where N(t) is the number of repeat purchases a customer makes in t
         units of time.
 
-        Parameters:
+        Parameters
         ----------
-        t: int
+        t: float
             number units of time
         n: int
             number of purchases
 
-        Returns:
-        ----------
+        Returns
+        -------
         float:
             Probability to have n purchasess up to t units of time
+
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 

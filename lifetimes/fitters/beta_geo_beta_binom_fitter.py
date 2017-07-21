@@ -175,7 +175,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         alpha, beta, gamma, delta = params
 
-        p1 = 1 / exp(BetaGeoBetaBinomFitter._loglikelihood(params, x, tx, n))
+        p1 = 1 / exp(self._loglikelihood(params, x, tx, n))
         p2 = exp(betaln(alpha + x + 1, beta + n - x) - betaln(alpha, beta))
         p3 = delta / (gamma - 1) * exp(gammaln(gamma + delta) -
                                        gammaln(1 + delta))
@@ -210,7 +210,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         p1 = betaln(alpha + x, beta + n - x) - betaln(alpha, beta)
         p2 = betaln(gamma, delta + n + m) - betaln(gamma, delta)
-        p3 = BetaGeoBetaBinomFitter._loglikelihood(params, x, tx, n)
+        p3 = self._loglikelihood(params, x, tx, n)
 
         return exp(p1 + p2) / exp(p3)
 
