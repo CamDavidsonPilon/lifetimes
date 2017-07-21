@@ -21,8 +21,10 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
                                  observation_period_end=datetime.today(), freq='D', datetime_format=None,
                                  monetary_value_col=None):
     """
-    This function creates a summary of each customer over a calibration and holdout period (training and testing,
-    respectively).
+    Create a summary of each customer over a calibration and holdout period.
+
+    This function creates a summary of each customer over a calibration and
+    holdout period (training and testing, respectively).
     It accepts transition data, and returns a Dataframe of sufficient statistics.
 
     Parameters:
@@ -42,6 +44,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
         If monetary_value_col isn't None, the dataframe will also have the columns monetary_value_cal and
         monetary_value_holdout.
+
     """
     def to_period(d):
         return d.to_period(freq)
@@ -89,10 +92,13 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
                             observation_period_end=datetime.today(), freq='D'):
     """
+    Return dataframe with first transactions.
+
     This takes a Dataframe of transaction data of the form:
         customer_id, datetime [, monetary_value]
     and appends a column named 'repeated' to the transaction log which indicates which rows
     are repeated transactions for that customer_id.
+
     Parameters:
         transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
@@ -105,6 +111,7 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
             the provided format.
         freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
             http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+
     """
     select_columns = [customer_id_col, datetime_col]
 
@@ -143,10 +150,13 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
                                        observation_period_end=datetime.today(), freq='D'):
     """
+    Return summary data from transactions.
+
     This transforms a Dataframe of transaction data of the form:
         customer_id, datetime [, monetary_value]
     to a Dataframe of the form:
         customer_id, frequency, recency, T [, monetary_value]
+
     Parameters:
         transactions: a Pandas DataFrame.
         customer_id_col: the column in transactions that denotes the customer_id
@@ -159,6 +169,11 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
             the provided format.
         freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
             http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+
+    Returns:
+        Dataframe of the form:
+            customer_id, frequency, recency, T [, monetary_value]
+
     """
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
 
@@ -197,12 +212,18 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
 def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     """
-    :param model: A fitted lifetimes model
-    :param transactions: a Pandas DataFrame containing the transactions history of the customer_id
-    :param datetime_col: the column in the transactions that denotes the datetime the purchase was made
-    :param t: the number of time units since the birth for which we want to draw the p_alive
-    :param freq: Default 'D' for days. Other examples= 'W' for weekly
-    :return: A pandas Series containing the p_alive as a function of T (age of the customer)
+    Calculate alive path for plotting alive history of user.
+
+    Parameters:
+        model: A fitted lifetimes model
+        transactions: a Pandas DataFrame containing the transactions history of the customer_id
+        datetime_col: the column in the transactions that denotes the datetime the purchase was made
+        t: the number of time units since the birth for which we want to draw the p_alive
+        freq: Default 'D' for days. Other examples= 'W' for weekly
+
+    Returns:
+        A pandas Series containing the p_alive as a function of T (age of the customer)
+
     """
     customer_history = transactions[[datetime_col]].copy()
     customer_history[datetime_col] = pd.to_datetime(customer_history[datetime_col])
@@ -287,7 +308,11 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
 
 def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
     """
+    Compute the average lifetime value for a group of one or more customers.
+
     This method computes the average lifetime value for a group of one or more customers.
+
+    Parameters:
         transaction_prediction_model: the model to predict future transactions, literature uses
             pareto/nbd but we can also use a different model like bg
         frequency: the frequency vector of customers' purchases (denoted x in literature).
@@ -299,6 +324,7 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
 
     Returns:
         Series object with customer ids as index and the estimated customer lifetime values as values
+
     """
     df = pd.DataFrame(index=frequency.index)
     df['clv'] = 0  # initialize the clv column to zeros
@@ -315,7 +341,8 @@ def customer_lifetime_value(transaction_prediction_model, frequency, recency, T,
 def expected_cumulative_transactions(model, transactions, datetime_col, customer_id_col, t,
                                      datetime_format=None, freq='D', set_index_date=False):
     """
-    Function to get expected and actual repeated cumulative transactions
+    Get expected and actual repeated cumulative transactions.
+
     Parameters:
         model: A fitted lifetimes model
         transactions: a Pandas DataFrame containing the transactions history of the customer_id
@@ -328,10 +355,11 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
         freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
             http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
         set_index_date: when True set date as Pandas DataFrame index, default False - number of time units
+
     Returns:
         A dataframe with columns actual, predicted
-    """
 
+    """
     transactions = transactions.copy()
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()

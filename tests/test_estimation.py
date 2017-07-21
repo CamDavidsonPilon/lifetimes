@@ -332,7 +332,7 @@ class TestParetoNBDFitter():
         )
         assert (ptf.data.index == index).all() == False
 
-class TestBetaGammaFitter():
+class TestBetaGeoFitter():
 
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
         bgf = estimation.BetaGeoFitter

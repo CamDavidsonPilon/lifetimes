@@ -6,3 +6,7 @@ matplotlib
 pytest-cov
 pytest-mpl
 coveralls
+pydocstyle
+pycodestyle
+recommonmark
+sphinxcontrib-napoleon
