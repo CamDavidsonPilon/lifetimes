@@ -8,6 +8,7 @@ pd.options.mode.chained_assignment = None
 
 __all__ = ['calibration_and_holdout_data',
            'summary_data_from_transaction_data',
+           '_find_first_transactions',
            'calculate_alive_path',
            'expected_cumulative_transactions']
 
@@ -96,7 +97,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
 
 def _find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                            observation_period_end=datetime.today(), freq='D'):
+                             observation_period_end=datetime.today(), freq='D'):
     """
     Return dataframe with first transactions.
 
