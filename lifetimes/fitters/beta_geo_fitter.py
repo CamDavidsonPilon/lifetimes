@@ -16,11 +16,9 @@ from ..generate_data import beta_geometric_nbd_model
 
 
 class BetaGeoFitter(BaseFitter):
-    """
+    """Also known as the BG/NBD model.
 
-    Also known as the BG/NBD model.
-
-    Based on [1], this model has the following assumptions:
+    Based on [1]_, this model has the following assumptions:
 
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution
@@ -28,10 +26,6 @@ class BetaGeoFitter(BaseFitter):
     3) Individuals purchases follow a Poisson process with rate lambda_i*t .
     4) After each purchase, an individual has a p_i probability of dieing
        (never buying again).
-
-    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
-       "Counting Your Customers the Easy Way: An Alternative to the
-       Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
     Parameters
     ----------
@@ -47,6 +41,11 @@ class BetaGeoFitter(BaseFitter):
     data: :obj: DataFrame
         A DataFrame with the columns given in the call to `fit`
 
+    References
+    ----------
+    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+       "Counting Your Customers the Easy Way: An Alternative to the
+       Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -56,8 +55,7 @@ class BetaGeoFitter(BaseFitter):
     def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
-        """
-        Fit a dataset to the BG/NBD model.
+        """Fit a dataset to the BG/NBD model.
 
         Parameters
         ----------
@@ -272,8 +270,7 @@ class BetaGeoFitter(BaseFitter):
         Returns
         -------
         matrix:
-            A matrix of the form [t_x: historical recency,
-                                    x: historical frequency]
+            A matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
         max_frequency = max_frequency or int(self.data['frequency'].max())
@@ -302,7 +299,7 @@ class BetaGeoFitter(BaseFitter):
         Returns
         -------
         float:
-            Probability to have n purchasess up to t units of time
+            Probability to have n purchases up to t units of time
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
