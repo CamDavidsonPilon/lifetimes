@@ -17,13 +17,30 @@ class GammaGammaFitter(BaseFitter):
 
     It is used to estimate the average monetary value of customer transactions.
 
-    This implementation is based on the Excel spreadsheet found in [1].
-    More details on the derivation and evaluation can be found in [2].
+    This implementation is based on the Excel spreadsheet found in [1]_.
+    More details on the derivation and evaluation can be found in [2]_.
 
-    [1] http://www.brucehardie.com/notes/025/
-    [2] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005),
-        "RFM and CLV: Using iso-value curves for customer base analysis",
-        Journal of Marketing Research, 42 (November), 415-430
+    Parameters
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+
+    Attributes
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: OrderedDict
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the columns given in the call to `fit`
+
+    References
+    ----------
+    .. [1] http://www.brucehardie.com/notes/025/
+       The Gamma-Gamma Model of Monetary Value.
+    .. [2] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005),
+       "RFM and CLV: Using iso-value curves for customer base analysis",
+       Journal of Marketing Research, 42 (November), 415-430.
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -59,16 +76,20 @@ class GammaGammaFitter(BaseFitter):
         This method computes the conditional expectation of the average profit
         per transaction for a group of one or more customers.
 
-        Parameters:
-            frequency: a vector containing the customers' frequencies.
-                       Defaults to the whole set of frequencies used for
-                       fitting the model.
-            monetary_value: a vector containing the customers' monetary values.
-                            Defaults to the whole set of monetary values used
-                            for fitting the model.
+        Parameters
+        ----------
+        frequency: array_like, optional
+            a vector containing the customers' frequencies.
+            Defaults to the whole set of frequencies used for fitting the model.
+        monetary_value: array_like, optional
+            a vector containing the customers' monetary values.
+            Defaults to the whole set of monetary values used for
+            fitting the model.
 
-        Returns:
-            the conditional expectation of the average profit per transaction
+        Returns
+        -------
+        array_like:
+            The conditional expectation of the average profit per transaction
 
         """
         if monetary_value is None:
@@ -90,27 +111,39 @@ class GammaGammaFitter(BaseFitter):
         """
         Fit the data to the Gamma/Gamma model.
 
-        Parameters:
-            frequency: the frequency vector of customers' purchases
-                       (denoted x in literature).
-            monetary_value: the monetary value vector of customer's purchases
-                            (denoted m in literature).
-            iterative_fitting: perform iterative_fitting fits over
-                               random/warm-started initial params
-            initial_params: set initial params for the iterative fitter.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
-            index: index for resulted DataFrame which is accessible via
-                   self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
-            kwargs: key word arguments to pass to the scipy.optimize.minimize
-                    function as options dict.
+        Parameters
+        ----------
+        frequency: array_like
+            the frequency vector of customers' purchases
+            (denoted x in literature).
+        monetary_value: array_like
+            the monetary value vector of customer's purchases
+            (denoted m in literature).
+        iterative_fitting: int, optional
+            perform iterative_fitting fits over random/warm-started initial params
+        initial_params: array_like, optional
+            set the initial parameters for the fitter.
+        verbose : bool, optional
+            set to true to print out convergence diagnostics.
+        tol : float, optional
+            tolerance for termination of the function minimization process.
+        index: array_like, optional
+            index for resulted DataFrame which is accessible via self.data
+        fit_method : string, optional
+            fit_method to passing to scipy.optimize.minimize
+        maxiter : int, optional
+            max iterations for optimizer in scipy.optimize.minimize will be
+            overwritten if setted in kwargs.
+        kwargs:
+            key word arguments to pass to the scipy.optimize.minimize
+            function as options dict
 
-        Returns:
-            self, fitted and with parameters estimated
+
+
+        Returns
+        -------
+        GammaGammaFitter
+            fitted and with parameters estimated
 
         """
         _check_inputs(frequency, monetary_value=monetary_value)
@@ -144,22 +177,29 @@ class GammaGammaFitter(BaseFitter):
         This method computes the average lifetime value for a group of one
         or more customers.
 
-        Parameters:
-            transaction_prediction_model: the model to predict future
-                                          transactions, literature uses
-                                          pareto/ndb but we can also use a
-                                          different model like bg
-            frequency: the frequency vector of customers' purchases
-                       (denoted x in literature).
-            recency: the recency vector of customers' purchases
-                     (denoted t_x in literature).
-            T: the vector of customers' age (time since first purchase)
-            monetary_value: the monetary value vector of customer's purchases
-                            (denoted m in literature).
-            time: the lifetime expected for the user in months. Default: 12
-            discount_rate: the monthly adjusted discount rate. Default: 0.01
+        Parameters
+        ----------
+        transaction_prediction_model: model
+            the model to predict future transactions, literature uses
+            pareto/ndb but we can also use a different model like bg
+        frequency: array_like
+            the frequency vector of customers' purchases
+            (denoted x in literature).
+        recency: the recency vector of customers' purchases
+                 (denoted t_x in literature).
+        T: array_like
+            customers' age (time units since first purchase)
+        monetary_value: array_like
+            the monetary value vector of customer's purchases
+            (denoted m in literature).
+        time: float, optional
+            the lifetime expected for the user in months. Default: 12
+        discount_rate: float, optional
+            the monthly adjusted discount rate. Default: 0.01
 
-        Returns:
+        Returns
+        -------
+        Series:
             Series object with customer ids as index and the estimated customer
             lifetime values as values
 

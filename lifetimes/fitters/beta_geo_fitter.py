@@ -73,7 +73,7 @@ class BetaGeoFitter(BaseFitter):
             set the initial parameters for the fitter.
         verbose : bool, optional
             set to true to print out convergence diagnostics.
-        tol : int, optional
+        tol : float, optional
             tolerance for termination of the function minimization process.
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
