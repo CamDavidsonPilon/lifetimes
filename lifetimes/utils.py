@@ -340,7 +340,7 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
     # more order-periods than periods.
 
 
-def customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
+def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
     """
     Compute the average lifetime value for a group of one or more customers.
 

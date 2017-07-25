@@ -2,6 +2,3 @@ numpy
 scipy
 pandas>=0.19
 dill
-
-# for building docs with ReadTheDocs
-sphinxcontrib-napoleon 

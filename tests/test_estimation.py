@@ -190,7 +190,7 @@ class TestGammaGammaFitter():
                 cdnow_customers_with_monetary_value['monetary_value']
         )
 
-        utils_clv = utils.customer_lifetime_value(
+        utils_clv = utils._customer_lifetime_value(
                 bgf,
                 cdnow_customers_with_monetary_value['frequency'],
                 cdnow_customers_with_monetary_value['recency'],

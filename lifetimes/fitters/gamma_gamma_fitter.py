@@ -8,7 +8,7 @@ from pandas import DataFrame
 from scipy.special import gammaln
 
 from . import BaseFitter
-from ..utils import _fit, _check_inputs, customer_lifetime_value
+from ..utils import _fit, _check_inputs, _customer_lifetime_value
 
 
 class GammaGammaFitter(BaseFitter):
@@ -167,6 +167,6 @@ class GammaGammaFitter(BaseFitter):
         # use the Gamma-Gamma estimates for the monetary_values
         adjusted_monetary_value = self.conditional_expected_average_profit(
             frequency, monetary_value)
-        return customer_lifetime_value(transaction_prediction_model, frequency,
-                                       recency, T, adjusted_monetary_value,
-                                       time, discount_rate)
+        return _customer_lifetime_value(transaction_prediction_model, frequency,
+                                        recency, T, adjusted_monetary_value,
+                                        time, discount_rate)
