@@ -80,7 +80,7 @@ def large_transaction_level_data_with_monetary_value():
 
 def test_find_first_transactions_returns_correct_results(large_transaction_level_data):
     today = '2015-02-07'
-    actual = utils.find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today)
+    actual = utils._find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today)
     expected = pd.DataFrame([[1, pd.Period('2015-01-01', 'D'), True],
                              [1, pd.Period('2015-02-06', 'D'), False],
                              [2, pd.Period('2015-01-01', 'D'), True],
@@ -99,7 +99,7 @@ def test_find_first_transactions_returns_correct_results(large_transaction_level
 
 def test_find_first_transactions_with_specific_non_daily_frequency(large_transaction_level_data):
     today = '2015-02-07'
-    actual = utils.find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today, freq='W')
+    actual = utils._find_first_transactions(large_transaction_level_data, 'id', 'date', observation_period_end=today, freq='W')
     expected = pd.DataFrame([[1, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), True],
                              [1, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), False],
                              [2, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), True],
@@ -116,7 +116,7 @@ def test_find_first_transactions_with_specific_non_daily_frequency(large_transac
 
 def test_find_first_transactions_with_monetary_values(large_transaction_level_data_with_monetary_value):
     today = '2015-02-07'
-    actual = utils.find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today)
+    actual = utils._find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today)
     expected = pd.DataFrame([[1, pd.Period('2015-01-01', 'D'), 1, True],
                              [1, pd.Period('2015-02-06', 'D'), 2, False],
                              [2, pd.Period('2015-01-01', 'D'), 2, True],
@@ -135,7 +135,7 @@ def test_find_first_transactions_with_monetary_values(large_transaction_level_da
 
 def test_find_first_transactions_with_monetary_values_with_specific_non_daily_frequency(large_transaction_level_data_with_monetary_value):
     today = '2015-02-07'
-    actual = utils.find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today, freq='W')
+    actual = utils._find_first_transactions(large_transaction_level_data_with_monetary_value, 'id', 'date', 'monetary_value', observation_period_end=today, freq='W')
     expected = pd.DataFrame([[1, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), 1, True],
                              [1, pd.Period('2015-02-02/2015-02-08', 'W-SUN'), 2, False],
                              [2, pd.Period('2014-12-29/2015-01-04', 'W-SUN'), 2, True],

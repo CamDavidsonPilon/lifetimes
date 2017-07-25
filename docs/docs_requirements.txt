@@ -1,0 +1,3 @@
+-r ../dev_requirements.txt
+recommonmark
+sphinxcontrib-napoleon

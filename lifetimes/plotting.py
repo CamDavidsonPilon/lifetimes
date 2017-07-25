@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from lifetimes.utils import coalesce, calculate_alive_path, expected_cumulative_transactions
+from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
 from scipy import stats
 
 __all__ = [
@@ -15,6 +15,10 @@ __all__ = [
     'plot_transaction_rate_heterogeneity',
     'plot_dropout_rate_heterogeneity'
 ]
+
+
+def coalesce(*args):
+    return next(s for s in args if s is not None)
 
 
 def plot_period_transactions(model, max_frequency=7, title='Frequency of Repeat Transactions',
@@ -94,7 +98,12 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
     return ax
 
 
-def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=None, **kwargs):
+def plot_frequency_recency_matrix(
+    model, T=1, max_frequency=None, max_recency=None,
+    title=None,
+    xlabel="Customer's Historical Frequency",
+    ylabel="Customer's Recency",
+    **kwargs):
     """
     Plot recency frequecy matrix as heatmap.
 
@@ -126,10 +135,12 @@ def plot_frequency_recency_matrix(model, T=1, max_frequency=None, max_recency=No
 
     ax = plt.subplot(111)
     PCM = ax.imshow(Z, interpolation=interpolation, **kwargs)
-    plt.xlabel("Customer's Historical Frequency")
-    plt.ylabel("Customer's Recency")
-    plt.title('Expected Number of Future Purchases for %d Unit%s of Time,'
-              '\nby Frequency and Recency of a Customer' % (T, "s"[T == 1:]))
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if title is None:
+        title = 'Expected Number of Future Purchases for {} Unit{} of Time,'. \
+            format(T, "s"[T == 1:]) + '\nby Frequency and Recency of a Customer'
+    plt.title(title)
 
     # turn matrix into square
     forceAspect(ax)
@@ -380,7 +391,7 @@ def plot_transaction_rate_heterogeneity(model, suptitle='Heterogeneity in Transa
 
     r, alpha = model._unload_params('r', 'alpha')
     rate_mean = r / alpha
-    rate_var = r / alpha**2
+    rate_var = r / alpha ** 2
 
     rv = stats.gamma(r, scale=1 / alpha)
     lim = rv.ppf(0.99)
@@ -417,7 +428,7 @@ def plot_dropout_rate_heterogeneity(model, suptitle='Heterogeneity in Dropout Pr
 
     a, b = model._unload_params('a', 'b')
     beta_mean = a / (a + b)
-    beta_var = a * b / ((a + b)**2) / (a + b + 1)
+    beta_var = a * b / ((a + b) ** 2) / (a + b + 1)
 
     rv = stats.beta(a, b)
     lim = rv.ppf(0.99)
