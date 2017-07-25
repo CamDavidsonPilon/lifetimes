@@ -18,7 +18,7 @@ def coalesce(*args):
 
 
 def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, calibration_period_end,
-                                 observation_period_end=datetime.today(), freq='D', datetime_format=None,
+                                 observation_period_end=None, freq='D', datetime_format=None,
                                  monetary_value_col=None):
     """
     Create a summary of each customer over a calibration and holdout period.
@@ -32,8 +32,8 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         customer_id_col: the column in transactions that denotes the customer_id
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         calibration_period_end: a period to limit the calibration to, inclusive.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated, inclusive.
+        observation_period_end (optional): a string or datetime to denote the final date of the study.
+            Events after this date are truncated. If not given, defaults to the max 'datetime_col'.
         freq: Default 'D' for days. Other examples: 'W' for weekly.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
@@ -48,6 +48,9 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     """
     def to_period(d):
         return d.to_period(freq)
+
+    if observation_period_end is None:
+        observation_period_end = transactions[datetime_col].max()
 
     transaction_cols = [customer_id_col, datetime_col]
     if monetary_value_col:
@@ -90,7 +93,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
 
 def find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                            observation_period_end=datetime.today(), freq='D'):
+                            observation_period_end=None, freq='D'):
     """
     Return dataframe with first transactions.
 
@@ -105,14 +108,17 @@ def find_first_transactions(transactions, customer_id_col, datetime_col, monetar
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         monetary_value_col: the column in transactions that denotes the monetary value of the transaction.
             Optional, only needed for customer lifetime value estimation models.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated.
+        observation_period_end (optional): a string or datetime to denote the final date of the study.
+            Events after this date are truncated. If not given, defaults to the max 'datetime_col'.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
         freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
             http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
 
     """
+    if observation_period_end is None:
+        observation_period_end = transactions[datetime_col].max()
+
     select_columns = [customer_id_col, datetime_col]
 
     if monetary_value_col:
@@ -163,8 +169,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         datetime_col: the column in transactions that denotes the datetime the purchase was made.
         monetary_value_col: the columns in the transactions that denotes the monetary value of the transaction.
             Optional, only needed for customer lifetime value estimation models.
-        observation_period_end: a string or datetime to denote the final date of the study. Events
-            after this date are truncated.
+        observation_period_end (optional): a string or datetime to denote the final date of the study.
+            Events after this date are truncated. If not given, defaults to the max 'datetime_col'.
         datetime_format: a string that represents the timestamp format. Useful if Pandas can't understand
             the provided format.
         freq: Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
