@@ -17,8 +17,8 @@ class GammaGammaFitter(BaseFitter):
 
     It is used to estimate the average monetary value of customer transactions.
 
-    This implementation is based on the Excel spreadsheet found in [1]_.
-    More details on the derivation and evaluation can be found in [2]_.
+    This implementation is based on the Excel spreadsheet found in [3]_.
+    More details on the derivation and evaluation can be found in [4]_.
 
     Parameters
     ----------
@@ -36,9 +36,9 @@ class GammaGammaFitter(BaseFitter):
 
     References
     ----------
-    .. [1] http://www.brucehardie.com/notes/025/
+    .. [3] http://www.brucehardie.com/notes/025/
        The Gamma-Gamma Model of Monetary Value.
-    .. [2] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005),
+    .. [4] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005),
        "RFM and CLV: Using iso-value curves for customer base analysis",
        Journal of Marketing Research, 42 (November), 415-430.
     """
@@ -137,8 +137,6 @@ class GammaGammaFitter(BaseFitter):
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
-
-
 
         Returns
         -------

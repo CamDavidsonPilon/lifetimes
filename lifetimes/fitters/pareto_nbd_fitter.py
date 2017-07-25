@@ -14,7 +14,29 @@ from ..generate_data import pareto_nbd_model
 
 
 class ParetoNBDFitter(BaseFitter):
-    """Pareto NBD fitter."""
+    """Pareto NBD fitter [7]_.
+
+    Parameters
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+
+    Attributes
+    ----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: OrderedDict
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the columns given in the call to `fit`
+
+    References
+    ----------
+    .. [7] David C. Schmittlein, Donald G. Morrison and Richard Colombo
+       Management Science,Vol. 33, No. 1 (Jan., 1987), pp. 1-24
+      "Counting Your Customers: Who Are They and What Will They Do Next,"
+
+    """
 
     def __init__(self, penalizer_coef=0.0):
         """Initialization, set penalizer_coef."""
@@ -26,28 +48,39 @@ class ParetoNBDFitter(BaseFitter):
         """
         Pareto/NBD model fitter.
 
-        Parameters:
-            frequency: the frequency vector of customers' purchases
-                       (denoted x in literature).
-            recency: the recency vector of customers' purchases
-                     (denoted t_x in literature).
-            T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform iterative_fitting fits over
-                               random/warm-started initial params
-            initial_params: set initial params for the iterative fitter.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
-            index: index for resulted DataFrame which is accessible via
-                   self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
-            kwargs: key word arguments to pass to the scipy.optimize.minimize
-                    function as options dict
+        Parameters
+        ----------
+        frequency: array_like
+            the frequency vector of customers' purchases
+            (denoted x in literature).
+        recency: array_like
+            the recency vector of customers' purchases
+            (denoted t_x in literature).
+        T: array_like
+            customers' age (time units since first purchase)
+        iterative_fitting: int, optional
+            perform iterative_fitting fits over random/warm-started initial params
+        initial_params: array_like, optional
+            set the initial parameters for the fitter.
+        verbose : bool, optional
+            set to true to print out convergence diagnostics.
+        tol : float, optional
+            tolerance for termination of the function minimization process.
+        index: array_like, optional
+            index for resulted DataFrame which is accessible via self.data
+        fit_method : string, optional
+            fit_method to passing to scipy.optimize.minimize
+        maxiter : int, optional
+            max iterations for optimizer in scipy.optimize.minimize will be
+            overwritten if setted in kwargs.
+        kwargs:
+            key word arguments to pass to the scipy.optimize.minimize
+            function as options dict
 
-        Returns:
-            self, with additional properties and methods like params_ and plot
+        Returns
+        -------
+        ParetoNBDFitter
+            with additional properties like params_ and methods like predict
 
         """
         frequency = asarray(frequency)
@@ -127,6 +160,43 @@ class ParetoNBDFitter(BaseFitter):
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -(A_1 + A_2).mean() + penalizer_term
 
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
+                                                            recency, T):
+        """
+        Conditional expected number of purchases up to time.
+
+        Calculate the expected number of repeat purchases up to time t for a
+        randomly choose individual from the population, given they have
+        purchase history (frequency, recency, T)
+
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expectation for.
+        frequency: array_like
+            historical frequency of customer.
+        recency: array_like
+            historical recency of customer.
+        T: array_like
+            age of the customer.
+
+        Returns
+        -------
+        array_like
+
+        """
+        x, t_x = frequency, recency
+        params = self._unload_params('r', 'alpha', 's', 'beta')
+        r, alpha, s, beta = params
+
+        likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
+        first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * \
+            log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
+        second_term = log(r + x) + log(beta + T) - log(alpha + T)
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) /
+                         (s - 1))
+        return exp(first_term + second_term + third_term - likelihood)
+
     def conditional_probability_alive(self, frequency, recency, T):
         """
         Conditional probability alive.
@@ -136,12 +206,19 @@ class ParetoNBDFitter(BaseFitter):
         From paper:
         http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
-        Parameters:
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
+        Parameters
+        ----------
+        frequency: float
+            historical frequency of customer.
+        recency: float
+            historical recency of customer.
+        T: float
+            age of the customer.
 
-        Returns: a scalar value representing a probability
+        Returns
+        -------
+        float
+            value representing a probability
 
         """
         x, t_x = frequency, recency
@@ -156,16 +233,18 @@ class ParetoNBDFitter(BaseFitter):
         """
         Compute the probability alive matrix.
 
-        Parameters:
-            max_frequency: the maximum frequency to plot. Default is max
-                           observed frequency.
-            max_recency: the maximum recency to plot. This also determines
-                         the age of the customer. Default to max observed age.
+        Parameters
+        ----------
+        max_frequency: float, optional
+            the maximum frequency to plot. Default is max observed frequency.
+        max_recency: float, optional
+            the maximum recency to plot. This also determines the age of the
+            customer. Default to max observed age.
 
-        Returns:
-            A matrix of the form [t_x: historical recency,
-                                    x: historical frequency]
-
+        Returns
+        -------
+        matrix:
+            A matrix of the form [t_x: historical recency, x: historical frequency]
         """
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
@@ -178,36 +257,6 @@ class ParetoNBDFitter(BaseFitter):
                                                              max_recency)
 
         return Z
-
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
-        """
-        Conditional expected number of purchases up to time.
-
-        Calculate the expected number of repeat purchases up to time t for a
-        randomly choose individual from the population, given they have
-        purchase history (frequency, recency, T)
-
-        Parameters:
-            t: a scalar or array of times.
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
-
-        Returns: a scalar or array
-
-        """
-        x, t_x = frequency, recency
-        params = self._unload_params('r', 'alpha', 's', 'beta')
-        r, alpha, s, beta = params
-
-        likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
-        first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * \
-            log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
-        second_term = log(r + x) + log(beta + T) - log(alpha + T)
-        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) /
-                         (s - 1))
-        return exp(first_term + second_term + third_term - likelihood)
 
     def expected_number_of_purchases_up_to_time(self, t):
         """

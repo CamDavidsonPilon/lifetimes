@@ -18,7 +18,7 @@ from ..generate_data import beta_geometric_nbd_model
 class BetaGeoFitter(BaseFitter):
     """Also known as the BG/NBD model.
 
-    Based on [1]_, this model has the following assumptions:
+    Based on [2]_, this model has the following assumptions:
 
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution
@@ -43,7 +43,7 @@ class BetaGeoFitter(BaseFitter):
 
     References
     ----------
-    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+    .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
        "Counting Your Customers the Easy Way: An Alternative to the
        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
     """
@@ -90,7 +90,7 @@ class BetaGeoFitter(BaseFitter):
         Returns
         -------
         BetaGeoFitter
-            with additional properties like params_ and methods like expected_number_of_purchases_up_to_time
+            with additional properties like params_ and methods like predict
 
         """
         frequency = asarray(frequency)
@@ -146,27 +146,6 @@ class BetaGeoFitter(BaseFitter):
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return -(A_1 + A_2 + misc.logsumexp(
             vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
-
-    def expected_number_of_purchases_up_to_time(self, t):
-        """
-        Calculate the expected number of repeat purchases up to time t.
-
-        Calculate repeat purchases for a randomly choose individual from the
-        population.
-
-        Parameters
-        ----------
-        t: array_like
-            times to calculate the expection for
-
-        Returns
-        -------
-        array_like
-
-        """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
-        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
@@ -229,18 +208,18 @@ class BetaGeoFitter(BaseFitter):
 
         Parameters
         ----------
-        frequency: a scalar
+        frequency: float
             historical frequency of customer.
-        recency: a scalar
+        recency: float
             historical recency of customer.
-        T: a scalar
+        T: float
             age of the customer.
         ln_exp_max: int
             to what value clip log_div equation
 
         Returns
         -------
-        a scalar
+        float
             value representing a probability
 
         """
@@ -279,6 +258,27 @@ class BetaGeoFitter(BaseFitter):
         return np.fromfunction(self.conditional_probability_alive,
                                (max_frequency + 1, max_recency + 1),
                                T=max_recency).T
+
+    def expected_number_of_purchases_up_to_time(self, t):
+        """
+        Calculate the expected number of repeat purchases up to time t.
+
+        Calculate repeat purchases for a randomly choose individual from the
+        population.
+
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expection for
+
+        Returns
+        -------
+        array_like
+
+        """
+        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
+        return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         r"""

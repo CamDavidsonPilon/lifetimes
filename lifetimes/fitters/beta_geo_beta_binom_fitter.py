@@ -14,7 +14,7 @@ from . import BaseFitter
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
-    """Also known as the Beta-Geometric/Beta-Binomial Model [1].
+    """Also known as the Beta-Geometric/Beta-Binomial Model [1]_.
 
     Future purchases opportunities are treated as discrete points in time.
     In the literature, the model provides a better fit than the Pareto/NBD
@@ -22,10 +22,6 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     The model is estimated with a recency-frequency matrix with n transaction
     opportunities.
-
-    [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
-        "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
-        Marketing Science, 29 (6), 1086-1108.
 
     Parameters
     ----------
@@ -40,6 +36,12 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         The fitted parameters of the model
     data: :obj: DataFrame
         A DataFrame with the columns given in the call to `fit`
+
+    References
+    ----------
+    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
+       "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
+       Marketing Science, 29 (6), 1086-1108.
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -88,13 +90,13 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         Parameters
         ----------
-        frequency:
+        frequency: array_like
             Total periods with observed transactions
-        recency:
+        recency: array_like
             Period of most recent transaction
-        n:
+        n: array_like
             Number of transaction opportunities.
-        n_custs:
+        n_custs: array_like
             Number of customers with given frequency/recency/T. Fader
             and Hardie condense the individual RFM matrix into all
             observed combinations of frequency/recency/T. This
@@ -103,22 +105,27 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             loglikelihood, the loglikelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
-        verbose: boolean
+        verbose: boolean, optional
             Set to true to print out convergence diagnostics.
-        tol: float
+        tol: float, optional
             Tolerance for termination of the function minimization process.
-        index:
+        iterative_fitting: int, optional
+            perform iterative_fitting fits over random/warm-started initial params
+        index: array_like, optional
             Index for resulted DataFrame which is accessible via self.data
-        fit_method: string
+        fit_method: string, optional
             Fit_method to passing to scipy.optimize.minimize
-        maxiter: int
+        maxiter: int, optional
             Max iterations for optimizer in scipy.optimize.minimize
             will be overwritten if setted in kwargs.
         kwargs:
             Key word arguments to pass to the scipy.optimize.minimize
             function as options dict
 
-        Returns: self
+        Returns
+        -------
+        BetaGeoBetaBinomFitter
+            fitted and with parameters estimated
 
         """
         frequency = asarray(frequency)
@@ -155,17 +162,19 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         transaction opportunities by a customer with purchase history
         (x, tx, n).
 
-        E(X(n, n+n*)|alpha, beta, gamma, delta, frequency, recency, n)
+        .. math:: E(X(n, n+n*)|alpha, beta, gamma, delta, frequency, recency, n)
 
         See (13) in Fader & Hardie 2010.
 
         Parameters
         ----------
-            t: scalar or array of time periods (n+t)
+        t: array_like
+            time periods (n+t)
 
         Returns
         ----------
-        scalar or array of predicted transactions
+        array_like
+            predicted transactions
 
         """
         x = self.data['frequency']
@@ -191,14 +200,19 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         Conditional probability customer is alive at transaction opportunity
         n + m.
 
-        P(alive at n + m|alpha, beta, gamma, delta, frequency, recency, n)
+        .. math:: P(alive at n + m|alpha, beta, gamma, delta, frequency, recency, n)
 
         See (A10) in Fader and Hardie 2010.
 
-        Parameters:
-            m: scalar or array of transaction opportunities
+        Parameters
+        ----------
+        m: array_like
+            transaction opportunities
 
-        Returns: scalar or array of alive probabilities
+        Returns
+        -------
+        array_like
+            alive probabilities
 
         """
         params = self._unload_params('alpha', 'beta', 'gamma', 'delta')
@@ -222,14 +236,19 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         opportunities.
         Used by Fader and Hardie to assess in-sample fit.
 
-        Pr(X(n) = x|alpha, beta, gamma, delta)
+        .. math:: Pr(X(n) = x|alpha, beta, gamma, delta)
 
         See (7) in Fader & Hardie 2010.
 
-        Parameters:
-            n: scalar, number of transaction opportunities
+        Parameters
+        ----------
+        n: float
+            number of transaction opportunities
 
-        Returns: DataFrame of predicted values, indexed by x
+        Returns
+        -------
+        DataFrame:
+            Predicted values, indexed by x
 
         """
         params = self._unload_params('alpha', 'beta', 'gamma', 'delta')

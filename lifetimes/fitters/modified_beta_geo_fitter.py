@@ -10,23 +10,26 @@ from ..generate_data import modified_beta_geometric_nbd_model
 
 
 class ModifiedBetaGeoFitter(BetaGeoFitter):
-    """
+    r"""
     Also known as the MBG/NBD model.
 
-    Based on [1,2], this model has the following assumptions:
+    Based on [5]_, [6]_, this model has the following assumptions:
     1) Each individual, i, has a hidden lambda_i and p_i parameter
     2) These come from a population wide Gamma and a Beta distribution
        respectively.
-    3) Individuals purchases follow a Poisson process with rate lambda_i*t .
+    3) Individuals purchases follow a Poisson process with rate :math:`\lambda_i*t` .
     4) At the beginning of their lifetime and after each purchase, an
        individual has a p_i probability of dieing (never buying again).
 
-    [1] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
-        "Empirical validation and comparison of models for customer base
-        analysis,"
-        International Journal of Research in Marketing, 24 (3), 201-209.
-    [2] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model,"
-        International Journal of Research in Marketing, 25 (3), 225-226.
+    References
+    ----------
+
+    .. [5] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
+       "Empirical validation and comparison of models for customer base
+       analysis,"
+       International Journal of Research in Marketing, 24 (3), 201-209.
+    .. [6] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model,"
+       International Journal of Research in Marketing, 25 (3), 225-226.
 
     """
 
@@ -40,29 +43,39 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         Fit the data to the MBG/NBD model.
 
-        Parameters:
-            frequency: the frequency vector of customers' purchases (denoted x
-                       in literature).
-            recency: the recency vector of customers' purchases (denoted t_x in
-                     literature).
-            T: the vector of customers' age (time since first purchase)
-            iterative_fitting: perform iterative_fitting fits over
-                               random/warm-started initial params
-            initial_params: set the initial parameters for the fitter.
-            verbose: set to true to print out convergence diagnostics.
-            tol: tolerance for termination of the function minimization
-                 process.
-            index: index for resulted DataFrame which is accessible via
-                   self.data
-            fit_method: fit_method to passing to scipy.optimize.minimize
-            maxiter: max iterations for optimizer in scipy.optimize.minimize
-                     will be overwritten if setted in kwargs.
-            kwargs: key word arguments to pass to the scipy.optimize.minimize
-                    function as options dict
+        Parameters
+        ----------
+        frequency: array_like
+            the frequency vector of customers' purchases
+            (denoted x in literature).
+        recency: array_like
+            the recency vector of customers' purchases
+            (denoted t_x in literature).
+        T: array_like
+            customers' age (time units since first purchase)
+        iterative_fitting: int, optional
+            perform iterative_fitting fits over random/warm-started initial params
+        initial_params: array_like, optional
+            set the initial parameters for the fitter.
+        verbose : bool, optional
+            set to true to print out convergence diagnostics.
+        tol : float, optional
+            tolerance for termination of the function minimization process.
+        index: array_like, optional
+            index for resulted DataFrame which is accessible via self.data
+        fit_method : string, optional
+            fit_method to passing to scipy.optimize.minimize
+        maxiter : int, optional
+            max iterations for optimizer in scipy.optimize.minimize will be
+            overwritten if setted in kwargs.
+        kwargs:
+            key word arguments to pass to the scipy.optimize.minimize
+            function as options dict
 
-        Returns:
-            self, with additional properties and methods like params_ and
-            predict
+        Returns
+        -------
+        ModifiedBetaGeoFitter:
+            With additional properties and methods like params_ and predict
 
         """
         # although the parent method is called, this class's
@@ -109,10 +122,14 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population.
 
-        Parameters:
-            t: a scalar or array of times.
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expection for
 
-        Returns: a scalar or array
+        Returns
+        -------
+        array_like
 
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -129,13 +146,20 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         purchase history (frequency, recency, T)
         See Wagner, U. and Hoppe D. (2008).
 
-        Parameters:
-            t: a scalar or array of times.
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expectation for.
+        frequency: array_like
+            historical frequency of customer.
+        recency: array_like
+            historical recency of customer.
+        T: array_like
+            age of the customer.
 
-        Returns: a scalar or array
+        Returns
+        -------
+        array_like
 
         """
         x = frequency
@@ -161,12 +185,21 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         From https://www.researchgate.net/publication/247219660_Empirical_validation_and_comparison_of_models_for_customer_base_analysis
         Appendix A, eq. (5)
 
-        Parameters:
-            frequency: a scalar: historical frequency of customer.
-            recency: a scalar: historical recency of customer.
-            T: a scalar: age of the customer.
+        Parameters
+        ----------
+        frequency: float
+            historical frequency of customer.
+        recency: float
+            historical recency of customer.
+        T: float
+            age of the customer.
+        ln_exp_max: int
+            to what value clip log_div equation
 
-        Returns: a scalar
+        Returns
+        -------
+        float
+            value representing a probability
 
         """  # noqa
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
@@ -179,28 +212,43 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Compute the probability alive matrix.
 
         Parameters
-            max_frequency: the maximum frequency to plot.
-                           Default is max observed frequency.
-            max_recency: the maximum recency to plot.
-                         This also determines the age of the customer.
-                         Default to max observed age.
+        ----------
+        max_frequency: float, optional
+            the maximum frequency to plot. Default is max observed frequency.
+        max_recency: float, optional
+            the maximum recency to plot. This also determines the age of the
+            customer. Default to max observed age.
 
         Returns
-            A matrix of the form [t_x: historical recency,
-                                  x: historical frequency]
+        -------
+        matrix:
+            A matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
         return super(self.__class__, self) \
             .conditional_probability_alive_matrix(max_frequency, max_recency)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
-        """
+        r"""
         Compute the probability of n purchases up to time t.
 
-        P( N(t) = n | model )
+        .. math::  P( N(t) = n | \text{model} )
 
         where N(t) is the number of repeat purchases a customer makes in t
         units of time.
+
+        Parameters
+        ----------
+        t: float
+            number units of time
+        n: int
+            number of purchases
+
+        Returns
+        -------
+        float:
+            Probability to have n purchases up to t units of time
+
         """
         r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
         _j = np.arange(0, n)
