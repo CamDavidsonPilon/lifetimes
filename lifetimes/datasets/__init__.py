@@ -17,12 +17,18 @@ def load_dataset(filename, **kwargs):
     """
     Load a dataset from lifetimes.datasets.
 
-    Parameters:
-        filename: for example "larynx.csv"
-        usecols: list of columns in file to use
+    Parameters
+    ----------
+    filename: str
+        for example "larynx.csv"
+    usecols: list
+        Passed to **kwargs, list of columns in file to use.
+    **kwargs
+        Passed to pandas.read_csv function.
 
-    Returns:
-        Pandas dataframe
+    Returns
+    -------
+    DataFrame
 
     """
     return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)

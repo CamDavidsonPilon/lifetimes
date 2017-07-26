@@ -283,6 +283,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
          initial_params, params_size, disp, tol=1e-8, fit_method='Nelder-Mead',
          maxiter=2000, **kwargs):
+    """Helper for fitter fit."""
     ll = []
     sols = []
 
@@ -318,11 +319,27 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
 
 
 def _scale_time(age):
-    # create a scalar such that the maximum age is 10.
+    """Create a scalar such that the maximum age is 10."""
     return 10. / age.max()
 
 
 def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
+    """Validation checks for inputs.
+
+    Raises ValueError when checks failed.
+
+    Parameters
+    ----------
+    frequency: array_like
+        the frequency vector of customers' purchases (denoted x in literature).
+    recency: array_like, optional
+        the recency vector of customers' purchases (denoted t_x in literature).
+    T: array_like, optional
+        the vector of customers' age (time since first purchase)
+    monetary_value: array_like, optional
+        the monetary value vector of customer's purchases (denoted m in literature).
+
+    """
     if recency is not None:
         if T is not None and np.any(recency > T):
             raise ValueError("Some values in recency vector are larger than T vector.")
