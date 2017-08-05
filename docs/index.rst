@@ -5,18 +5,16 @@
 
 .. include:: intro.rst
 
-
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    Quickstart
-   Examples and recipes
+   More examples and recipes
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

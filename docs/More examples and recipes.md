@@ -1,4 +1,4 @@
-## Examples and recipes
+## More Examples and recipes
 
 ### Example SQL statement to transform transactional data into RFM data
 
@@ -10,13 +10,12 @@ Let's review what our variables mean:
 
 Thus, executing a query against a transactional dataset, called `orders`, in a SQL-store may look like:
 
-.. code-block:: mysql
-
-
-    SELECT
-      customer_id,
-      COUNT(distinct date(transaction_at)) - 1 as frequency,
-      datediff('day', MIN(transaction_at), MAX(transaction_at)) as recency,
-      datediff('day', CURRENT_DATE, MIN(transaction_at)) as T
-    FROM orders
-    GROUP BY customer_id
+```sql
+SELECT
+  customer_id,
+  COUNT(distinct date(transaction_at)) - 1 as frequency,
+  datediff('day', MIN(transaction_at), MAX(transaction_at)) as recency,
+  datediff('day', CURRENT_DATE, MIN(transaction_at)) as T
+FROM orders
+GROUP BY customer_id
+```

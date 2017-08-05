@@ -1,9 +1,6 @@
 .. figure:: http://i.imgur.com/7s3jqZM.png
    :alt: 
 
-`Lifetimes <http://lifetimes.readthedocs.io/en/latest/>`__
-==========================================================
-
 Measuring users is hard. Lifetimes makes it easy.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -59,10 +56,15 @@ Requirements are only Numpy, Scipy, Pandas,
 `Dill <https://github.com/uqfoundation/dill>`__ (and
 optionally-but-seriously matplotlib).
 
+Documenation and tutorials
+--------------------------
+
+`Official documentation <http://lifetimes.readthedocs.io/en/latest/>`__
+
 Questions? Comments? Requests?
 ------------------------------
 
-Please leave an issue in the `lifetimes
+Please create an issue in the `lifetimes
 repository <https://github.com/CamDavidsonPilon/lifetimes>`__.
 
 More Information
