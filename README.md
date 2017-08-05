@@ -1,6 +1,5 @@
 ![](http://i.imgur.com/7s3jqZM.png)
 
-# [Lifetimes](http://lifetimes.readthedocs.io/en/latest/)
 #### Measuring users is hard. Lifetimes makes it easy.
 [![PyPI version](https://badge.fury.io/py/Lifetimes.svg)](https://badge.fury.io/py/Lifetimes)
 [![Documentation Status](https://readthedocs.org/projects/lifetimes/badge/?version=latest)](http://lifetimes.readthedocs.io/en/latest/?badge=latest)
@@ -37,10 +36,13 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
 Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
 
+## Documenation and tutorials
+[Official documentation](http://lifetimes.readthedocs.io/en/latest/)
+
 
 ## Questions? Comments? Requests?
 
-Please leave an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes). 
+Please create an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes). 
 
 
 ## More Information
