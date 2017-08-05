@@ -12,7 +12,7 @@
    :caption: Contents:
 
    Quickstart
-   Examples and recipies
+   Examples and recipes
 
 
 Indices and tables
