@@ -117,13 +117,27 @@ class TestPlotting():
         return plt.gcf()
 
     @pytest.mark.mpl_image_compare(tolerance=2, style='default')
+    def test_plot_transaction_rate_heterogeneity(self):
+        """Test transactions rate heterogeneity."""
+        plt.figure()
+        plotting.plot_transaction_rate_heterogeneity(bgf)
+        return plt.gcf()
+
+    @pytest.mark.mpl_image_compare(tolerance=2, style='default')
+    def test_plot_dropout_rate_heterogeneity(self):
+        """Test dropout rate heterogeneity."""
+        plt.figure()
+        plotting.plot_dropout_rate_heterogeneity(bgf)
+        return plt.gcf()
+
+    @pytest.mark.mpl_image_compare(tolerance=2, style='default')
     def test_plot_customer_alive_history(self):
         plt.figure()
         transaction_data = load_transaction_data()
         # yes I know this is using the wrong data, but I'm testing plotting here.
-        id = 35
+        id_user = 35
         days_since_birth = 200
-        sp_trans = transaction_data.loc[transaction_data['id'] == id]
+        sp_trans = transaction_data.loc[transaction_data['id'] == id_user]
         plotting.plot_history_alive(bgf, days_since_birth, sp_trans, 'date')
         return plt.gcf()
 
@@ -149,6 +163,7 @@ class TestPlotting():
 
     @pytest.mark.mpl_image_compare(tolerance=2, style='default')
     def test_plot_cumulative_transactions(self):
+        """Test plotting cumultative transactions with CDNOW example."""
         transactions = load_dataset('CDNOW_sample.txt', header=None, sep='\s+')
         transactions.columns = ['id_total', 'id_sample', 'date', 'num_cd_purc',
                                 'total_value']
@@ -171,6 +186,7 @@ class TestPlotting():
 
     @pytest.mark.mpl_image_compare(tolerance=2, style='default')
     def test_plot_incremental_transactions(self):
+        """Test plotting incremental transactions with CDNOW example."""
         transactions = load_dataset('CDNOW_sample.txt', header=None, sep='\s+')
         transactions.columns = ['id_total', 'id_sample', 'date', 'num_cd_purc',
                                 'total_value']

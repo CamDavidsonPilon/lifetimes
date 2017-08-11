@@ -514,6 +514,7 @@ def plot_transaction_rate_heterogeneity(model,
                                         suptitle='Heterogeneity in Transaction Rate',
                                         xlabel='Transaction Rate',
                                         ylabel='Density',
+                                        suptitle_fontsize=14,
                                         **kwargs):
     """
     Plot the estimated gamma distribution of lambda (customers' propensities to purchase).
@@ -547,13 +548,14 @@ def plot_transaction_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.subplots_adjust(top=0.93)
-    fig.suptitle('Heterogeneity in Transaction Rate', fontsize=14, fontweight='bold')
+    fig.suptitle('Heterogeneity in Transaction Rate',
+                 fontsize=suptitle_fontsize, fontweight='bold')
 
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(rate_mean, rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
     return ax
 
@@ -562,6 +564,7 @@ def plot_dropout_rate_heterogeneity(model,
                                     suptitle='Heterogeneity in Dropout Probability',
                                     xlabel='Dropout Probability p',
                                     ylabel='Density',
+                                    suptitle_fontsize=14,
                                     **kwargs):
     """
     Plot the estimated gamma distribution of p.
@@ -597,13 +600,13 @@ def plot_dropout_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.subplots_adjust(top=0.93)
-    fig.suptitle(suptitle, fontsize=14, fontweight='bold')
+    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight='bold')
 
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(beta_mean, beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
     return ax
 
