@@ -25,13 +25,13 @@ import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-# Convert package README.md to README.rst to include in index.rst for docs
+# Convert package README.md to intro.rst to include in index.rst for docs
 try:
     import pypandoc
     long_description = pypandoc.convert_file('../README.md', 'rst',
                                              outputfile='intro.rst')
 except(ImportError):
-    print('Install pypandoc to convert README.md to README.rst')
+    print('Install pypandoc to convert README.md to intro.rst')
 
 
 # -- General configuration ------------------------------------------------

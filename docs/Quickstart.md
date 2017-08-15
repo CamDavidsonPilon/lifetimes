@@ -27,7 +27,7 @@ If your data is not in the format (very common), there are [utility functions](#
 
 #### Basic Frequency/Recency analysis using the BG/NBD model
 
-We'll use the **BG/NBD model** first. There are other models which we will explore in these docs, but this is the simplest to start with. 
+We'll use the **BG/NBD model** first. There are other models which we will explore in these docs, but this is the simplest to start with.
 
     from lifetimes import BetaGeoFitter
 
@@ -41,11 +41,11 @@ We'll use the **BG/NBD model** first. There are other models which we will explo
 
 After fitting, we have lots of nice methods and properties attached to the fitter object.
 
-For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the intialization of the model. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
+For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the initialization of the model. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
 
 ##### Visualizing our Frequency/Recency Matrix
 
-Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the **Frequency/Recency matrix**, which computes the expected number of transactions a artifical customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
+Consider: a customer bought from you every day for three weeks straight, and we haven't heard from them in months. What are the chances they are still "alive"? Pretty small. On the other hand, a customer who historically buys from you once a quarter, and bought last quarter, is likely still alive. We can visualize this relationship using the **Frequency/Recency matrix**, which computes the expected number of transactions a artificial customer is to make in the next time period, given his or her recency (age at last purchase) and frequency (the number of repeat transactions he or she has made).
 
     from lifetimes.plotting import plot_frequency_recency_matrix
 
@@ -54,7 +54,7 @@ Consider: a customer bought from you every day for three weeks straight, and we 
 ![fr_matrix](http://imgur.com/Rw8PGcq.png)
 
 
-We can see that if a customer has bought 25 times from you, and their lastest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are your best customer (bottom-right). Your coldest customers are those that are in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks.
+We can see that if a customer has bought 25 times from you, and their latest purchase was when they were 35 weeks old (given the individual is 35 weeks old), then they are your best customer (bottom-right). Your coldest customers are those that are in the top-right corner: they bought a lot quickly, and we haven't seen them in weeks.
 
 There's also that beautiful "tail" around (5,25). That represents the customer who buys infrequently, but we've seen him or her recently, so they *might* buy again - we're not sure if they are dead or just between purchases.
 
@@ -87,7 +87,7 @@ Great, we can see that the customer who has made 26 purchases, and bought very r
 
 ##### Assessing model fit
 
-Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artifical data simulated with your fitted model's parameters.
+Ok, we can predict and we can visualize our customers' behaviour, but is our model correct? There are a few ways to assess the model's correctness. The first is to compare your data versus artificial data simulated with your fitted model's parameters.
 
     from lifetimes.plotting import plot_period_transactions
     plot_period_transactions(bgf)
