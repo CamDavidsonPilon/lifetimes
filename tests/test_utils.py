@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 import numpy as np
-import sys
 from pandas.util.testing import assert_frame_equal
 from numpy.testing import assert_almost_equal, assert_allclose
 
@@ -247,13 +246,11 @@ def test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_a
     # see http://brucehardie.com/papers/rfm_clv_2005-02-16.pdf
     # RFM and CLV: Using Iso-value Curves for Customer Base Analysis
     df = pd.read_csv('lifetimes/datasets/CDNOW_sample.txt', sep='\s+', header=None, names=['_id', 'id', 'date', 'cds_bought', 'spent'])
-    if sys.version_info[0] < 3:
-        df['date'] = pd.to_datetime(df['date'].astype(unicode))
-    else:
-        df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+    df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
     df_train = df[df['date'] < '1997-10-01']
     summary = utils.summary_data_from_transaction_data(df_train, 'id', 'date', 'spent')
     results = summary[summary['frequency'] > 0]['monetary_value'].describe()
+
     assert np.round(results.loc['mean']) == 35
     assert np.round(results.loc['std']) == 30
     assert np.round(results.loc['min']) == 3
