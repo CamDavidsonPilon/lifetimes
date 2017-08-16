@@ -10,7 +10,7 @@
    :caption: Contents:
 
    Quickstart
-   Save and load model
+   Saving and loading model
    More examples and recipes
 
 

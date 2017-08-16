@@ -1,6 +1,6 @@
-## Save and load model
+## Saving and loading model
 
-When you have lots of data and training takes a lot of time option with saving and loading model could be useful. First you need fit model, then save it and load.
+When you have lots of data and training takes a lot of time option with saving and loading model could be useful. First you need to fit the model, then save it and load.
 
 ### Fit model
 
