@@ -258,6 +258,8 @@ def plot_probability_alive_matrix(model,
 def plot_expected_repeat_purchases(model,
                                    title='Expected Number of Repeat Purchases per Customer',
                                    xlabel='Time Since First Purchase',
+                                   ax=None,
+                                   label=None,
                                    **kwargs):
     """
     Plot expected repeat purchases on calibration period .
@@ -272,6 +274,10 @@ def plot_expected_repeat_purchases(model,
         Figure title
     xlabel: str, optional
         Figure xlabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    label: str, optional
+        Label for plot.
     kwargs
         Passed into the matplotlib.pyplot.plot command.
 
@@ -282,8 +288,8 @@ def plot_expected_repeat_purchases(model,
     """
     from matplotlib import pyplot as plt
 
-    ax = kwargs.pop('ax', None) or plt.subplot(111)
-    label = kwargs.pop('label', None)
+    if ax is None:
+        ax = plt.subplot(111)
 
     if plt.matplotlib.__version__ >= "1.5":
         color_cycle = ax._get_lines.prop_cycler
@@ -295,10 +301,10 @@ def plot_expected_repeat_purchases(model,
     max_T = model.data['T'].max()
 
     times = np.linspace(0, max_T, 100)
-    ax = plt.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
+    ax.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
 
     times = np.linspace(max_T, 1.5 * max_T, 100)
-    plt.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
+    ax.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
 
     plt.title(title)
     plt.xlabel(xlabel)
@@ -514,6 +520,7 @@ def plot_transaction_rate_heterogeneity(model,
                                         suptitle='Heterogeneity in Transaction Rate',
                                         xlabel='Transaction Rate',
                                         ylabel='Density',
+                                        suptitle_fontsize=14,
                                         **kwargs):
     """
     Plot the estimated gamma distribution of lambda (customers' propensities to purchase).
@@ -547,13 +554,14 @@ def plot_transaction_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.subplots_adjust(top=0.93)
-    fig.suptitle('Heterogeneity in Transaction Rate', fontsize=14, fontweight='bold')
+    fig.suptitle('Heterogeneity in Transaction Rate',
+                 fontsize=suptitle_fontsize, fontweight='bold')
 
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(rate_mean, rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
     return ax
 
@@ -562,6 +570,7 @@ def plot_dropout_rate_heterogeneity(model,
                                     suptitle='Heterogeneity in Dropout Probability',
                                     xlabel='Dropout Probability p',
                                     ylabel='Density',
+                                    suptitle_fontsize=14,
                                     **kwargs):
     """
     Plot the estimated gamma distribution of p.
@@ -597,13 +606,13 @@ def plot_dropout_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.subplots_adjust(top=0.93)
-    fig.suptitle(suptitle, fontsize=14, fontweight='bold')
+    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight='bold')
 
     ax.set_title('mean: {:.3f}, var: {:.3f}'.format(beta_mean, beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
     return ax
 
