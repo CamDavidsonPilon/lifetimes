@@ -17,10 +17,18 @@ bgf
 
 ### Saving model
 
-Model will be saved with [dill](https://github.com/uqfoundation/dill) to pickle object. Optional parameter `save_data` is used for saving data from model or not (default: `True`).
+Model will be saved with [dill](https://github.com/uqfoundation/dill) to pickle object. Optional parameters `save_data` and `save_generate_data_method` are present to reduce final pickle object size for big dataframes.
+Optional parameters:
+- `save_data` is used for saving data from model or not (default: `True`).
+- `save_generate_data_method` is used for saving `generate_new_data` method from model or not (default: `True`)
 
 ```python
 bgf.save_model('bgf.pkl')
+```
+
+or to save only model with minumum size without `data` and `generate_new_data`:
+```python
+bgf.save_model('bgf_small_size.pkl', save_data=False, save_generate_data_method=False)
 ```
 
 ### Loading model
