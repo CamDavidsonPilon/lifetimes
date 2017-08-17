@@ -23,7 +23,8 @@ class BaseFitter(object):
                              " method first.")
         return [self.params_[x] for x in args]
 
-    def save_model(self, path, save_data=True, save_generate_data_method=True):
+    def save_model(self, path, save_data=True, save_generate_data_method=True,
+                   values_to_save=None):
         """
         Save model with dill package.
 
@@ -36,11 +37,15 @@ class BaseFitter(object):
         save_generate_data_method: bool, optional
             Whether to save generate_new_data method (if it exists) from
             fitter.generate_new_data to pickle object.
+        values_to_save: list, optional
+            Placeholders for original attributes for saving object. If None
+            will be extended to attr_list length like [None] * len(attr_list)
 
         """
         attr_list = ['data' * (not save_data),
                      'generate_new_data' * (not save_generate_data_method)]
-        _save_obj_without_attr(self, attr_list, path)
+        _save_obj_without_attr(self, attr_list, path,
+                               values_to_save=values_to_save)
 
     def load_model(self, path):
         """

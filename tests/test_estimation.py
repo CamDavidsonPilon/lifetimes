@@ -482,6 +482,7 @@ class TestBetaGeoFitter():
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
 
     def test_save_load_bgnbd(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD."""
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         bgf.save_model(PATH_SAVE_BGNBD_MODEL)
@@ -499,6 +500,7 @@ class TestBetaGeoFitter():
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
     def test_save_load_bgnbd_no_data(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data."""
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False)
@@ -513,6 +515,44 @@ class TestBetaGeoFitter():
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
 
         assert bgf_new.__dict__['data'] is None
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_generate_data(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without generate_new_data method."""
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_generate_data_method=False)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert bgf_new.__dict__['generate_new_data'] is None
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_data_replace_with_empty_str(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data with replaced value empty str."""
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False, values_to_save=[''])
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert bgf_new.__dict__['data'] is ''
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
