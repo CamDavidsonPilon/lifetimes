@@ -512,7 +512,7 @@ class TestBetaGeoFitter():
         assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
 
-        assert isinstance(bgf_new.__dict__['data'], list)
+        assert bgf_new.__dict__['data'] is None
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
