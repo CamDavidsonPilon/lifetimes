@@ -18,6 +18,7 @@ from lifetimes.datasets import load_cdnow_summary, load_cdnow_summary_data_with_
 def cdnow_customers():
     return load_cdnow_summary()
 
+
 cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
 PATH_SAVE_MODEL = './base_fitter.pkl'
@@ -31,6 +32,8 @@ class TestBaseFitter():
         base_fitter.params_ = dict(x=12.3, y=42)
         base_fitter.data = np.array([1, 2, 3])
         assert repr(base_fitter) == '<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.30, y: 42.00>'
+        base_fitter.data = None
+        assert repr(base_fitter) == '<lifetimes.BaseFitter: x: 12.30, y: 42.00>'
 
     def test_unload_params(self):
         base_fitter = estimation.BaseFitter()
@@ -38,7 +41,6 @@ class TestBaseFitter():
             base_fitter._unload_params()
         base_fitter.params_ = dict(x=12.3, y=42)
         npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params('x', 'y'))
-
 
     def test_save_load_model(self):
         base_fitter = estimation.BaseFitter()
@@ -50,7 +52,6 @@ class TestBaseFitter():
 
         assert repr(base_fitter) == repr(base_fitter_saved)
         os.remove(PATH_SAVE_MODEL)
-
 
 
 class TestBetaGeoBetaBinomFitter():
@@ -144,6 +145,7 @@ class TestBetaGeoBetaBinomFitter():
             index=None
         )
         assert (bbtf.data.index == index).all() == False
+
 
 class TestGammaGammaFitter():
 

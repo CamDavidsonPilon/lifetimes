@@ -10,12 +10,17 @@ class BaseFitter(object):
         """Representation of fitter."""
         classname = self.__class__.__name__
         try:
-            param_str = ", ".join("%s: %.2f" % (param, value) for param, value
-                                  in sorted(self.params_.items()))
-            return "<lifetimes.%s: fitted with %d subjects, %s>" % (
-                classname, self.data.shape[0], param_str)
+            subj_str = " fitted with {:d} subjects,".format(self.data.shape[0])
         except AttributeError:
-            return "<lifetimes.%s>" % classname
+            subj_str = ""
+
+        try:
+            param_str = ", ".join("{}: {:.2f}".format(par, val) for par, val
+                                  in sorted(self.params_.items()))
+            return "<lifetimes.{classname}:{subj_str} {param_str}>".format(
+                classname=classname, subj_str=subj_str, param_str=param_str)
+        except AttributeError:
+            return "<lifetimes.{classname}>".format(classname=classname)
 
     def _unload_params(self, *args):
         if not hasattr(self, 'params_'):
