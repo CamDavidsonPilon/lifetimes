@@ -1,7 +1,9 @@
+"""Lifetimes utils and helpers."""
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import dill
 from scipy.optimize import minimize
 
 pd.options.mode.chained_assignment = None
@@ -466,3 +468,36 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
                                         'predicted': pred_cum_transactions}, index=date_index)
 
     return df_cum_transactions
+
+
+def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
+    """Helper to save object with attributes from attr_list.
+
+    Parameters
+    ----------
+    obj: obj
+        Object of class with __dict__ attribute.
+    attr_list: list
+        List with attributes to exclude from saving to dill object. If empty
+        list all attributes will be saved.
+    path: str
+        Where to save dill object.
+    values_to_save: list, optional
+        Placeholders for original attributes for saving object. If None will be
+        extended to attr_list length like [None] * len(attr_list)
+    """
+    if values_to_save is None:
+        values_to_save = [None] * len(attr_list)
+
+    saved_attr_dict = {}
+    for attr, val_save in zip(attr_list, values_to_save):
+        if attr in obj.__dict__:
+            item = obj.__dict__.pop(attr)
+            saved_attr_dict[attr] = item
+            setattr(obj, attr, val_save)
+
+    with open(path, 'wb') as out_file:
+        dill.dump(obj, out_file)
+
+    for attr, item in saved_attr_dict.items():
+        setattr(obj, attr, item)
