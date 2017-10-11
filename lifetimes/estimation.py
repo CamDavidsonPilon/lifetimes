@@ -19,6 +19,10 @@ B = special.beta
 
 
 class BaseFitter(object):
+
+    params_ = None
+    data = None
+
     def __repr__(self):
         classname = self.__class__.__name__
         try:
@@ -827,10 +831,20 @@ class BGBBFitter(BaseFitter):
         a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
         return BGBBFitter.static_expected_number_of_purchases_up_to_time(a, b, g, d, t)
 
+    def limit_number_of_purchases(self):
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_limit_number_of_purchases(a, b, g, d)
+
     @staticmethod
     def static_expected_number_of_purchases_up_to_time(a, b, g, d, t):
         return a / (a + b) * d / (g - 1) * (
             1.0 - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
+
+    @staticmethod
+    def static_limit_number_of_purchases(a, b, g, d):
+        if g < 1:
+            return np.infty
+        return (a / (a + b)) * (d / (g - 1))
 
     def expected_number_of_purchases_up_to_time_error(self, t, C):
         """
@@ -883,7 +897,7 @@ class BGBBFitter(BaseFitter):
     @staticmethod
     def static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n):
         if not (isinstance(n, int) and isinstance(t, int)):
-            raise TypeError("t and n musy be integers")
+            raise TypeError("t and n must be integers")
 
         common_factor = 1.0 / special.beta(a, b) * 1.0 / special.beta(g, d)
 
@@ -893,6 +907,15 @@ class BGBBFitter(BaseFitter):
              range(n, int(t - 1 + 1))])
 
         return common_factor * (first_term + second_term)
+
+    @staticmethod
+    def static_probability_alive_next_step(a, b, g, d, x, t_x, n):
+        if not (isinstance(x, int) and isinstance(t_x, int)):
+            raise TypeError("t_x and x and n must be integers")
+
+        L = np.exp(-BGBBFitter._negative_log_likelihood((a, b, g, d), x, t_x, n, penalizer_coef=0.0))
+
+        return B(a + x, b + n - x) / B(a, b) * B(g, d + n + 1) / B(g, d) * 1.0 / L
 
 
 class BGBBBGFitter(BaseFitter):

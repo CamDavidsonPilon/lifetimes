@@ -7,16 +7,17 @@ from lifetimes import models
 from lifetimes.data_compression import compress_bgext_data
 from lifetimes.utils import is_almost_equal, is_same_order
 from uncertainties import correlation_matrix, ufloat
+import matplotlib.pyplot as plt
 
 
 @pytest.mark.BGExt
 def test_BGExt_generation():
-    params = {'alpha': 0.3, 'beta': 1.5}
+    params = {'alpha': 2.23, 'beta': 9.35}
     probs = (1,)
 
-    gen_data = gen.bgext_model(5, params['alpha'], params['beta'], probs=probs, size=10)
+    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], probs=probs, size=1000)
 
-    assert len(gen_data) == 10
+    assert len(gen_data) == 1000
     assert 'T' in gen_data
     assert 'frequency' in gen_data
     assert 'theta' in gen_data
@@ -33,6 +34,18 @@ def test_BGExt_generation():
     assert 'theta' in gen_data
     assert 'alt_state' in gen_data
     print gen_data
+
+
+@pytest.mark.BGExt
+def test_generte_BGExt_for_external_studies():
+    params = {'alpha': 2.8, 'beta': 9.35}
+    probs = (1,)
+
+    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], probs=probs, size=10000)
+
+    c_gen_data = compress_bgext_data(gen_data)
+
+    c_gen_data.to_csv("/Users/marcomeneghelli/Desktop/bg_data_2.csv")
 
 
 @pytest.mark.BGExt
@@ -272,7 +285,6 @@ def test_BG_integration_in_models_with_uncertainties():
         assert Ex.n >= 0
         assert Ex.s >= 0
 
-
     t = 10
     print "E[X(t) = n] as a function of n, t = " + str(t)
     tot_prob = 0.0
@@ -334,3 +346,46 @@ def test_correlations_of_uparams_and_derivatives():
     assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
 
     # print [correlation_matrix([p1, model.expected_number_of_purchases_up_to_time(t)])[0, 1] for t in range(1,100)]
+
+
+@pytest.mark.BGExt
+def test_address_dispersion_of_fit_with_few_renewals():
+    params = {'alpha': 2.26, 'beta': 8.13}  # similar to ReadIt
+    probs = (1,)
+
+    print "True number of renewals:"
+    true_Ex = est.BGFitter.static_expected_number_of_purchases_up_to_time(params['alpha'], params['beta'], 52) + 1
+    print true_Ex
+
+    print "Estimates:"
+    N = 30
+    conv_day = 8
+    T = 2
+
+    estimates = []
+    for i in range(N):
+        gen_data = gen.bgext_model([T - 2, T - 1, T] * (conv_day * 7), params['alpha'], params['beta'], probs=probs)
+        data = compress_bgext_data(gen_data)
+
+        model = models.BGModel(penalizer_coef=0.1)
+
+        model.fit(data['frequency'], data['T'], bootstrap_size=30, N=data['N'],
+                  )  # initial_params=params.values()
+
+        # print "Fitted params"
+        # print model.params
+        # print model.params_C
+
+        Ex = model.expected_number_of_purchases_up_to_time(52) + 1
+        print Ex
+        estimates.append(Ex.n)
+
+    plt.hist(estimates, 50, normed=0, facecolor='g', alpha=0.75)
+
+    plt.xlabel('estimates')
+    plt.title(
+        'Histogram of ' + str(N) + ' estimates (true value in red) - ' + str(conv_day) + ' conv/day, T: ' + str(T))
+
+    plt.axvline(x=true_Ex, color="red")
+    plt.grid(True)
+    plt.show()
