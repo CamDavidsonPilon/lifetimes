@@ -105,7 +105,6 @@ def print_estimates_hist(exs, true_Ex, number_of_days, color, edge_color):
     plt.axvline(x=true_Ex.n, color=edge_color, label="fitted{}: {}+/-{}".format(number_of_days, round(true_Ex.n,2), round(true_Ex.s,2)))
 
 
-
 def save_estimates_to_file(exs, path):
     df = pd.DataFrame(data=map(lambda x: [x.n, x.s], exs))
     df.to_csv(path)

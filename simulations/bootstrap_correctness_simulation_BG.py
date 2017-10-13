@@ -1,11 +1,12 @@
-from dispersion_of_fit_simulation_BG import get_estimates_from_bootstrap
+from dispersion_of_fit_simulation_BG import print_estimates_hist
 import lifetimes.generate_data as gen
 import lifetimes.data_compression as comp
 from lifetimes.models import BGModel
 from lifetimes.estimation import BGFitter
 import math
 import numpy as np
-import random
+import matplotlib.pyplot as plt
+import uncertainties
 
 
 if __name__ == "__main__":
@@ -17,7 +18,6 @@ if __name__ == "__main__":
     daily_installs = [2000] * 30
     conversion_rate = 0.06
     free_trial_conversion = 0.6
-    days = [16, 20, 23, 27]
     true_Ex = BGModel().fitter.static_expected_number_of_purchases_up_to_time(params['alpha'], params['beta'], 52) + 1
     exss = []
     fitted_e_x = []
@@ -35,10 +35,20 @@ if __name__ == "__main__":
         current_model.fit(frequency=data["frequency"], T=data["T"], N=data["N"], bootstrap_size=100)
         ex = current_model.expected_number_of_purchases_up_to_time(52) + 1
         fitted_e_x.append(ex)
-        p = current_model.sampled_parameters
-        percentiles_data = [BGFitter.static_expected_number_of_purchases_up_to_time(pars['alpha'], pars['beta'], 52) + 1 for pars in current_model.sampled_parameters]
-        percentiles_e_x.append((np.percentile(percentiles_data, 16), np.percentile(percentiles_data, 84)))
-
+        percentiles_data = filter(lambda x: not (math.isnan(x) or math.isinf(x)), [BGFitter.static_expected_number_of_purchases_up_to_time(pars['alpha'], pars['beta'], 52) + 1 for pars in current_model.sampled_parameters])
+        percentiles = (np.percentile(percentiles_data, 16), np.percentile(percentiles_data, 84))
+        percentiles_e_x.append(percentiles)
+        # plt.hist(
+        #     percentiles_data,
+        #     bins=range(40), normed=0,
+        #     alpha=0.3
+        # )
+        # plt.axvline(x=true_Ex, color='red', alpha =0.7)
+        # plt.axvline(x=percentiles[0], color='blue', alpha =0.7)
+        # plt.axvline(x=percentiles[1], color='blue', alpha =0.7)
+        # plt.axvline(x=ex.n - ex.s, color='green', alpha =0.7)
+        # plt.axvline(x=ex.n + ex.s, color='green', alpha =0.7)
+        # plt.show()
 
     contained = len(filter(lambda x: x.n -x.s < true_Ex < x.n+x.s, fitted_e_x)) * 100.0 / N
     print("Interval contains true value: %{} of times".format(contained))
