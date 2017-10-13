@@ -39,7 +39,6 @@ def set_plot_title(true_Ex, N, daily_installs, conversion_rate, free_trial_conve
     plt.axvline(x=true_Ex, color="red")
     plt.legend()
     plt.grid(True)
-    plt.show()
 
 
 def print_estimates_lines(exs, true_Ex, number_of_days):
@@ -90,7 +89,7 @@ if __name__ == "__main__":
     # params = { "alpha": 1.1428044756900324, "beta": 3.586332707244498 } # ReadIt - Latin
     # params = {"alpha": 1.07424287184781, "beta": 2.358619301400822} #ReadIt - Italy
     probs = (1, )
-    N = 10
+    N = 2
     daily_installs = [1000] * 30
     conversion_rate = 0.06
     free_trial_conversion = 0.6
@@ -109,14 +108,18 @@ if __name__ == "__main__":
             N=N)
         exss.append(ex)
 
-    set_plot_title(true_Ex, N, daily_installs=daily_installs[0],conversion_rate=conversion_rate, free_trial_conversion=free_trial_conversion)
     for index, exs in enumerate(exss):
-        print_estimates_lines(exs, true_Ex, days[index])
+        print_estimates_hist(exs, true_Ex, days[index],
+                             color=[(1, 1, 0, 0.5), (0, 1, 0, 0.5), (1, 0, 0, 0.5), (0, 0, 1, 0.5)][index],
+                             edge_color=[(1, 1, 0, 1), (0, 1, 0, 1), (1, 0, 0, 1), (0, 0, 1, 1)][index])
+    set_plot_title(true_Ex, N, daily_installs=daily_installs[0], conversion_rate=conversion_rate,
+                   free_trial_conversion=free_trial_conversion)
     plt.show()
 
-    set_plot_title(true_Ex)
     for index, exs in enumerate(exss):
         print_estimates_lines(exs, true_Ex, days[index])
+    set_plot_title(true_Ex, N, daily_installs=daily_installs[0], conversion_rate=conversion_rate,
+                   free_trial_conversion=free_trial_conversion)
     plt.show()
 
     for index, exs in enumerate(exss):
