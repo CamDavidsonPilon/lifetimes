@@ -461,7 +461,7 @@ class BGModel(Model):
         self.wrapped_static_probability_of_n_purchases_up_to_time = \
             uncertainties.wrap(BGFitter.static_probability_of_n_purchases_up_to_time)
 
-    def generateData(self, t, parameters, size):
+    def generate_data(self, t, parameters, size):
         return gen.bgext_model(t, parameters['alpha'],
                                parameters['beta'],
                                size=size)
