@@ -33,7 +33,8 @@ def plot_period_transactions(model, max_frequency=7, **kwargs):
     return ax
 
 
-def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs):
+def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_matrix, kind="frequency_cal", n=7,
+                                                    **kwargs):
     """
     This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
 
@@ -58,11 +59,14 @@ def plot_calibration_purchases_vs_holdout_purchases(model, calibration_holdout_m
     summary = calibration_holdout_matrix.copy()
     duration_holdout = summary.iloc[0]['duration_holdout']
 
-    summary['model_predictions'] = summary.apply(lambda r: model.conditional_expected_number_of_purchases_up_to_time(duration_holdout, r['frequency_cal'], r['recency_cal'], r['T_cal']), axis=1)
+    summary['model_predictions'] = summary.apply(
+        lambda r: model.conditional_expected_number_of_purchases_up_to_time(duration_holdout, r['frequency_cal'],
+                                                                            r['recency_cal'], r['T_cal']), axis=1)
 
     if kind == "time_since_last_purchase":
         summary["time_since_last_purchase"] = summary["T_cal"] - summary["recency_cal"]
-        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
+        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().ix[
+             :n].plot(**kwargs)
     else:
         ax = summary.groupby(kind)[['frequency_holdout', 'model_predictions']].mean().ix[:n].plot(**kwargs)
 
@@ -225,3 +229,37 @@ def forceAspect(ax, aspect=1):
     im = ax.get_images()
     extent = im[0].get_extent()
     ax.set_aspect(abs((extent[1] - extent[0]) / (extent[3] - extent[2])) / aspect)
+
+
+def plot_beta(a, b):
+    """
+    Plots beta distribution.
+    """
+
+    from matplotlib import pyplot as plt
+
+    from scipy.stats import beta
+
+    fig, ax = plt.subplots(1, 1)
+
+    mean, var, skew, kurt = beta.stats(a, b, moments='mvsk')
+
+    x = np.linspace(0.001, 0.999, 1000)
+
+    ax.plot(x, beta.pdf(x, a, b),
+            'r-', lw=5, alpha=0.6, label='beta pdf')
+
+    ax.set_xlim(0, 1)
+
+    r = beta.rvs(a, b, size=1000)
+
+    ax.hist(r, normed=True, histtype='stepfilled', alpha=0.2)
+    ax.legend(loc='best', frameon=False)
+
+
+if __name__ == "__main__":
+    from matplotlib import pyplot as plt
+
+    plot_beta(1.32, 2.85)
+    plt.show()
+    pass

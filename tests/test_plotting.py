@@ -7,7 +7,7 @@ matplotlib.use('AGG') # use a non-interactive backend
 from matplotlib import pyplot as plt
 
 from lifetimes import plotting
-from lifetimes import BetaGeoFitter, ParetoNBDFitter, ModifiedBetaGeoFitter
+from lifetimes.estimation import BetaGeoFitter, ParetoNBDFitter, ModifiedBetaGeoFitter
 from lifetimes.datasets import load_cdnow, load_transaction_data
 from lifetimes import utils
 
