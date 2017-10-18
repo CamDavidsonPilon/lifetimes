@@ -44,9 +44,10 @@ def get_estimates_from_bootstrap(params, daily_installs, observed_days, conversi
         cov = model.params_C
         [a, b] = uncertainties.correlated_values([a, b], cov)
         Ex = model.wrapped_static_expected_number_of_purchases_up_to_time(a, b, 52) + 1
-        print (i, Ex)
-        exs.append(Ex)
-    return (exs, model.expected_number_of_purchases_up_to_time(52) + 1)
+        if not math.isnan(Ex.n) and not math.isinf(Ex.n):
+            print (i, Ex)
+            exs.append(Ex)
+    return exs, model.expected_number_of_purchases_up_to_time(52) + 1
 
 
 def set_plot_title(true_Ex, N, daily_installs, conversion_rate, free_trial_conversion):
@@ -83,9 +84,9 @@ def print_estimates_lines(exs, true_Ex, number_of_days, color, edge_color):
 
 
 def print_estimates_hist(exs, true_Ex, number_of_days, color, edge_color):
-    percentage_out_lower = len(filter(lambda x: true_Ex > x + x.s, exs)) * 100.0 / len(exs)
-    percentage_out_upper = len(filter(lambda x: true_Ex < x - x.s, exs)) * 100.0 / len(exs)
-    percentage_in = len(filter(lambda x: x - x.s < true_Ex < x + x.s, exs)) * 100.0 / len(exs)
+    percentage_out_lower = len(filter(lambda x: true_Ex > x.n + x.s, exs)) * 100.0 / len(exs)
+    percentage_out_upper = len(filter(lambda x: true_Ex < x.n - x.s, exs)) * 100.0 / len(exs)
+    percentage_in = len(filter(lambda x: x.n - x.s < true_Ex < x.n + x.s, exs)) * 100.0 / len(exs)
     estimates = map(lambda x: x.n, exs)
     plt.hist(
         map(lambda x: x.n, exs),
@@ -111,11 +112,11 @@ def save_estimates_to_file(exs, path):
 
 
 if __name__ == "__main__":
-    params = {"alpha": 0.3271620446656849, "beta": 0.8511102671654379}  # ReadIt - US
+    # params = {"alpha": 0.3271620446656849, "beta": 0.8511102671654379}  # ReadIt - US
     # params = { "alpha": 1.1428044756900324, "beta": 3.586332707244498 } # ReadIt - Latin
-    # params = {"alpha": 1.07424287184781, "beta": 2.358619301400822} #ReadIt - Italy
+    params = {"alpha": 1.07424287184781, "beta": 2.358619301400822} #ReadIt - Italy
     probs = (1, )
-    N = 100
+    N = 1000
     daily_installs = [2000] * 30
     conversion_rate = 0.06
     free_trial_conversion = 0.6
