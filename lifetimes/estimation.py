@@ -11,8 +11,6 @@ from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbg_model, bgbbbgext_model, bgext_model
 from lifetimes.formulas import gamma_ratio
-from uncertainties import UFloat, ufloat
-
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 B = special.beta
@@ -178,21 +176,21 @@ class ParetoNBDFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _log_A_0(params, freq, recency, age):
+    def _log_A_0(params, frequency, recency, age):
 
         r, alpha, s, beta = params
 
-        min_of_alpha_beta, max_of_alpha_beta, t = (alpha, beta, r + freq) if alpha < beta else (beta, alpha, s + 1)
+        min_of_alpha_beta, max_of_alpha_beta, t = (alpha, beta, r + frequency) if alpha < beta else (beta, alpha, s + 1)
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
-        rsf = r + s + freq
+        rsf = r + s + frequency
         p_1, q_1 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + recency)), (
             max_of_alpha_beta + recency)
         p_2, q_2 = special.hyp2f1(rsf, t, rsf + 1., abs_alpha_beta / (max_of_alpha_beta + age)), (
             max_of_alpha_beta + age)
 
         try:
-            size = len(freq)
+            size = len(frequency)
             sign = np.ones(size)
         except TypeError:
             sign = 1
@@ -201,18 +199,18 @@ class ParetoNBDFitter(BaseFitter):
                - rsf * log(q_1 * q_2)
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, frequency, recency, T, penalizer_coef):
 
         if npany(asarray(params) <= 0.):
             return np.inf
 
         r, alpha, s, beta = params
-        x = freq
+        x = frequency
 
         r_s_x = r + s + x
 
         A_1 = special.gammaln(r + x) - special.gammaln(r) + r * log(alpha) + s * log(beta)
-        log_A_0 = ParetoNBDFitter._log_A_0(params, freq, rec, T)
+        log_A_0 = ParetoNBDFitter._log_A_0(params, frequency, recency, T)
 
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
 
@@ -398,18 +396,18 @@ class BetaGeoFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, frequency, recency, T, penalizer_coef):
         if npany(asarray(params) <= 0):
             return np.inf
 
         r, alpha, a, b = params
 
-        A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + freq) - special.gammaln(b) - special.gammaln(a + b + freq)
-        A_3 = -(r + freq) * log(alpha + T)
+        A_1 = special.gammaln(r + frequency) - special.gammaln(r) + r * log(alpha)
+        A_2 = special.gammaln(a + b) + special.gammaln(b + frequency) - special.gammaln(b) - special.gammaln(a + b + frequency)
+        A_3 = -(r + frequency) * log(alpha + T)
 
-        d = vconcat[ones_like(freq), (freq > 0)]
-        A_4 = log(a) - log(b + freq - 1) - (r + freq) * log(rec + alpha)
+        d = vconcat[ones_like(frequency), (frequency > 0)]
+        A_4 = log(a) - log(b + frequency - 1) - (r + frequency) * log(recency + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d)).sum() + penalizer_term
@@ -557,17 +555,17 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, frequency, recency, T, penalizer_coef):
         if npany(asarray(params) <= 0):
             return np.inf
 
         r, alpha, a, b = params
 
-        A_1 = special.gammaln(r + freq) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + freq + 1) - special.gammaln(b) - special.gammaln(
-            a + b + freq + 1)
-        A_3 = -(r + freq) * log(alpha + T)
-        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
+        A_1 = special.gammaln(r + frequency) - special.gammaln(r) + r * log(alpha)
+        A_2 = special.gammaln(a + b) + special.gammaln(b + frequency + 1) - special.gammaln(b) - special.gammaln(
+            a + b + frequency + 1)
+        A_3 = -(r + frequency) * log(alpha + T)
+        A_4 = log(a) - log(b + frequency) + (r + frequency) * (log(alpha + T) - log(alpha + recency))
 
         penalizer_term = penalizer_coef * log(params).sum()
         return -(A_1 + A_2 + A_3 + log(exp(A_4) + 1.)).sum() + penalizer_term
@@ -665,13 +663,13 @@ class BGBBFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef, N=None, jac=False):
+    def _negative_log_likelihood(params, frequency, recency, T, penalizer_coef, N=None, jac=False):
         """
 
         Args:
             params:
-            freq:
-            rec:
+            frequency:
+            recency:
             T:
             penalizer_coef:
             N:
@@ -688,8 +686,8 @@ class BGBBFitter(BaseFitter):
             return np.inf
 
         a, b, g, d = params
-        x = freq
-        tx = rec
+        x = frequency
+        tx = recency
 
         denominator = special.beta(a, b) * special.beta(g, d)
 
@@ -803,6 +801,9 @@ class BGBBFitter(BaseFitter):
 
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
+            gen_t = reduce(lambda res, el: res + el, [[t] * n for t, n in zip(T, N)], [])
+        else:
+            gen_t = T
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, recency, T, self.penalizer_coef, N, jac],
                                                       iterative_fitting,
@@ -813,7 +814,7 @@ class BGBBFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1: bgbb_model(T, *params, size=size)
+        self.generate_new_data = lambda size=1, compressed=False: bgbb_model(gen_t, *params, size=size, compressed=compressed)
 
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
         return self
@@ -934,14 +935,14 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = None
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, frequency_before_conversion, penalizer_coef, N=None):
+    def _negative_log_likelihood(params, frequency, recency, T, frequency_before_conversion, penalizer_coef, N=None):
 
         if npany(asarray(params) <= 0.):
             return np.inf
 
         a, b, g, d, e, z = params
         xc = frequency_before_conversion
-        x = freq
+        x = frequency
 
         if isinstance(xc, float) or isinstance(xc, int):
             pass
@@ -961,7 +962,7 @@ class BGBBBGFitter(BaseFitter):
             ll_purchases = -ll_vector.sum()
 
         sub_params = a, b, g, d
-        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
+        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, frequency, recency, T, penalizer_coef, N)
 
     def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None,
             verbose=False,
@@ -992,6 +993,9 @@ class BGBBBGFitter(BaseFitter):
         _check_inputs(frequency, recency, T, N=N, frequency_before_conversion=frequency_before_conversion)
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
+            gen_t = reduce(lambda res, el: res + el, [[t] * n for t, n in zip(T, N)], [])
+        else:
+            gen_t = T
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, recency, T, frequency_before_conversion,
                                                        self.penalizer_coef, N],
@@ -1003,7 +1007,7 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
-        self.generate_new_data = lambda size=1: bgbbbg_model(T, *params, size=size)
+        self.generate_new_data = lambda size=1, compressed=False: bgbbbg_model(gen_t, *params, size=size, compressed=compressed)
 
         return self
 
@@ -1063,7 +1067,7 @@ class BGBBBGExtFitter(BaseFitter):
         self.params_ = None
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, frequency_before_conversion, penalizer_coef, N=None):
+    def _negative_log_likelihood(params, frequency, recency, T, frequency_before_conversion, penalizer_coef, N=None):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -1072,7 +1076,7 @@ class BGBBBGExtFitter(BaseFitter):
         if c0 >= 1:
             return np.inf
         xc = frequency_before_conversion
-        x = freq
+        x = frequency
 
         if isinstance(xc, float) or isinstance(xc, int):
             pass
@@ -1094,7 +1098,7 @@ class BGBBBGExtFitter(BaseFitter):
             ll_purchases = -ll_vector.sum()
 
         sub_params = a, b, g, d
-        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, freq, rec, T, penalizer_coef, N)
+        return ll_purchases + BGBBFitter._negative_log_likelihood(sub_params, frequency, recency, T, penalizer_coef, N)
 
     def fit(self, frequency, recency, T, frequency_before_conversion, iterative_fitting=0, initial_params=None,
             verbose=False,
@@ -1136,7 +1140,7 @@ class BGBBBGExtFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_before_conversion'])
-        self.generate_new_data = lambda size=1: bgbbbgext_model(T, *params, size=size)
+        self.generate_new_data = lambda size=1, compressed=False: bgbbbgext_model(T, *params, size=size, compressed=compressed)
         return self
 
     def expected_probability_of_converting_at_time(self, t):
@@ -1257,7 +1261,7 @@ class BGFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, T, penalizer_coef, N=None):
+    def _negative_log_likelihood(params, frequency, T, penalizer_coef, N=None):
         """
         """
 
@@ -1266,7 +1270,7 @@ class BGFitter(BaseFitter):
         if npany(asarray([a, b]) <= 0.):
             return np.inf
 
-        x = freq
+        x = frequency
         if isinstance(x, float) or isinstance(x, int):
             Ntot = 1
         else:
@@ -1330,6 +1334,9 @@ class BGFitter(BaseFitter):
 
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
+            gen_t = reduce(lambda res, el: res + el, [[t] * n for t, n in zip(T, N)], [])
+        else:
+            gen_t = T
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, T, self.penalizer_coef, N],
                                                       iterative_fitting,
@@ -1339,7 +1346,8 @@ class BGFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['alpha', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, T], columns=['frequency', 'T'])
-        self.generate_new_data = lambda size=1: bgext_model(T, *params, size=size)
+
+        self.generate_new_data = lambda size=1, compressed=False: bgext_model(gen_t, *params, size=size, compressed=compressed)
 
         return self
 
