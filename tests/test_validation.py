@@ -1,6 +1,6 @@
 import pytest
 from lifetimes.data_compression import compress_bgext_data, compress_data, compress_session_session_before_conversion_data
-from lifetimes.validation import generate_neg_likelihoods, goodness_of_test
+from lifetimes.validation import generate_neg_likelihoods, goodness_of_test, split_dataset
 import lifetimes.generate_data as gen
 import pandas as pd
 import lifetimes.estimation as est
@@ -92,5 +92,15 @@ def test_goodness_of_test_BGBBBG():
                                 fitter_class=est.BGBBBGFitter,
                                 verbose=True,
                                 test_data=wrong_test_data)
+
+@pytest.mark.validation
+def test_split_data():
+    params = {'alpha': 0.32, 'beta': 0.85}
+
+    gen_data = compress_bgext_data(gen.bgext_model(T=sample_T,
+                                                   alpha=params['alpha'],
+                                                   beta=params['beta']))
+    gen_data, test_data = split_dataset(gen_data, 0.3)
+    assert goodness_of_test(gen_data, fitter_class=est.BGFitter, verbose=True, test_data=test_data)
 
 

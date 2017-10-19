@@ -78,6 +78,28 @@ def goodness_of_test(data,
     return False
 
 
+def split_dataset(data, test_size_ratio):
+    test_N = []
+    train_N = []
+    for i, n in enumerate(data['N']):
+        test_N.append(0)
+        train_N.append(0)
+        for _ in range(n):
+            if np.random.uniform() < test_size_ratio:
+                test_N[i] += 1
+            else:
+                train_N[i] += 1
+    test_data = data.copy(deep=True)
+    test_data['N'] = test_N
+    test_data = test_data[test_data['N'] > 0]
+    train_data = data.copy(deep=True)
+    train_data['N'] = train_N
+    train_data = train_data[train_data['N'] > 0]
+    return train_data, test_data
+
+
+
+
 if __name__ == "__main__":
     params = {'alpha': 0.32, 'beta': 0.85}
 
