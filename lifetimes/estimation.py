@@ -814,7 +814,7 @@ class BGBBFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1, compressed=False: bgbb_model(gen_t, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbb_model(ts, *params, size=size, compressed=compressed)
 
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
         return self
@@ -1007,7 +1007,7 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
-        self.generate_new_data = lambda size=1, compressed=False: bgbbbg_model(gen_t, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbg_model(ts, *params, size=size, compressed=compressed)
 
         return self
 
@@ -1129,6 +1129,9 @@ class BGBBBGExtFitter(BaseFitter):
         _check_inputs(frequency, recency, T, N=N, frequency_before_conversion=frequency_before_conversion)
         if N is not None:  # in this case it means you're handling compressed data
             N = asarray(N)
+            gen_t = reduce(lambda res, el: res + el, [[t] * n for t, n in zip(T, N)], [])
+        else:
+            gen_t = T
         params, self._negative_log_likelihood_ = _fit(self._negative_log_likelihood,
                                                       [frequency, recency, T, frequency_before_conversion,
                                                        self.penalizer_coef, N],
@@ -1140,7 +1143,7 @@ class BGBBBGExtFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_before_conversion'])
-        self.generate_new_data = lambda size=1, compressed=False: bgbbbgext_model(T, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbgext_model(ts, *params, size=size, compressed=compressed)
         return self
 
     def expected_probability_of_converting_at_time(self, t):
@@ -1347,7 +1350,7 @@ class BGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, T], columns=['frequency', 'T'])
 
-        self.generate_new_data = lambda size=1, compressed=False: bgext_model(gen_t, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgext_model(ts, *params, size=size, compressed=compressed)
 
         return self
 

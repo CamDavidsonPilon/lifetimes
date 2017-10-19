@@ -8,6 +8,7 @@ import pandas as pd
 
 
 def generate_neg_likelihoods(fitter,
+                             test_ts=None,
                              penalizer_coef=0.1, size=100, simulation_size=100, refit=True):
     """
     Generates <simulation_size> log-likelihoods of BG model.
@@ -20,7 +21,10 @@ def generate_neg_likelihoods(fitter,
     params = fitter.params_
 
     for i in range(simulation_size):
-        gen_data = fitter.generate_new_data(size=size, compressed=True)
+        if test_ts:
+            gen_data = fitter.generate_new_data(size=size, compressed=True, ts=test_ts)
+        else:
+            gen_data = fitter.generate_new_data(size=size, compressed=True)
         current_fitter = fitter.__class__(penalizer_coef=penalizer_coef)
         if refit:
             current_fitter.fit(**gen_data)
@@ -47,19 +51,20 @@ def goodness_of_test(data,
     params = fitter.params_
     if test_data is None:
         n_ll = fitter._negative_log_likelihood_
-        refit = True
+        n_lls = generate_neg_likelihoods(fitter=fitter,
+                                         simulation_size=simulation_size,
+                                         refit=True)
     else:
         n_ll = fitter._negative_log_likelihood(
             params=params.values(),
             penalizer_coef=penalizer_coef,
             **test_data
         )
-        refit = False
-
-    # generate negative log likelihoods
-    n_lls = generate_neg_likelihoods(fitter=fitter,
-                                     simulation_size=simulation_size,
-                                     refit=refit)
+        n_lls = generate_neg_likelihoods(fitter=fitter,
+                                         simulation_size=simulation_size,
+                                         test_ts=reduce(lambda res, el: res + el,
+                                                        [[t] * n for t, n in zip(test_data['T'], test_data['N'])], []),
+                                         refit=False)
 
     # perform goodness of fit test
     lwr, upr = np.percentile(n_lls, [(1 - confidence_level) * 100, confidence_level * 100])
