@@ -41,13 +41,6 @@ def goodness_of_test(data,
     Returns True if data are compatible with the fitter distribution.
     """
 
-    # extract Ts for generation
-    ts = list(data['T'])
-    Ns = list(data['N'])
-    Ts = []
-    for i in range(len(ts)):
-        Ts += [ts[i]] * Ns[i]
-
     # fit them
     fitter = fitter_class(penalizer_coef=penalizer_coef)
     fitter.fit(**data)
@@ -70,9 +63,6 @@ def goodness_of_test(data,
 
     # perform goodness of fit test
     lwr, upr = np.percentile(n_lls, [(1 - confidence_level) * 100, confidence_level * 100])
-
-    # print lwr, upr
-    # print n_ll
 
     if verbose:
         print "Bounds: " + str((lwr, upr))
