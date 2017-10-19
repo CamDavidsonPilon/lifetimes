@@ -66,6 +66,13 @@ def test_goodness_of_test_BGBB():
                             fitter_class=est.BGBBFitter,
                             verbose=True, test_data=test_data)
 
+    wrong_params = {'alpha': 3, 'beta': 0.1, 'gamma': 5, 'delta': 0.2}
+    wrong_test_data = gen.bgbb_model(T=sample_T, size=1000, compressed=True, **wrong_params)
+    assert not goodness_of_test(gen_data,
+                                fitter_class=est.BGBBFitter,
+                                verbose=True,
+                                test_data=wrong_test_data)
+
 
 @pytest.mark.validation
 def test_goodness_of_test_BGBBBG():
@@ -78,4 +85,12 @@ def test_goodness_of_test_BGBBBG():
     assert goodness_of_test(gen_data,
                             fitter_class=est.BGBBBGFitter,
                             verbose=True, test_data=test_data)
+
+    wrong_params = {'alpha': 3, 'beta': 0.1, 'gamma': 5, 'delta': 0.2, 'epsilon': 10, 'zeta': 1}
+    wrong_test_data = gen.bgbbbg_model(T=sample_T, size=1000, compressed=True, **wrong_params)
+    assert not goodness_of_test(gen_data,
+                                fitter_class=est.BGBBBGFitter,
+                                verbose=True,
+                                test_data=wrong_test_data)
+
 
