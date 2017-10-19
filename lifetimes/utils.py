@@ -352,3 +352,15 @@ def is_same_order(v1, v2, tol=10):
         return 1.0/tol < math.fabs(float(v2)/v1) < tol
     else:
         return True
+
+
+def multinomial_sample(data):
+    """
+
+    Args:
+        data: an array t containing a number of users
+    """
+    total = sum(data)
+    prob = [float(n) / total for n in data]
+    return np.random.multinomial(total, prob, size=1)[0]
+

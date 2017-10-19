@@ -7,7 +7,7 @@ import random
 import copy
 from abc import abstractmethod
 import uncertainties
-from lifetimes.utils import is_almost_equal
+from lifetimes.utils import multinomial_sample
 
 
 class Model(object):
@@ -99,10 +99,8 @@ class Model(object):
             else:
                 # in case of compressed data you've gotta sample a multinomial distribution
                 N = data['N']
-                N_sum = sum(N)
-                prob = [float(n) / N_sum for n in N]
-                sampled_N = np.random.multinomial(N_sum, prob, size=1)
-                tmp_fitter.fit(frequency=data['frequency'], recency=data['recency'], T=data['T'], N=sampled_N[0])
+                sampled_N = multinomial_sample(N)
+                tmp_fitter.fit(frequency=data['frequency'], recency=data['recency'], T=data['T'], N=sampled_N)
             par_estimates.append(tmp_fitter.params_)
 
         par_lists = []

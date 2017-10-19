@@ -26,24 +26,23 @@ def compress_data(data):
 
 def compress_bgext_data(data):
     """
-    Takes id-level data and compress them by frequency, T, alt_state. Data must contain columns 'frequency', 'T', 'alt_state'
+    Takes id-level data and compress them by frequency, T. Data must contain columns 'frequency', 'T'
     :param data:    id-level data
     :type data:     pandas df
     :return:        Compressed data frame
     """
-    if 'T' not in data or 'frequency' not in data or 'alt_state' not in data:
-        raise ValueError("Input data frame must contain recency, T and alt_state")
+    if 'T' not in data or 'frequency' not in data:
+        raise ValueError("Input data frame must contain recency, T")
 
     newData = []
     for T in pd.Series.unique(data['T']):
         data_T = data[data['T'] == T]
         for frequency in pd.Series.unique(data_T['frequency']):
             data_f = data_T[data_T['frequency'] == frequency]
-            for alt_state in pd.Series.unique(data_f['alt_state']):
-                N = len(data_f[data_f['alt_state'] == alt_state])
-                newData.append([frequency, T, alt_state, N])
+            N = len(data_f)
+            newData.append([frequency, T, N])
 
-    compressed_data = pd.DataFrame(newData, columns=['frequency', 'T', 'alt_state', 'N'])
+    compressed_data = pd.DataFrame(newData, columns=['frequency', 'T', 'N'])
     return compressed_data
 
 

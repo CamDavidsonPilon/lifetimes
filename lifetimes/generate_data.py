@@ -513,7 +513,7 @@ def bgbbbgext_model(T, alpha, beta, gamma, delta, epsilon, zeta, c0, size=1, tim
     return df.set_index('customer_id')
 
 
-def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
+def bgext_model(T, alpha, beta, size=1):
     """
     Generate artificial data according to the discrete BG extended model.
     This models subscription-like data where a user renews subcription for a series of contiguous times
@@ -529,7 +529,7 @@ def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
 
     Returns:
         DataFrame, with index as customer_ids and the following columns:
-        'customer_id', 'frequency', 'T', 'p', 'alt_state', 'theta'
+        'customer_id', 'frequency', 'T', 'p', 'theta'
     """
     if size < 1:
         raise ValueError("size must be positive")
@@ -543,18 +543,13 @@ def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
         T = np.array(T)
         size = len(T)
 
-    probs = normalize_positive_vector(probs)
-    n_alt_states = len(probs)
-
     # Generate hidden parameters fo all costumers
     thetas = stats.beta.rvs(alpha, beta, size=size)  # probability of churning
-    users = []
-    columns = ['frequency', 'T', 'alt_state', 'theta', 'customer_id']
+    columns = ['frequency', 'T', 'theta', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
 
-        alt_state = -1 # alive
         theta = thetas[i]  # probability of dying
 
         # start testing from t = 1
@@ -566,10 +561,9 @@ def bgext_model(T, alpha, beta, probs=(1.0,), size=1):
                 ts.append(t)
                 t += 1
             else:
-                alt_state = list(np.random.multinomial(1, probs)).index(1)
                 break
 
-        df.ix[i] = len(ts), T[i], alt_state, theta, i
+        df.ix[i] = len(ts), T[i], theta, i
     return df.set_index('customer_id')
 
 

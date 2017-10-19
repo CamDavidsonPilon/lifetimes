@@ -11,37 +11,41 @@ import matplotlib.pyplot as plt
 
 
 @pytest.mark.BGExt
+def test_BG_compression():
+    params = {'alpha': 2.23, 'beta': 9.35}
+    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], size=1000)
+    comp_data = compress_bgext_data(gen_data)
+    assert len(gen_data) == sum(comp_data['N'])
+
+
+@pytest.mark.BGExt
 def test_BGExt_generation():
     params = {'alpha': 2.23, 'beta': 9.35}
-    probs = (1,)
 
-    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], probs=probs, size=1000)
+    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], size=1000)
 
     assert len(gen_data) == 1000
     assert 'T' in gen_data
     assert 'frequency' in gen_data
     assert 'theta' in gen_data
-    assert 'alt_state' in gen_data
     print gen_data
 
     print compress_bgext_data(gen_data)
 
-    gen_data = gen.bgext_model([5, 5, 1, 1], params['alpha'], params['beta'], probs=probs, size=10)
+    gen_data = gen.bgext_model([5, 5, 1, 1], params['alpha'], params['beta'], size=10)
 
     assert len(gen_data) == 4
     assert 'T' in gen_data
     assert 'frequency' in gen_data
     assert 'theta' in gen_data
-    assert 'alt_state' in gen_data
     print gen_data
 
 
 @pytest.mark.BGExt
 def test_generte_BGExt_for_external_studies():
     params = {'alpha': 2.8, 'beta': 9.35}
-    probs = (1,)
 
-    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], probs=probs, size=10000)
+    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], size=10000)
 
     c_gen_data = compress_bgext_data(gen_data)
 
@@ -351,7 +355,6 @@ def test_correlations_of_uparams_and_derivatives():
 @pytest.mark.BGExt
 def test_address_dispersion_of_fit_with_few_renewals():
     params = {'alpha': 2.26, 'beta': 8.13}  # similar to ReadIt
-    probs = (1,)
 
     print "True number of renewals:"
     true_Ex = est.BGFitter.static_expected_number_of_purchases_up_to_time(params['alpha'], params['beta'], 52) + 1
@@ -364,7 +367,7 @@ def test_address_dispersion_of_fit_with_few_renewals():
 
     estimates = []
     for i in range(N):
-        gen_data = gen.bgext_model([T - 2, T - 1, T] * (conv_day * 7), params['alpha'], params['beta'], probs=probs)
+        gen_data = gen.bgext_model([T - 2, T - 1, T] * (conv_day * 7), params['alpha'], params['beta'])
         data = compress_bgext_data(gen_data)
 
         model = models.BGModel(penalizer_coef=0.1)
