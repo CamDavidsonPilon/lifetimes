@@ -7,45 +7,39 @@ import numpy as np
 import pandas as pd
 
 
-def generate_BG_neg_likelihoods(alpha, beta, penalizer_coef=0.1, T=None, size=100, simulation_size=100, refit=True):
+def generate_neg_likelihoods(fitter,
+                             penalizer_coef=0.1, size=100, simulation_size=100, refit=True):
     """
     Generates <simulation_size> log-likelihoods of BG model.
     To test goodness of model.
     Use refit=True if you're testing on fitted data [dafault].
     Use refit=False if you divided your dataset in training/test, this runs much faster.
     """
-    fitter = est.BGFitter(penalizer_coef=penalizer_coef)
 
     n_lls = []
+    params = fitter.params_
 
     for i in range(simulation_size):
-        gen_data = compress_bgext_data(gen.bgext_model(T=T, alpha=alpha, beta=beta, size=size))
-
+        gen_data = fitter.generate_new_data(size=size, compressed=True)
+        current_fitter = fitter.__class__(penalizer_coef=penalizer_coef)
         if refit:
-            fitter.fit(gen_data['frequency'], gen_data['T'], N=gen_data['N'])
-            n_lls.append(fitter._negative_log_likelihood_)
+            current_fitter.fit(**gen_data)
+            n_lls.append(current_fitter._negative_log_likelihood_)
         else:
-            n_ll = est.BGFitter._negative_log_likelihood(params=[alpha, beta],
-                                                         freq=gen_data['frequency'], T=gen_data['T'],
-                                                         penalizer_coef=penalizer_coef,
-                                                         N=gen_data['N'])
+            n_ll = current_fitter._negative_log_likelihood(params=params.values(),
+                                                   penalizer_coef=penalizer_coef,
+                                                   **gen_data)
             n_lls.append(n_ll)
 
     return np.array(n_lls)
 
 
-def goodness_of_test(data, fitter_class, penalizer_coef=0.1, simulation_size=100, confidence_level=0.99, verbose=False, test_data=None):
+def goodness_of_test(data,
+                     fitter_class,
+                     penalizer_coef=0.1, simulation_size=100, confidence_level=0.99, verbose=False, test_data=None):
     """
     Returns True if data are compatible with the fitter distribution.
     """
-
-    # check inputs
-    if 'frequency' not in data:
-        raise ValueError('frequency not in data')
-    if 'T' not in data:
-        raise ValueError('T not in data')
-    if 'N' not in data:
-        raise ValueError('N not in data')
 
     # extract Ts for generation
     ts = list(data['T'])
@@ -64,16 +58,15 @@ def goodness_of_test(data, fitter_class, penalizer_coef=0.1, simulation_size=100
     else:
         n_ll = fitter._negative_log_likelihood(
             params=params.values(),
-            freq=test_data['frequency'],
-            T=test_data['T'],
-            N=test_data['N'],
-            penalizer_coef=penalizer_coef
+            penalizer_coef=penalizer_coef,
+            **test_data
         )
         refit = False
 
     # generate negative log likelihoods
-    n_lls = generate_BG_neg_likelihoods(params['alpha'], params['beta'], T=Ts,
-                                        simulation_size=simulation_size, refit=refit)
+    n_lls = generate_neg_likelihoods(fitter=fitter,
+                                     simulation_size=simulation_size,
+                                     refit=refit)
 
     # perform goodness of fit test
     lwr, upr = np.percentile(n_lls, [(1 - confidence_level) * 100, confidence_level * 100])
@@ -102,7 +95,11 @@ if __name__ == "__main__":
     test_n = multinomial_sample(gen_data['N'])
     test_data = gen_data.copy(deep=True)
     test_data['N'] = test_n
-    print goodness_of_test(gen_data, fitter_class=est.BGFitter, test_data=test_data, verbose=True)
+    print goodness_of_test(
+        data=gen_data,
+        fitter_class=est.BGFitter,
+        test_data=test_data,
+        verbose=True)
 
     # simulation_size = 100
     # N_users = 10000
