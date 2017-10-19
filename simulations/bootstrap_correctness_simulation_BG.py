@@ -52,7 +52,7 @@ if __name__ == "__main__":
                              for day, installs in enumerate(daily_installs)])
                 Ts = filter(lambda x: x > 0, Ts)
                 current_model = BGModel()
-                gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'], probs=probs)
+                gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'])
                 data = comp.compress_bgext_data(gen_data)
                 current_model.fit(frequency=data["frequency"], T=data["T"], N=data["N"], bootstrap_size=100)
                 ex = current_model.expected_number_of_purchases_up_to_time(52) + 1

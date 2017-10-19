@@ -8,14 +8,14 @@ from lifetimes.models import BGModel
 import uncertainties
 
 
-def get_estimates(params, probs, daily_installs, observed_days, conversion_rate, free_trial_conversion, N):
+def get_estimates(params, daily_installs, observed_days, conversion_rate, free_trial_conversion, N):
     Ts = reduce(lambda x, y: x + y,
                 [[(observed_days - day) / 7] * int(math.floor(installs * conversion_rate * free_trial_conversion))
                  for day, installs in enumerate(daily_installs)])
     Ts = filter(lambda x: x > 0, Ts)
     exs = []
     for i in range(N):
-        gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'], probs=probs)
+        gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'])
         data = comp.compress_bgext_data(gen_data)
 
         model = BGModel(penalizer_coef=0.1)
@@ -34,7 +34,7 @@ def get_estimates_from_bootstrap(params, daily_installs, observed_days, conversi
                 [[(observed_days - day) / 7] * int(math.floor(installs * conversion_rate * free_trial_conversion))
                  for day, installs in enumerate(daily_installs)])
     Ts = filter(lambda x: x > 0, Ts)
-    gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'], probs=probs)
+    gen_data = gen.bgext_model(Ts, params['alpha'], params['beta'])
     data = comp.compress_bgext_data(gen_data)
     model.fit(frequency=data["frequency"], T=data["T"], N=data["N"], bootstrap_size=N)
     exs = []
