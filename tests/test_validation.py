@@ -67,7 +67,7 @@ def test_goodness_of_test_BGBB():
                             verbose=True, test_data=test_data)
 
     wrong_params = {'alpha': 3, 'beta': 0.1, 'gamma': 5, 'delta': 0.2}
-    wrong_test_data = gen.bgbb_model(T=sample_T, size=1000, compressed=True, **wrong_params)
+    wrong_test_data = gen.bgbb_model(T=sample_T, size=100, compressed=True, **wrong_params)
     assert not goodness_of_test(gen_data,
                                 fitter_class=est.BGBBFitter,
                                 verbose=True,
@@ -78,7 +78,7 @@ def test_goodness_of_test_BGBB():
 def test_goodness_of_test_BGBBBG():
     params = {'alpha': 1.2, 'beta': 0.7, 'gamma': 0.6, 'delta': 2.7, 'epsilon': 1.0, 'zeta': 10.0}
 
-    gen_data = gen.bgbbbg_model(T=sample_T, size=1000, compressed=True, **params)
+    gen_data = gen.bgbbbg_model(T=sample_T, size=100, compressed=True, **params)
     test_n = multinomial_sample(gen_data['N'])
     test_data = gen_data.copy(deep=True)
     test_data['N'] = test_n
