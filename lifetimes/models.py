@@ -34,7 +34,7 @@ class Model(object):
         if pars is None:
             raise ValueError("fit the data first")
 
-        if not np.all(np.array(pars.values()) >= 0):
+        if not np.all(np.array(pars.values()) >= 0.00001):
             return False
         if not np.all(np.array(pars.values()) <= 500):
             return False
