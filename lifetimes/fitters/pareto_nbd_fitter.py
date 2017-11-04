@@ -3,7 +3,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 import numpy as np
-from numpy import mean, log, exp, logaddexp, asarray, any as npany, c_ as vconcat
+from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1
 from scipy import misc
