@@ -43,9 +43,9 @@ def test_BGExt_generation():
 
 @pytest.mark.BGExt
 def test_generte_BGExt_for_external_studies():
-    params = {'alpha': 2.8, 'beta': 9.35}
+    params = {'alpha': 0.32, 'beta': 0.85}
 
-    gen_data = gen.bgext_model(52, params['alpha'], params['beta'], size=10000)
+    gen_data = gen.bgext_model(20, params['alpha'], params['beta'], size=10000)
 
     c_gen_data = compress_bgext_data(gen_data)
 
