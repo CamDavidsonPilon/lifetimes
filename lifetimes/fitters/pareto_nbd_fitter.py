@@ -141,10 +141,7 @@ class ParetoNBDFitter(BaseFitter):
                 rsf * log(q_1 * q_2))
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
-
-        if npany(asarray(params) <= 0.):
-            return np.inf
+    def _conditional_log_likelihood(params, freq, rec, T):
 
         r, alpha, s, beta = params
         x = freq
@@ -157,8 +154,18 @@ class ParetoNBDFitter(BaseFitter):
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T),
                         log(s) + log_A_0 - log(r_s_x))
 
+        return A_1 + A_2
+
+    @staticmethod
+    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+
+        if npany(asarray(params) <= 0.):
+            return np.inf
+
+        conditional_log_likelihood = ParetoNBDFitter._conditional_log_likelihood(params, freq, rec, T)
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(A_1 + A_2).mean() + penalizer_term
+
+        return -conditional_log_likelihood.mean() + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
@@ -189,7 +196,7 @@ class ParetoNBDFitter(BaseFitter):
         params = self._unload_params('r', 'alpha', 's', 'beta')
         r, alpha, s, beta = params
 
-        likelihood = -self._negative_log_likelihood(params, x, t_x, T, 0)
+        likelihood = self._conditional_log_likelihood(params, x, t_x, T)
         first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * \
             log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
