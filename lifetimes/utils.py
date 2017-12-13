@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.optimize import minimize
 import operator as op
 import math
+from functools import reduce
 
 pd.options.mode.chained_assignment = None
 

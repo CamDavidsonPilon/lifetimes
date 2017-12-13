@@ -1,15 +1,17 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import numpy as np
 from scipy import stats
 import pandas as pd
 import random
 import csv
 import os
-from utils import normalize_positive_vector
-import data_compression as comp
+from .utils import normalize_positive_vector
+from . import data_compression as comp
 
 
 def hello():
-    print "hello from MM! :)"
+    print("hello from MM! :)")
 
 
 def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):

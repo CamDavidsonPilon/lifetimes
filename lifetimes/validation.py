@@ -1,10 +1,13 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import lifetimes.generate_data as gen
 import lifetimes.estimation as est
 from lifetimes.data_compression import compress_bgext_data
-from utils import multinomial_sample
+from .utils import multinomial_sample
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from functools import reduce
 
 
 def generate_neg_likelihoods(fitter,
@@ -70,8 +73,8 @@ def goodness_of_test(data,
     lwr, upr = np.percentile(n_lls, [(1 - confidence_level) * 100, confidence_level * 100])
 
     if verbose:
-        print "Bounds: " + str((lwr, upr))
-        print "Value: " + str(n_ll)
+        print("Bounds: " + str((lwr, upr)))
+        print("Value: " + str(n_ll))
 
     if lwr < n_ll < upr:
         return True
@@ -112,11 +115,11 @@ if __name__ == "__main__":
     test_n = multinomial_sample(gen_data['N'])
     test_data = gen_data.copy(deep=True)
     test_data['N'] = test_n
-    print goodness_of_test(
+    print(goodness_of_test(
         data=gen_data,
         fitter_class=est.BGFitter,
         test_data=test_data,
-        verbose=True)
+        verbose=True))
 
     # simulation_size = 100
     # N_users = 10000

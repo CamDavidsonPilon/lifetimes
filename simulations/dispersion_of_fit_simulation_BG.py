@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import lifetimes.generate_data as gen
 import lifetimes.data_compression as comp
 from lifetimes.models import BGModel
 import uncertainties
+from functools import reduce
 
 
 def get_estimates(params, daily_installs, observed_days, conversion_rate, free_trial_conversion, N):
@@ -23,7 +25,7 @@ def get_estimates(params, daily_installs, observed_days, conversion_rate, free_t
         model.fit(data['frequency'], data['T'], bootstrap_size=30, N=data['N'])
 
         Ex = model.expected_number_of_purchases_up_to_time(52) + 1
-        print (i, Ex)
+        print((i, Ex))
         exs.append(Ex)
     return exs
 
@@ -45,7 +47,7 @@ def get_estimates_from_bootstrap(params, daily_installs, observed_days, conversi
         [a, b] = uncertainties.correlated_values([a, b], cov)
         Ex = model.wrapped_static_expected_number_of_purchases_up_to_time(a, b, 52) + 1
         if not math.isnan(Ex.n) and not math.isinf(Ex.n):
-            print (i, Ex)
+            print((i, Ex))
             exs.append(Ex)
     return exs, model.expected_number_of_purchases_up_to_time(52) + 1
 

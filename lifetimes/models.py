@@ -1,8 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import math
-from estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGExtFitter, BGFitter
+from .estimation import BetaGeoFitter, ModifiedBetaGeoFitter, ParetoNBDFitter, BGBBFitter, BGBBBGExtFitter, BGFitter
 import numpy as np
 import pandas as pd
-import generate_data as gen
+from . import generate_data as gen
 import random
 import copy
 from abc import abstractmethod
@@ -559,9 +561,9 @@ class NumericalMetrics(object):
         return len(self.p_x)
 
     def dump(self):
-        print "range: " + str(range(len(self.p_x)))
-        print "probabilities: " + str(self.p_x)
-        print "probabilities err: " + str(self.p_x_err)
+        print("range: " + str(range(len(self.p_x))))
+        print("probabilities: " + str(self.p_x))
+        print("probabilities err: " + str(self.p_x_err))
 
     def expected_x(self):
         """

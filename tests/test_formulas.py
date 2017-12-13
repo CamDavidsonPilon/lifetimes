@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 from lifetimes.formulas import gamma_ratio
 
@@ -11,4 +12,4 @@ def test_gamma_ratio():
     for x in xs:
         gr.append(gamma_ratio(x, 1))
 
-    print gr
+    print(gr)
