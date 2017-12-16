@@ -5,7 +5,7 @@ from collections import OrderedDict
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
-from scipy.special import gammaln, hyp2f1
+from scipy.special import gammaln, hyp2f1, betaln
 from scipy import misc
 
 from . import BaseFitter
@@ -283,10 +283,10 @@ class ParetoNBDFitter(BaseFitter):
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term
     
-        def conditional_probability_of_n_purchases_up_to_time(self, n, t, frequency, recency, T):
+    def conditional_probability_of_n_purchases_up_to_time(self, n, t, frequency, recency, T):
         """
         Return the probability of n purchases up to time t for an individual
-        with history frequency, recency an T (age).
+        with history frequency, recency and T (age).
         From paper:
         http://www.brucehardie.com/notes/028/pareto_nbd_conditional_pmf.pdf
         Parameters:
@@ -302,6 +302,9 @@ class ParetoNBDFitter(BaseFitter):
                 age of the customer.
         Returns: a scalar or array
         """
+        if t <= 0:
+            return 0
+
         x, t_x = frequency, recency
         params = self._unload_params('r', 'alpha', 's', 'beta')
         r, alpha, s, beta = params
@@ -325,21 +328,33 @@ class ParetoNBDFitter(BaseFitter):
                 gammaln(r) + gammaln(s) + (r + s + x) * log(max_of_alpha_beta + T)
             )
 
-        def log_B_three(i):
+        def _log_B_three(i):
             return r * log(alpha) + s * log(beta) + gammaln(r + s + x + i) + betaln(r + x + n, s + 1) + \
                 log(hyp2f1(r + s + x + i, p, r + s + x + n + 1, abs_alpha_beta/(max_of_alpha_beta + T + t))) - (
                     gammaln(r) + gammaln(s) + (r + s + x + i) * log(max_of_alpha_beta + T + t)
                 )
+
+        def _log_factorial(n):
+            return np.sum([log(i) for i in range(1, n+1)])
         
-        zero = (n == 0) * (1 - exp(log_p_zero))
-        one = n * log(t) - log(np.math.factorial(n)) + log_B_one - log_l
-        two = log_B_two - log_l
-        three = misc.logsumexp([i * log(t) - log(np.math.factorial(i)) + log_B_three(i) - log_l for i in range(n+1)], axis=0)
-        
+        zeroth_term = (n == 0) * (1 - exp(log_p_zero))
+        first_term = n * log(t) - _log_factorial(n) + log_B_one - log_l
+        second_term = log_B_two - log_l
+        third_term = misc.logsumexp(
+            [i * log(t) - _log_factorial(i) + _log_B_three(i) - log_l for i in range(n+1)],
+            axis=0
+        )
+
         try:
             size = len(x)
             sign = np.ones(size)
         except TypeError:
             sign = 1
-        
-        return zero + exp(misc.logsumexp([one, two, three], b=[sign, sign, -sign], axis=0))
+
+        # In some scenarios (e.g. large n) tiny numerical errors in the calculation of second_term and third_term
+        # cause sumexp to be ever so slightly negative and logsumexp throws an error. Hence we ignore the sign here.
+        return zeroth_term + exp(misc.logsumexp(
+            [first_term, second_term, third_term], b=[sign, sign, -sign],
+            axis=0,
+            return_sign=True
+        )[0])
