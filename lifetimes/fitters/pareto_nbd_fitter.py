@@ -5,7 +5,7 @@ from collections import OrderedDict
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
-from scipy.special import gammaln, hyp2f1
+from scipy.special import gammaln, hyp2f1, betaln
 from scipy import misc
 
 from . import BaseFitter
@@ -231,9 +231,9 @@ class ParetoNBDFitter(BaseFitter):
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
 
-        A_0 = np.exp(self._log_A_0([r, alpha, s, beta], x, t_x, T))
-        return 1. / (1. + (s / (r + s + x)) *
-                     (alpha + T) ** (r + x) * (beta + T) ** s * A_0)
+        A_0 = self._log_A_0([r, alpha, s, beta], x, t_x, T)
+        return 1. / (1. + exp(log(s) - log(r + s + x) +
+                        (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
 
     def conditional_probability_alive_matrix(self, max_frequency=None,
                                              max_recency=None):
@@ -282,3 +282,79 @@ class ParetoNBDFitter(BaseFitter):
         first_term = r * beta / alpha / (s - 1)
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term
+    
+    def conditional_probability_of_n_purchases_up_to_time(self, n, t, frequency, recency, T):
+        """
+        Return the probability of n purchases up to time t for an individual
+        with history frequency, recency and T (age).
+        From paper:
+        http://www.brucehardie.com/notes/028/pareto_nbd_conditional_pmf.pdf
+        Parameters:
+            n: int
+                number of purchases.
+            t: a scalar
+                time up to which probability should be calculated.
+            frequency: float
+                historical frequency of customer.
+            recency: float
+                historical recency of customer.
+            T: float
+                age of the customer.
+        Returns: a scalar or array
+        """
+        if t <= 0:
+            return 0
+
+        x, t_x = frequency, recency
+        params = self._unload_params('r', 'alpha', 's', 'beta')
+        r, alpha, s, beta = params
+        
+        if alpha < beta:
+            min_of_alpha_beta, max_of_alpha_beta, p, p_l_1, p_l_2 = (alpha, beta, r + x + n, r + x, r + x + 1)
+        else:
+            min_of_alpha_beta, max_of_alpha_beta, p, p_l_1, p_l_2 = (beta, alpha, s + 1, s + 1, s)
+        abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
+        
+        log_l = self._conditional_log_likelihood(params, x, t_x, T)
+        log_p_zero = gammaln(r + x) + r * log(alpha) + s * log(beta) - ( 
+            gammaln(r) + (r + x) * log(alpha + T) + s * log(beta + T) + 
+            log_l
+        )
+        log_B_one =  gammaln(r + x + n) + r * log(alpha) + s * log(beta) - ( 
+            gammaln(r) + (r + x + n) * log(alpha + T + t) + s * log(beta + T + t)
+        )
+        log_B_two = r * log(alpha) + s * log(beta) + gammaln(r + s + x) + betaln(r + x + n, s + 1) + \
+            log(hyp2f1(r + s + x, p, r + s + x + n + 1, abs_alpha_beta/(max_of_alpha_beta + T))) - (
+                gammaln(r) + gammaln(s) + (r + s + x) * log(max_of_alpha_beta + T)
+            )
+
+        def _log_B_three(i):
+            return r * log(alpha) + s * log(beta) + gammaln(r + s + x + i) + betaln(r + x + n, s + 1) + \
+                log(hyp2f1(r + s + x + i, p, r + s + x + n + 1, abs_alpha_beta/(max_of_alpha_beta + T + t))) - (
+                    gammaln(r) + gammaln(s) + (r + s + x + i) * log(max_of_alpha_beta + T + t)
+                )
+
+        def _log_factorial(n):
+            return np.sum([log(i) for i in range(1, n+1)])
+        
+        zeroth_term = (n == 0) * (1 - exp(log_p_zero))
+        first_term = n * log(t) - _log_factorial(n) + log_B_one - log_l
+        second_term = log_B_two - log_l
+        third_term = misc.logsumexp(
+            [i * log(t) - _log_factorial(i) + _log_B_three(i) - log_l for i in range(n+1)],
+            axis=0
+        )
+
+        try:
+            size = len(x)
+            sign = np.ones(size)
+        except TypeError:
+            sign = 1
+
+        # In some scenarios (e.g. large n) tiny numerical errors in the calculation of second_term and third_term
+        # cause sumexp to be ever so slightly negative and logsumexp throws an error. Hence we ignore the sign here.
+        return zeroth_term + exp(misc.logsumexp(
+            [first_term, second_term, third_term], b=[sign, sign, -sign],
+            axis=0,
+            return_sign=True
+        )[0])
