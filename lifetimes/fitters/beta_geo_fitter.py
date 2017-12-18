@@ -54,7 +54,7 @@ class BetaGeoFitter(BaseFitter):
 
     def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+            fit_method='Nelder-Mead', maxiter=2000, weight=None, **kwargs):
         """Fit a dataset to the BG/NBD model.
 
         Parameters
@@ -82,6 +82,8 @@ class BetaGeoFitter(BaseFitter):
         maxiter : int, optional
             max iterations for optimizer in scipy.optimize.minimize will be
             overwritten if setted in kwargs.
+        weight: array_like
+            the weight to be given to each customer in the likelihood calculation
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -96,6 +98,12 @@ class BetaGeoFitter(BaseFitter):
         frequency = asarray(frequency)
         recency = asarray(recency)
         T = asarray(T)
+
+        if weight is None:
+            weight = np.ones_like(frequency)
+        else:
+            weight = asarray(weight)
+
         _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
@@ -104,7 +112,7 @@ class BetaGeoFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+            [frequency, scaled_recency, scaled_T, weight, self.penalizer_coef],
             iterative_fitting,
             initial_params,
             4,
@@ -128,7 +136,7 @@ class BetaGeoFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, freq, rec, T, weight, penalizer_coef):
         if npany(asarray(params) <= 0):
             return np.inf
 
@@ -143,9 +151,11 @@ class BetaGeoFitter(BaseFitter):
         A_4 = log(a) - log(b + where(freq == 0, 1, freq) - 1) - \
             (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
+        total_weight = weight.sum()
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(A_1 + A_2 + misc.logsumexp(
-            vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
+        return -((A_1 + A_2 + misc.logsumexp(
+            vconcat[A_3, A_4], axis=1, b=d)) * weight).sum() / total_weight \
+            + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
