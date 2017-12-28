@@ -310,7 +310,7 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.params_ = OrderedDict(
             zip(['r', 'alpha', 's', 'beta'],
-            [0.5534, 10.5802, 0.6061, 11.6562]))
+                [0.5534, 10.5802, 0.6061, 11.6562]))
         p_alive = ptf.conditional_probability_alive(26.00, 30.86, 31.00)
         assert abs(p_alive - 0.9979) < 0.001
 
@@ -318,8 +318,8 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.params_ = OrderedDict(
             zip(['r', 'alpha', 's', 'beta'],
-            [10.465, 7.98565181e-03, 3.0516, 2.820]))
-        freq = np.array([400., 500., 500.])
+                [10.465, 7.98565181e-03, 3.0516, 2.820]))
+        freq = np.array([40., 50., 50.])
         rec = np.array([5., 1., 4.])
         age = np.array([6., 37., 37.])
         assert all([r <= 1 and r >= 0 and not np.isinf(r) and not pd.isnull(r)
@@ -458,7 +458,7 @@ class TestBetaGeoFitter():
         bfg1.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
         np.random.seed(0)
-        bfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
+        bfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
 
 

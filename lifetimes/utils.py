@@ -303,16 +303,20 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
     if iterative_fitting <= 0:
         raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
 
+    if iterative_fitting > 1 and initial_params is not None:
+        raise ValueError("iterative_fitting and initial_params should not be both set, as no improvement could be made.")
+
+
     # set options for minimize, if specified in kwargs will be overwrittern
     minimize_options = {}
     minimize_options['disp'] = disp
     minimize_options['maxiter'] = maxiter
     minimize_options.update(kwargs)
 
-    current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
     total_count = 0
 
     while total_count < iterative_fitting:
+        current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
         if minimize_options['disp']:
             print('Optimize function with {}'.format(fit_method))
         output = minimize(_func_caller, method=fit_method, tol=tol,
@@ -329,8 +333,8 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
 
 
 def _scale_time(age):
-    """Create a scalar such that the maximum age is 10."""
-    return 10. / age.max()
+    """Create a scalar such that the maximum age is 1."""
+    return 1. / age.max()
 
 
 def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
