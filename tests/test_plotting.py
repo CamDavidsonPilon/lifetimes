@@ -1,5 +1,3 @@
-import os
-import pandas as pd
 import pytest
 
 import matplotlib
@@ -15,9 +13,10 @@ bgf = BetaGeoFitter()
 cd_data = load_cdnow_summary()
 bgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
 
+
 @pytest.mark.plottest
 class TestPlotting():
-    
+
     @pytest.mark.mpl_image_compare(tolerance=30)
     def test_plot_period_transactions(self):
         plt.figure()
@@ -28,7 +27,7 @@ class TestPlotting():
     def test_plot_period_transactions_parento(self):
         pnbd = ParetoNBDFitter()
         pnbd.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
-        
+
         plt.figure()
         plotting.plot_period_transactions(pnbd)
         return plt.gcf()
@@ -37,7 +36,7 @@ class TestPlotting():
     def test_plot_period_transactions_mbgf(self):
         mbgf = ModifiedBetaGeoFitter()
         mbgf.fit(cd_data['frequency'], cd_data['recency'], cd_data['T'], iterative_fitting=1)
-        
+
         plt.figure()
         plotting.plot_period_transactions(mbgf)
         return plt.gcf()
@@ -109,7 +108,7 @@ class TestPlotting():
         return plt.gcf()
 
     @pytest.mark.mpl_image_compare(tolerance=30)
-    def test_plot_expected_repeat_purchases(self):
+    def test_plot_expected_repeat_purchases_with_label(self):
         plt.figure()
         plotting.plot_expected_repeat_purchases(bgf, label='test label')
         return plt.gcf()
@@ -130,7 +129,7 @@ class TestPlotting():
         transaction_data = load_transaction_data()
         summary = utils.calibration_and_holdout_data(transaction_data, 'id', 'date', '2014-09-01', '2014-12-31')
         bgf.fit(summary['frequency_cal'], summary['recency_cal'], summary['T_cal'])
-        
+
         plt.figure()
         plotting.plot_calibration_purchases_vs_holdout_purchases(bgf, summary)
         return plt.gcf()
