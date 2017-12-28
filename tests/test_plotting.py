@@ -1,7 +1,7 @@
 import pytest
 
-import matplotlib
-matplotlib.use('AGG') # use a non-interactive backend
+#import matplotlib
+#matplotlib.use('AGG') # use a non-interactive backend
 from matplotlib import pyplot as plt
 
 from lifetimes import plotting
