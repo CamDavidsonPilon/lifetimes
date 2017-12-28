@@ -251,7 +251,7 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
-        npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
+        npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=2)
 
     def test_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
         """ From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
