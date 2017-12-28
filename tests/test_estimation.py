@@ -93,9 +93,7 @@ class TestBetaGeoBetaBinomFitter():
     def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
         """
         Total from Hardie's Conditional Expectations (II) sheet.
-
         http://brucehardie.com/notes/010/BGBB_2011-01-20_XLSX.zip
-
         """
 
         bbtf = estimation.BetaGeoBetaBinomFitter()
@@ -341,8 +339,8 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         index = range(len(cdnow_customers), 0, -1)
         ptf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -350,12 +348,52 @@ class TestParetoNBDFitter():
 
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )
         assert (ptf.data.index == index).all() == False
+
+    def test_conditional_probability_of_n_purchases_up_to_time_is_between_0_and_1(self, cdnow_customers):
+        """
+        Due to the large parameter space we take a random subset.
+        """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        for freq in np.random.choice(100, 5):
+            for recency in np.random.choice(100, 5):
+                for age in recency + np.random.choice(100, 5):
+                    for t in np.random.choice(100, 5):
+                        for n in np.random.choice(10, 5):
+                            assert (
+                                0.0
+                                <= ptf.conditional_probability_of_n_purchases_up_to_time(n, t, freq, recency, age)
+                                <= 1.0
+                            )
+
+    def test_conditional_probability_of_n_purchases_up_to_time_adds_up_to_1(self, cdnow_customers):
+        """
+        Due to the large parameter space we take a random subset. We also restrict our limits to keep the number of
+        values of n for which the probability needs to be calculated to a sane level.
+        """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        for freq in np.random.choice(10, 5):
+            for recency in np.random.choice(9, 5):
+                for age in np.random.choice(np.arange(recency, 10, 1), 5):
+                    for t in 1 + np.random.choice(9, 5):
+                        npt.assert_almost_equal(
+                            np.sum([
+                                ptf.conditional_probability_of_n_purchases_up_to_time(n, t, freq, recency, age)
+                                for n in np.arange(0, 20, 1)
+                            ]),
+                            1.0,
+                            decimal=2
+                        )
+
 
 class TestBetaGeoFitter():
 
@@ -562,8 +600,8 @@ class TestBetaGeoFitter():
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         index = range(len(cdnow_customers), 0, -1)
         bgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -571,8 +609,8 @@ class TestBetaGeoFitter():
 
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )
@@ -744,8 +782,8 @@ class TestModifiedBetaGammaFitter():
         mbgf = estimation.ModifiedBetaGeoFitter()
         index = range(len(cdnow_customers), 0, -1)
         mbgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -753,8 +791,8 @@ class TestModifiedBetaGammaFitter():
 
         mbgf = estimation.ModifiedBetaGeoFitter()
         mbgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )
