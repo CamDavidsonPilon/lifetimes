@@ -1,5 +1,6 @@
 """MBG/NBD model."""
 from __future__ import print_function
+from __future__ import division
 
 import numpy as np
 from numpy import log, logaddexp, asarray, any as npany

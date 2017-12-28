@@ -1,5 +1,6 @@
 """Pareto/NBD model."""
 from __future__ import print_function
+from __future__ import division
 from collections import OrderedDict
 
 import numpy as np
@@ -9,7 +10,7 @@ from scipy.special import gammaln, hyp2f1, betaln
 from scipy import misc
 
 from . import BaseFitter
-from ..utils import _fit, _check_inputs
+from ..utils import _fit, _check_inputs, _scale_time
 from ..generate_data import pareto_nbd_model
 
 
@@ -88,9 +89,13 @@ class ParetoNBDFitter(BaseFitter):
         T = asarray(T)
         _check_inputs(frequency, recency, T)
 
+        self._scale = _scale_time(T)
+        scaled_recency = recency * self._scale
+        scaled_T = T * self._scale
+
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, recency, T, self.penalizer_coef],
+            [frequency, scaled_recency, scaled_T, self.penalizer_coef],
             iterative_fitting,
             initial_params,
             4,
@@ -101,6 +106,9 @@ class ParetoNBDFitter(BaseFitter):
             **kwargs)
 
         self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
+        self.params_['alpha'] /= self._scale
+        self.params_['beta'] /= self._scale
+
         self.data = DataFrame(vconcat[frequency, recency, T],
                               columns=['frequency', 'recency', 'T'])
         if index is not None:
@@ -149,7 +157,7 @@ class ParetoNBDFitter(BaseFitter):
         r_s_x = r + s + x
 
         A_1 = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta)
-        log_A_0 = ParetoNBDFitter._log_A_0(params, freq, rec, T)
+        log_A_0 = ParetoNBDFitter._log_A_0(params, x, rec, T)
 
         A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T),
                         log(s) + log_A_0 - log(r_s_x))
@@ -230,10 +238,9 @@ class ParetoNBDFitter(BaseFitter):
         """
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
-
         A_0 = self._log_A_0([r, alpha, s, beta], x, t_x, T)
         return 1. / (1. + exp(log(s) - log(r + s + x) +
-                        (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
+                              (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
 
     def conditional_probability_alive_matrix(self, max_frequency=None,
                                              max_recency=None):
