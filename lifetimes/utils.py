@@ -449,8 +449,8 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
-    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
-    transactions = transactions.set_index(datetime_col).to_period(freq).reset_index()
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format).dt.to_period(freq)
+    transactions = transactions.drop_duplicates()
 
     # find birth dates of users
     birth_dates = transactions.groupby(customer_id_col, sort=False, as_index=True)[datetime_col].min()

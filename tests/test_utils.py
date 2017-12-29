@@ -392,14 +392,20 @@ def test_customer_lifetime_value_with_known_values(fitted_bg):
     t = fitted_bg.data.head()
     expected = np.array([0.016053, 0.021171, 0.030461, 0.031686, 0.001607])
     # discount_rate=0 means the clv will be the same as the predicted
-    clv_d0 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=1, discount_rate=0.)
+    clv_d0 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1, 1, 1, 1, 1]), time=1, discount_rate=0.)
     assert_almost_equal(clv_d0.values, expected, decimal=5)
     # discount_rate=1 means the clv will halve over a period
-    clv_d1 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=1, discount_rate=1.)
+    clv_d1 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1, 1, 1, 1, 1]), time=1, discount_rate=1.)
     assert_almost_equal(clv_d1.values, expected / 2., decimal=5)
     # time=2, discount_rate=0 means the clv will be twice the initial
-    clv_t2_d0 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=0)
+    clv_t2_d0 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1, 1, 1, 1, 1]), time=2, discount_rate=0)
     assert_allclose(clv_t2_d0.values, expected * 2., rtol=0.1)
     # time=2, discount_rate=1 means the clv will be twice the initial
-    clv_t2_d1 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1,1,1,1,1]), time=2, discount_rate=1.)
+    clv_t2_d1 = utils._customer_lifetime_value(fitted_bg, t['frequency'], t['recency'], t['T'], monetary_value=pd.Series([1, 1, 1, 1, 1]), time=2, discount_rate=1.)
     assert_allclose(clv_t2_d1.values, expected / 2. + expected / 4., rtol=0.1)
+
+
+def test_expected_cumulative_transactions_dedups_inside_a_time_period(fitted_bg, example_transaction_data):
+    by_week = utils.expected_cumulative_transactions(fitted_bg, example_transaction_data, 'date', 'id', 10, freq='W')
+    by_day = utils.expected_cumulative_transactions(fitted_bg, example_transaction_data, 'date', 'id', 10, freq='D')
+    assert (by_week['actual'] >= by_day['actual']).all()
