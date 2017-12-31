@@ -4,7 +4,7 @@
  - fixed many of the numpy warnings as the result of fitting
  - added optional `initial_params` to all models
  - Added `conditional_probability_of_n_purchases_up_to_time` to `ParetoNBDFitter`
- - Fixed a bug in `expected_cumulative_transactions` and 
+ - Fixed a bug in `expected_cumulative_transactions` and `plot_cumulative_transactions`
 
 ### 0.8.1
  - adding new `save_model` and `load_model` functions to all fitters. This will save the model locally as a pickle file.
