@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 import math
 import lifetimes.generate_data as gen
@@ -95,18 +96,18 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
 
             mv = ufloat(np.mean(mv_values), np.std(mv_values) / math.sqrt(len(mv_values)))
 
-            print "Conversion parameters"
-            print params_conversion
-            print model_conversion.params
-            print model_conversion.uparams
+            print("Conversion parameters")
+            print(params_conversion)
+            print(model_conversion.params)
+            print(model_conversion.uparams)
 
-            print "Arppu parameters"
-            print params_arppu
-            print model_arppu.params
-            print model_arppu.uparams
+            print("Arppu parameters")
+            print(params_arppu)
+            print(model_arppu.params)
+            print(model_arppu.uparams)
 
-            print "Monetary values"
-            print mv
+            print("Monetary values")
+            print(mv)
 
             ts = range(T0)
             lifetime = [ufloat_to_tuple(model_conversion.expected_number_of_sessions_up_to_time(t)) for t in ts]
@@ -117,14 +118,14 @@ def test_BGBBBGExt_fitting_on_simulated_quite_real_looking_data():
             appd = [ufloat_to_tuple(get_arpd_retention(model_conversion, model_arppu, t)) for t in ts]
             arpd = [ufloat_to_tuple(appd[i][0] * mv) for i in range(len(appd))]
 
-            print ts
-            print lifetime
-            print conversion_diff
-            print conversion
-            print apppu
-            print arppu
-            print appd
-            print arpd
+            print(ts)
+            print(lifetime)
+            print(conversion_diff)
+            print(conversion)
+            print(apppu)
+            print(arppu)
+            print(appd)
+            print(arpd)
 
             summary_df = pd.DataFrame({
                 'lifetime': [v[0] + 1 for v in lifetime],

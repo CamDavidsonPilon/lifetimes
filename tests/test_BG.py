@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 import math
 import lifetimes.generate_data as gen
@@ -28,9 +29,9 @@ def test_BGExt_generation():
     assert 'T' in gen_data
     assert 'frequency' in gen_data
     assert 'theta' in gen_data
-    print gen_data
+    print(gen_data)
 
-    print compress_bgext_data(gen_data)
+    print(compress_bgext_data(gen_data))
 
     gen_data = gen.bgext_model([5, 5, 1, 1], params['alpha'], params['beta'], size=10)
 
@@ -38,7 +39,7 @@ def test_BGExt_generation():
     assert 'T' in gen_data
     assert 'frequency' in gen_data
     assert 'theta' in gen_data
-    print gen_data
+    print(gen_data)
 
 
 @pytest.mark.BGExt
@@ -101,7 +102,7 @@ def test_BG_fitting_compressed_or_not():
 
     data = gen.bgext_model(T, params['alpha'], params['beta'], size=size)
 
-    print data
+    print(data)
 
     compressed_data = compress_bgext_data(data)
 
@@ -112,9 +113,9 @@ def test_BG_fitting_compressed_or_not():
     fitter_compressed.fit(compressed_data['frequency'], compressed_data['T'],
                           N=compressed_data['N'], initial_params=params.values())
 
-    print params
-    print fitter.params_
-    print fitter_compressed.params_
+    print(params)
+    print(fitter.params_)
+    print(fitter_compressed.params_)
 
     for par_name in params.keys():
         assert math.fabs(fitter.params_[par_name] - fitter_compressed.params_[par_name]) < 0.00001
@@ -128,7 +129,7 @@ def test_BG_additional_functions():
 
     data = gen.bgext_model(T, params['alpha'], params['beta'], size=size)
 
-    print data
+    print(data)
 
     data = compress_bgext_data(data)
 
@@ -136,27 +137,27 @@ def test_BG_additional_functions():
 
     fitter.fit(data['frequency'], data['T'], N=data['N'], initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print fitter.params_
+    print("Fitted params")
+    print(fitter.params_)
 
-    print "E[X(t)] as a function of t"
+    print("E[X(t)] as a function of t")
     for t in [1, 10, 100, 1000, 10000]:
         Ex = fitter.expected_number_of_purchases_up_to_time(t)
         covariance_matrix = np.cov(np.vstack([[(params['alpha'] * 0.1) ** 2, 0], [0, (params['beta'] * 0.1) ** 2]]))
         Ex_err = fitter.expected_number_of_purchases_up_to_time_error(t, covariance_matrix)
-        print t, Ex, Ex / t, Ex_err
+        print(t, Ex, Ex / t, Ex_err)
         assert Ex >= 0
         assert Ex_err >= 0
 
     t = 10
-    print "P[X(t) = n] as a function of n, t = " + str(t)
+    print("P[X(t) = n] as a function of n, t = " + str(t))
     tot_prob = 0.0
     for n in range(t + 1):
         prob = fitter.probability_of_n_purchases_up_to_time(t, n)
-        print n, prob
+        print(n, prob)
         tot_prob += prob
         assert 1 >= prob >= 0
 
@@ -172,7 +173,7 @@ def test_BG_integration_in_models():
     data = gen.bgext_model([1] * 300 + [2] * 200 + [3] * 180 + [4] * 37, params['alpha'],
                            params['beta'])  # , size=size)
 
-    print data
+    print(data)
 
     data = compress_bgext_data(data)
 
@@ -184,26 +185,26 @@ def test_BG_integration_in_models():
     assert model.is_ready()
     assert model.good_fit()
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "E[X(t)] as a function of t"
+    print("E[X(t)] as a function of t")
     for t in [0, 1, 10, 100, 1000, 10000]:
         Ex = model.expected_number_of_purchases_up_to_time(t)
-        print t, Ex
+        print(t, Ex)
         assert Ex.n >= 0
         assert Ex.s >= 0
 
     t = 10
-    print "E[X(t) = n] as a function of n, t = " + str(t)
+    print("E[X(t) = n] as a function of n, t = " + str(t))
     tot_prob = 0.0
     for n in range(t + 1):
         prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
-        print n, prob
+        print(n, prob)
         tot_prob += prob
         assert 1 >= prob >= 0
 
@@ -229,26 +230,26 @@ def test_BG_on_simil_real_data():
     model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
               initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "E[X(t)] as a function of t"
+    print("E[X(t)] as a function of t")
     for t in [0, 1, 10, 100, 1000, 10000]:
         Ex = model.expected_number_of_purchases_up_to_time(t)
-        print t, Ex
+        print(t, Ex)
         assert Ex.n >= 0
         assert Ex.s >= 0
 
     t = 10
-    print "E[X(t) = n] as a function of n, t = " + str(t)
+    print("E[X(t) = n] as a function of n, t = " + str(t))
     tot_prob = 0.0
     for n in range(t + 1):
         prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
-        print n, prob
+        print(n, prob)
         tot_prob += prob
         assert 1 >= prob >= 0
 
@@ -272,34 +273,34 @@ def test_BG_integration_in_models_with_uncertainties():
     model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
               initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "Uncertain parameters"
-    print model.uparams
+    print("Uncertain parameters")
+    print(model.uparams)
 
-    print "E[X(t)] as a function of t"
+    print("E[X(t)] as a function of t")
     for t in [0, 1, 2, 3, 4, 5, 7, 10, 20, 50, 100, 1000, 10000]:
         Ex = model.expected_number_of_purchases_up_to_time(t)
-        print t, Ex
+        print(t, Ex)
         assert Ex.n >= 0
         assert Ex.s >= 0
 
     t = 10
-    print "E[X(t) = n] as a function of n, t = " + str(t)
+    print("E[X(t) = n] as a function of n, t = " + str(t))
     tot_prob = 0.0
     for n in range(t + 1):
         prob = model.fitter.probability_of_n_purchases_up_to_time(t, n)
-        print n, prob
+        print(n, prob)
         tot_prob += prob
         assert 1 >= prob >= 0
 
         uprob = model.probability_of_n_purchases_up_to_time(t, n)
-        print uprob
+        print(uprob)
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
@@ -318,15 +319,15 @@ def test_correlations_of_uparams_and_derivatives():
     model.fit(data['frequency'], data['T'], bootstrap_size=10, N=data['N'],
               initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "Uncertain parameters"
-    print model.uparams
+    print("Uncertain parameters")
+    print(model.uparams)
 
     assert is_almost_equal(correlation_matrix([model.uparams['alpha'], model.uparams['alpha']])[0, 1], 1.0)
     assert 1.0 > correlation_matrix([model.uparams['alpha'] + ufloat(1, 1), model.uparams['alpha']])[0, 1] > 0.0
@@ -356,11 +357,11 @@ def test_correlations_of_uparams_and_derivatives():
 def test_address_dispersion_of_fit_with_few_renewals():
     params = {'alpha': 2.26, 'beta': 8.13}  # similar to ReadIt
 
-    print "True number of renewals:"
+    print("True number of renewals:")
     true_Ex = est.BGFitter.static_expected_number_of_purchases_up_to_time(params['alpha'], params['beta'], 52) + 1
-    print true_Ex
+    print(true_Ex)
 
-    print "Estimates:"
+    print("Estimates:")
     N = 30
     conv_day = 8
     T = 2
@@ -380,7 +381,7 @@ def test_address_dispersion_of_fit_with_few_renewals():
         # print model.params_C
 
         Ex = model.expected_number_of_purchases_up_to_time(52) + 1
-        print Ex
+        print(Ex)
         estimates.append(Ex.n)
 
     plt.hist(estimates, 50, normed=0, facecolor='g', alpha=0.75)

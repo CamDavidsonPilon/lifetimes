@@ -1,4 +1,6 @@
-from dispersion_of_fit_simulation_BG import print_estimates_hist
+from __future__ import print_function
+from __future__ import absolute_import
+from .dispersion_of_fit_simulation_BG import print_estimates_hist
 import lifetimes.generate_data as gen
 import lifetimes.data_compression as comp
 from lifetimes.models import BGModel
@@ -7,6 +9,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import uncertainties
+from functools import reduce
 
 
 parameters = {

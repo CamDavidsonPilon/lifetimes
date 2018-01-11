@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 import math
 import lifetimes.generate_data as gen
@@ -120,16 +121,16 @@ def test_BGBBBG_fitting_compressed_or_not():
                           compressed_data['frequency_before_conversion'],
                           N=compressed_data['N'], initial_params=params.values())
 
-    print params
+    print(params)
     # print fitter.params_
-    print fitter_compressed.params_
+    print(fitter_compressed.params_)
     tot = 0
     fitted_conv = []
     for t in range(31):
         res = fitter_compressed.expected_probability_of_converting_at_time(t)
         tot += res
         fitted_conv.append(res)
-    print tot
+    print(tot)
 
     conversion_instants = data['time_first_purchase']
     real_conv = [0] * 31
@@ -139,9 +140,9 @@ def test_BGBBBG_fitting_compressed_or_not():
     real_conv = [x / len(conversion_instants) for x in real_conv]
 
     for r, f in zip(real_conv, fitted_conv):
-        print r, " - ", f
+        print(r, " - ", f)
 
-    print sum(real_conv), " - ", sum(fitted_conv)
+    print(sum(real_conv), " - ", sum(fitted_conv))
 
 
     # for par_name in params.keys():
@@ -167,15 +168,15 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
               frequency_before_conversion=compressed_data['frequency_before_conversion'],
               N=compressed_data['N'], initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "Uncertain parameters"
-    print model.uparams
+    print("Uncertain parameters")
+    print(model.uparams)
 
     # test correlations preserved
     assert is_almost_equal(correlation_matrix([model.uparams['alpha'], model.uparams['alpha']])[0, 1], 1.0)
@@ -187,38 +188,38 @@ def test_BGBBBGExt_integration_in_models_with_uncertainties():
 
     assert 1.0 > correlation_matrix([p1, p2])[0, 1] > 0.0
 
-    print "E[X(t)] as a function of t"
+    print("E[X(t)] as a function of t")
     for t in [0, 1, 10, 100, 1000, 10000]:
         uEx = model.expected_number_of_sessions_up_to_time(t)
-        print t, uEx
+        print(t, uEx)
         assert uEx.n >= 0
         assert uEx.s >= 0
 
     t = 10
-    print "E[X(t) = n] as a function of n, t = " + str(t)
+    print("E[X(t) = n] as a function of n, t = " + str(t))
     tot_prob = 0.0
     for n in range(t + 1):
         prob = model.fitter.probability_of_n_sessions_up_to_time(t, n)
-        print n, prob
+        print(n, prob)
         tot_prob += prob
         assert 1 >= prob >= 0
 
         uprob = model.probability_of_n_sessions_up_to_time(t, n)
-        print uprob
+        print(uprob)
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
 
-    print "c(t) as a function of t"
+    print("c(t) as a function of t")
     for t in [0, 1, 10, 100, 1000]:
         uc = model.expected_probability_of_converting_at_time(t)
-        print t, uc
+        print(t, uc)
         assert uc.n >= 0.0 and uc.n <= 1.0
         assert uc.s >= 0.0
 
-    print "cumulative c(t) as a function of t"
+    print("cumulative c(t) as a function of t")
     for t in [0, 1, 2, 3, 4, 5, 7, 10, 20, 50, 100]:
         uc = model.expected_probability_of_converting_within_time(t)
-        print t, uc
+        print(t, uc)
         assert uc.n >= 0.0 and uc.n <= 1.0
         assert uc.s >= 0.0

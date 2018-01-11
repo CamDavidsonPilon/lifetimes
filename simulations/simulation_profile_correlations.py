@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pytest
 import math
 import lifetimes.generate_data as gen
@@ -26,12 +27,12 @@ def test_BGBB_correlations():
     model.fit(data['frequency'], data['recency'], data['T'], bootstrap_size=10, N=data['N'],
               initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
     ts = range(1, 50)
     cum_profile_points = [model.expected_number_of_purchases_up_to_time(t) for t in [0] + ts]
@@ -79,15 +80,15 @@ def test_BGBBBG_correlations():
               frequency_before_conversion=compressed_data['frequency_before_conversion'],
               N=compressed_data['N'], initial_params=params.values())
 
-    print "Generation params"
-    print params
+    print("Generation params")
+    print(params)
 
-    print "Fitted params"
-    print model.params
-    print model.params_C
+    print("Fitted params")
+    print(model.params)
+    print(model.params_C)
 
-    print "Uncertain parameters"
-    print model.uparams
+    print("Uncertain parameters")
+    print(model.uparams)
 
     ts = range(0, 50)
     diff_profile_points = [model.expected_probability_of_converting_at_time(t) for t in ts]

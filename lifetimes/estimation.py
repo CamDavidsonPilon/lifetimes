@@ -11,6 +11,7 @@ from lifetimes.utils import _fit, _scale_time, _check_inputs, customer_lifetime_
 from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, modified_beta_geometric_nbd_model, \
     bgbb_model, bgbbbg_model, bgbbbgext_model, bgext_model
 from lifetimes.formulas import gamma_ratio
+from functools import reduce
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 B = special.beta

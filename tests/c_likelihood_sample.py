@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import lifetimes.generate_data as gen
 from lifetimes import models,estimation
@@ -31,14 +32,14 @@ def test_BGBB_likelihood_compressed(T,size):
 
     likelihood_c = model.fitter._c_negative_log_likelihood(params.values(),x,tx,T,N,n_samples)
     c_time = timeit.default_timer() - start_c
-    print "C_time: " + str(c_time)
-    print "Likelihood: " + str(likelihood_c)
+    print("C_time: " + str(c_time))
+    print("Likelihood: " + str(likelihood_c))
 
     start_py = timeit.default_timer()
     likelihood_py = model.fitter._negative_log_likelihood(params.values(),data['frequency'],data['recency'],data['T'],penalizer_coef=0, N = N)
     py_time = timeit.default_timer() - start_py
-    print "Py_time: " + str(py_time)
-    print "Likelihood: " + str(likelihood_py)
+    print("Py_time: " + str(py_time))
+    print("Likelihood: " + str(likelihood_py))
     #assert py_time > 3 * c_time
     #assert math.fabs(likelihood_c - likelihood_py) < 10**-6
 
@@ -55,8 +56,8 @@ def test_BGBBBB_likelihood_compressed_optimized(T,size):
     start_py = timeit.default_timer()
     likelihood_py = model.fitter._negative_log_likelihood(params.values(),data['frequency'],data['recency'],data['T'], data['frequency_purchases'], penalizer_coef=0, N = data['N'])
     py_time = timeit.default_timer() - start_py
-    print "Py_time: " + str(py_time)
-    print "Likelihood: " + str(likelihood_py)
+    print("Py_time: " + str(py_time))
+    print("Likelihood: " + str(likelihood_py))
 
     gc.collect()
 
@@ -77,8 +78,8 @@ def test_BGBBBB_likelihood_compressed_optimized(T,size):
     start_c = timeit.default_timer()
     likelihood_c = model.fitter._c_likelihood_optimized(params.values(),c_data,n_samples)
     c_time = timeit.default_timer() - start_c
-    print "C_opt_time: " + str(c_time)
-    print "Likelihood: " + str(likelihood_c)
+    print("C_opt_time: " + str(c_time))
+    print("Likelihood: " + str(likelihood_c))
 
     gc.collect()
 
@@ -95,16 +96,16 @@ def test_BGBBBB_likelihood_compressed_optimized(T,size):
     start_c = timeit.default_timer()
     likelihood_c = model.fitter._c_negative_log_likelihood(params.values(),x,tx,T,xp,N,n_samples)
     c_time = timeit.default_timer() - start_c
-    print "C_time: " + str(c_time)
-    print "Likelihood: " + str(likelihood_c)
+    print("C_time: " + str(c_time))
+    print("Likelihood: " + str(likelihood_c))
 
     gc.collect()
 
     start_c = timeit.default_timer()
     likelihood_c = model.fitter._c_negative_log_likelihood_float(params.values(), x, tx, T, xp, N, n_samples)
     c_time = timeit.default_timer() - start_c
-    print "C_float_time: " + str(c_time)
-    print "Likelihood: " + str(likelihood_c)
+    print("C_float_time: " + str(c_time))
+    print("Likelihood: " + str(likelihood_c))
 
 
     #assert py_time > 3 * c_time
@@ -131,20 +132,20 @@ def test_BGBBBB_likelihood_compressed(T,size):
     T = int_n_size_array(*data['T'])
     N = int_n_size_array(*data['N'])
     xp = int_n_size_array(*data['frequency_purchases'])
-    print "Data_time: " + str(timeit.default_timer() - start_c)
+    print("Data_time: " + str(timeit.default_timer() - start_c))
 
     start_exec = timeit.default_timer()
     likelihood_c = model.fitter._c_negative_log_likelihood(params.values(),x,tx,T,xp,N,n_samples)
     end_c = timeit.default_timer()
-    print "Exec: " + str(end_c - start_exec)
-    print "C_time: " + str(end_c - start_c)
-    print "Likelihood: " + str(likelihood_c)
+    print("Exec: " + str(end_c - start_exec))
+    print("C_time: " + str(end_c - start_c))
+    print("Likelihood: " + str(likelihood_c))
 
     start_py = timeit.default_timer()
     likelihood_py = model.fitter._negative_log_likelihood(params.values(),data['frequency'],data['recency'],data['T'], data['frequency_purchases'], penalizer_coef=0, N = data['N'])
     py_time = timeit.default_timer() - start_py
-    print "Py_time: " + str(py_time)
-    print "Likelihood: " + str(likelihood_py)
+    print("Py_time: " + str(py_time))
+    print("Likelihood: " + str(likelihood_py))
     #assert py_time > 3 * c_time
     #assert math.fabs(likelihood_c - likelihood_py) < 10**-6
 
@@ -174,7 +175,7 @@ def test_BGBBBB_compressed_fit():
         start = timeit.default_timer()
         model.fit(data['frequency'], recency = data['recency'], T = data['T'], N = data['N'], frequency_purchases=data['frequency_purchases'], c_fit=c,bootstrap_size=3,iterative_fitting=0)
         time = timeit.default_timer() - start
-        print model.params_C
+        print(model.params_C)
         return time, model.fitter.params_
 
     T = 30
@@ -187,9 +188,9 @@ def test_BGBBBB_compressed_fit():
     c_time,c_params = test_fit_compressed(models.BGBBBBModel(), True,compressed_data)
     py_time,py_params = test_fit_compressed(models.BGBBBBModel(), False, compressed_data)
 
-    print c_time
-    print py_time
-    print py_params
+    print(c_time)
+    print(py_time)
+    print(py_params)
     #for param_c, param_py in zip(c_params.values(), py_params.values()):
      #   assert math.fabs(param_c - param_py) < 10**-3
 
