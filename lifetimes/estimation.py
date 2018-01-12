@@ -920,6 +920,9 @@ class BGBBFitter(BaseFitter):
         return B(a + x, b + n - x) / B(a, b) * B(g, d + n + 1) / B(g, d) * 1.0 / L
 
 
+    # TODO: implement other desiderata methods
+
+
 class BGBBBGFitter(BaseFitter):
     """
         BG/BB/BG discrete time model with session and conversion.
