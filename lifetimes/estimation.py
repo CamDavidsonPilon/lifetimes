@@ -12,13 +12,13 @@ from lifetimes.generate_data import pareto_nbd_model, beta_geometric_nbd_model, 
     bgbb_model, bgbbbg_model, bgbbbgext_model, bgext_model
 from lifetimes.formulas import gamma_ratio
 from functools import reduce
+
 __all__ = ['BetaGeoFitter', 'ParetoNBDFitter', 'GammaGammaFitter', 'ModifiedBetaGeoFitter']
 
 B = special.beta
 
 
 class BaseFitter(object):
-
     params_ = None
     data = None
 
@@ -297,7 +297,7 @@ class ParetoNBDFitter(BaseFitter):
 
     @staticmethod
     def static_expected_number_of_purchases_up_to_time(r, a, s, b, t):
-        r, alpha, s, beta = (r, a, s, b)
+        r, alpha, s, beta = (float(r), float(a), float(s), float(b))
         first_term = r * beta / alpha / (s - 1)
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term
@@ -404,7 +404,8 @@ class BetaGeoFitter(BaseFitter):
         r, alpha, a, b = params
 
         A_1 = special.gammaln(r + frequency) - special.gammaln(r) + r * log(alpha)
-        A_2 = special.gammaln(a + b) + special.gammaln(b + frequency) - special.gammaln(b) - special.gammaln(a + b + frequency)
+        A_2 = special.gammaln(a + b) + special.gammaln(b + frequency) - special.gammaln(b) - special.gammaln(
+            a + b + frequency)
         A_3 = -(r + frequency) * log(alpha + T)
 
         d = vconcat[ones_like(frequency), (frequency > 0)]
@@ -687,6 +688,7 @@ class BGBBFitter(BaseFitter):
             return np.inf
 
         a, b, g, d = params
+        a, b, g, d = float(a), float(b), float(g), float(d)
         x = frequency
         tx = recency
 
@@ -815,7 +817,8 @@ class BGBBFitter(BaseFitter):
 
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T], columns=['frequency', 'recency', 'T'])
-        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbb_model(ts, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbb_model(ts, *params, size=size,
+                                                                                       compressed=compressed)
 
         # self.predict = self.conditional_expected_number_of_purchases_up_to_time   # TODO add these methods
         return self
@@ -839,11 +842,15 @@ class BGBBFitter(BaseFitter):
 
     @staticmethod
     def static_expected_number_of_purchases_up_to_time(a, b, g, d, t):
+        a, b, g, d = float(a), float(b), float(g), float(d)
+        if abs(g - 1.0) < 1e-6:
+            return a / (a + b) * d * (special.digamma(d + t + 1) - special.digamma(d + 1))
         return a / (a + b) * d / (g - 1) * (
             1.0 - (special.gamma(g + d) / special.gamma(1 + d)) / gamma_ratio(t + d + 1, g - 1))
 
     @staticmethod
     def static_limit_number_of_purchases(a, b, g, d):
+        a, b, g, d = float(a), float(b), float(g), float(d)
         if g < 1:
             return np.infty
         return (a / (a + b)) * (d / (g - 1))
@@ -864,6 +871,7 @@ class BGBBFitter(BaseFitter):
 
     @staticmethod
     def static_expected_number_of_purchases_up_to_time_error(a, b, g, d, t, C):
+        a, b, g, d = float(a), float(b), float(g), float(d)
 
         if len(C) != 4 or len(C[0]) != 4:
             raise ValueError("Covariance matrix: wrong dimensions. Must be 4x4 symmetric.")
@@ -898,6 +906,8 @@ class BGBBFitter(BaseFitter):
 
     @staticmethod
     def static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n):
+        a, b, g, d = float(a), float(b), float(g), float(d)
+
         if not (isinstance(n, int) and isinstance(t, int)):
             raise TypeError("t and n must be integers")
 
@@ -912,6 +922,8 @@ class BGBBFitter(BaseFitter):
 
     @staticmethod
     def static_probability_alive_next_step(a, b, g, d, x, t_x, n):
+        a, b, g, d = float(a), float(b), float(g), float(d)
+
         if not (isinstance(x, int) and isinstance(t_x, int)):
             raise TypeError("t_x and x and n must be integers")
 
@@ -920,7 +932,20 @@ class BGBBFitter(BaseFitter):
         return B(a + x, b + n - x) / B(a, b) * B(g, d + n + 1) / B(g, d) * 1.0 / L
 
 
-    # TODO: implement other desiderata methods
+        # TODO: implement other desiderata methods
+
+    def probability_of_being_alive(self, t):
+        """
+        Compute the probability for a user of being alive at time t
+        """
+        a, b, g, d = self._unload_params('alpha', 'beta', 'gamma', 'delta')
+        return BGBBFitter.static_probability_of_being_alive(g, d, t)
+
+    @staticmethod
+    def static_probability_of_being_alive(g, d, t):
+        g, d = float(g), float(d)
+
+        return special.beta(g, d + t) / special.beta(g, d)
 
 
 class BGBBBGFitter(BaseFitter):
@@ -945,6 +970,7 @@ class BGBBBGFitter(BaseFitter):
             return np.inf
 
         a, b, g, d, e, z = params
+        a, b, g, d, e, z = float(a), float(b), float(g), float(d), float(e), float(z)
         xc = frequency_before_conversion
         x = frequency
 
@@ -1011,7 +1037,8 @@ class BGBBBGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_purchases'])
-        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbg_model(ts, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbg_model(ts, *params, size=size,
+                                                                                         compressed=compressed)
 
         return self
 
@@ -1147,7 +1174,8 @@ class BGBBBGExtFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'c0'], params))
         self.data = DataFrame(vconcat[frequency, recency, T, frequency_before_conversion],
                               columns=['frequency', 'recency', 'T', 'frequency_before_conversion'])
-        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbgext_model(ts, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgbbbgext_model(ts, *params, size=size,
+                                                                                            compressed=compressed)
         return self
 
     def expected_probability_of_converting_at_time(self, t):
@@ -1274,6 +1302,8 @@ class BGFitter(BaseFitter):
 
         a = params[0]
         b = params[1]
+        a, b = float(a), float(b)
+
         if npany(asarray([a, b]) <= 0.):
             return np.inf
 
@@ -1354,7 +1384,8 @@ class BGFitter(BaseFitter):
         self.params_ = OrderedDict(zip(['alpha', 'beta'], params))
         self.data = DataFrame(vconcat[frequency, T], columns=['frequency', 'T'])
 
-        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgext_model(ts, *params, size=size, compressed=compressed)
+        self.generate_new_data = lambda size=1, compressed=False, ts=gen_t: bgext_model(ts, *params, size=size,
+                                                                                        compressed=compressed)
 
         return self
 
@@ -1373,6 +1404,8 @@ class BGFitter(BaseFitter):
 
     @staticmethod
     def static_expected_number_of_purchases_up_to_time(a, b, t):
+        a, b = float(a), float(b)
+
         if t == 0:
             return 0
         elif t == 1:
@@ -1398,6 +1431,7 @@ class BGFitter(BaseFitter):
 
     @staticmethod
     def static_expected_number_of_purchases_up_to_time_error(a, b, t, C):
+        a, b = float(a), float(b)
 
         if t == 0:
             return 0
@@ -1438,6 +1472,8 @@ class BGFitter(BaseFitter):
 
     @staticmethod
     def static_probability_of_n_purchases_up_to_time(a, b, t, n):
+        a, b = float(a), float(b)
+
         if not (isinstance(n, int) and isinstance(t, int)):
             raise TypeError("t and n must be integers")
 
@@ -1452,3 +1488,38 @@ class BGFitter(BaseFitter):
             num = special.beta(a, b + n)
 
         return num / den
+
+    def unsubscribe_posterior_density(self, t, n, x):
+        """
+        Returns the probability density function of the parameter of unsubscription, given that, at time t,
+        n subscriptions were observed
+
+        :param t: time of observation
+        :param n: number of subscriptions (it must be <= t)
+        :param x: the points where to evalueate the posterior density, it can be a np.array
+        :return: the posterior pdf of the parameter of unsubscription computed in x
+        """
+        a, b = self._unload_params('alpha', 'beta')
+        return BGFitter.static_unsubscribe_posterior_density(a, b, t, n, x)
+
+    @staticmethod
+    def static_unsubscribe_posterior_density(a, b, t, n, x):
+        a, b = float(a), float(b)
+
+        if not (isinstance(t, int) and isinstance(n, int)):
+            raise TypeError("t and x must be integers")
+        if t == 0:
+            raise ValueError("t must be > 0")
+        if n > t:
+            raise ValueError("t must be >= n")
+
+        if not np.isscalar(x):
+            raise TypeError("x must be a scalar")
+        if not 0.0 < x < 1.0:
+            raise ValueError("Posterior density function has domain ]0.0, 1.0[")
+
+        def posterior_pdf(u):
+            return u ** (a + (1 if n < t else 0) - 1) * (1 - u) ** (b + n - 1) / special.beta(a + (1 if n < t else 0),
+                                                                                              b + n)
+
+        return posterior_pdf(x)

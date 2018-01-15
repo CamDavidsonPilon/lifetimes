@@ -25,7 +25,10 @@ class Model(object):
         self.uparams = None
 
     def is_ready(self):
-        return self.params is not None and  self.params_C is not None
+        try:
+            return self.good_fit()
+        except:
+            return False
 
     def good_fit(self):
         """
@@ -244,7 +247,6 @@ class ParetoNBDModel(Model):
         self.wrapped_static_expected_number_of_purchases_up_to_time = \
             uncertainties.wrap(ParetoNBDFitter.static_expected_number_of_purchases_up_to_time)
 
-
     def generateData(self, t, parameters, size):
         return gen.pareto_nbd_model(t, parameters['r'], parameters['alpha'], parameters['s'],
                                     parameters['beta'],
@@ -280,6 +282,8 @@ class BGBBModel(Model):
             uncertainties.wrap(BGBBFitter.static_expected_number_of_purchases_up_to_time)
         self.wrapped_static_probability_of_n_purchases_up_to_time = \
             uncertainties.wrap(BGBBFitter.static_probability_of_n_purchases_up_to_time)
+        self.wrapped_static_probability_of_being_alive = uncertainties.wrap(
+            BGBBFitter.static_probability_of_being_alive)
 
     def generateData(self, t, parameters, size):
         return gen.bgbb_model(t, parameters['alpha'],
@@ -303,6 +307,14 @@ class BGBBModel(Model):
         uparams = self.uparams
         a, b, g, d = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, g, d, t, n)
+
+    def probability_of_being_alive(self, t):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
+        uparams = self.uparams
+        a, b, g, d = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_probability_of_being_alive(g, d, t)
 
 
 class BGBBBGExtModel(Model):
@@ -434,7 +446,7 @@ class BGBBBGExtModel(Model):
         a, b, g, d, e, z, c0 = [uparams[par_name] for par_name in self.param_names]
         return self.corrected_wrapped_static_expected_probability_of_converting_at_time(a, b, g, d, e, z, c0, t)
 
-    def expected_probability_of_converting_within_time(self, t):  #TODO: unstable.. fix it
+    def expected_probability_of_converting_within_time(self, t):  # TODO: unstable.. fix it
         if not self.is_ready():
             raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
 
@@ -461,12 +473,15 @@ class BGModel(Model):
         self.wrapped_static_probability_of_n_purchases_up_to_time = \
             uncertainties.wrap(BGFitter.static_probability_of_n_purchases_up_to_time)
 
+        self.wrapped_static_unsubscribe_posterior_density = uncertainties.wrap(
+           BGFitter.static_unsubscribe_posterior_density)
+
     def generate_data(self, t, parameters, size):
         return gen.bgext_model(t, parameters['alpha'],
                                parameters['beta'],
                                size=size)
 
-    def fit(self, frequency, T, recency=None,  bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
+    def fit(self, frequency, T, recency=None, bootstrap_size=10, N=None, initial_params=None, iterative_fitting=0):
         """
         Fit the model to data, finding parameters and their errors, and assigning them to internal variables
         Args:
@@ -526,14 +541,28 @@ class BGModel(Model):
         self.set_parameters(self.params, cov)
 
     def expected_number_of_purchases_up_to_time(self, t):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_expected_number_of_purchases_up_to_time(a, b, t)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
         uparams = self.uparams
         a, b = [uparams[par_name] for par_name in self.param_names]
         return self.wrapped_static_probability_of_n_purchases_up_to_time(a, b, t, n)
+
+    def unsubscribe_posterior_density(self, t, n, x):
+        if not self.is_ready():
+            raise ValueError("Model is not ready. Please call the '.fit' method first or provide parameters.")
+
+        uparams = self.uparams
+        a, b = [uparams[par_name] for par_name in self.param_names]
+        return self.wrapped_static_unsubscribe_posterior_density(a, b, t, n, x)
 
 
 class NumericalMetrics(object):

@@ -95,7 +95,7 @@ def test_BGBB_new_likelyhood():
     second_term = np.array([np.sum(
         [special.beta(a + x[j], b + tx[j] - x[j] + i) * special.beta(g + 1, d + tx[j] + i) for i in
          range(int(T[j] - tx[j] - 1 + 1))])
-                            for j in range(len(x))])
+        for j in range(len(x))])
 
     for ii in range(len(numerator)):
         assert numerator[ii] == first_term[ii] + second_term[ii]
@@ -143,14 +143,14 @@ def test_BGBB_fitting_with_jacobian():
     fitter = est.BGBBFitter()
 
     fitter.fit(compressed_data['frequency'], compressed_data['recency'], compressed_data['T'],
-                          N=compressed_data['N'], initial_params=params.values(), jac=False)
+               N=compressed_data['N'], initial_params=params.values(), jac=False)
 
     print(params)
     print("Without jacobian:")
     print(fitter.params_)
 
     fitter.fit(compressed_data['frequency'], compressed_data['recency'], compressed_data['T'],
-                          N=compressed_data['N'], initial_params=params.values(), jac=True)
+               N=compressed_data['N'], initial_params=params.values(), jac=True)
 
     print(params)
     print("With jacobian:")
@@ -221,6 +221,26 @@ def test_BGBB_additional_functions():
         assert 1 >= prob >= 0
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+    print("Probability of being alive at time t")
+    previous_p = 1.0
+    for t in range(1, 11):
+        prob = fitter.probability_of_being_alive(t)
+        print(t, prob)
+        assert 1 >= prob >= 0
+        assert previous_p >= prob
+        previous_p = prob
+
+    print("Test the limit of expected_number_of_purchases_up_to_time for gamma = 1")
+    a, b, d, t = 1.2, 0.7, 2.7, 1
+    gs = [0.05, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001]
+    for g in gs:
+        print(fitter.static_expected_number_of_purchases_up_to_time(a, b, 1 + g, d, t))
+
+    assert abs(fitter.static_expected_number_of_purchases_up_to_time(a, b, 1.000001, d,t)
+               - fitter.static_expected_number_of_purchases_up_to_time(a, b, 1.000002, d, t) < 1e-6)
+    assert fitter.static_expected_number_of_purchases_up_to_time(a, b, 1.000001, d, t) \
+           == fitter.static_expected_number_of_purchases_up_to_time(a, b, 1, d, t)
 
 
 @pytest.mark.BGBB
@@ -334,11 +354,21 @@ def test_BGBB_integration_in_models():
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
 
+    print("Probability of being alive at time t")
+    previous_p = 1.0
+    for t in range(1, 11):
+        prob = model.fitter.probability_of_being_alive(t)
+        print(t, prob)
+        assert 1 >= prob >= 0
+        assert previous_p >= prob
+        previous_p = prob
+
+
 @pytest.mark.BGBB
 def test_BGBBBB_transaction():
     N = 10
     T = 20
-    gen_data = gen.bgbb_model(T,0.3,5,0.6,10,N,True)
+    gen_data = gen.bgbb_model(T, 0.3, 5, 0.6, 10, N, True)
     assert len(gen_data) == N
     for user in gen_data:
         for t in user[1]:
@@ -357,8 +387,6 @@ def test_BGBB_generation_speedtest():
         gen_data = gen.bgbb_model(T, params['alpha'], params['beta'], params['gamma'], params['delta'], size=N)
     t1 = timeit.default_timer() - start_time
     print("time required: " + str(t1))
-
-
 
 
 @pytest.mark.BGBB
@@ -402,11 +430,20 @@ def test_BGBB_integration_in_models_with_uncertainties():
         tot_prob += prob
         assert 1 >= prob >= 0
 
-        uprob  = model.probability_of_n_purchases_up_to_time(t, n)
+        uprob = model.probability_of_n_purchases_up_to_time(t, n)
         print(uprob)
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+    print("Probability of being alive at time t")
+    previous_p = 1.0
+    for t in range(1, 11):
+        prob = model.probability_of_being_alive(t)
+        print(t, prob)
+        assert 1 >= prob >= 0
+        assert previous_p >= prob
+        previous_p = prob
 
 
 @pytest.mark.BGBB

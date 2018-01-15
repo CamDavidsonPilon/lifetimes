@@ -163,6 +163,13 @@ def test_BG_additional_functions():
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
 
+    t = 10
+    print("Unsubscribe posterior density")
+    grid = 0.001
+    for n in range(t + 1):
+        values = [fitter.unsubscribe_posterior_density(t, n, u) for u in np.arange(0 + grid, 1.0, grid)]
+        assert (all(values) >= 0.0)
+
 
 @pytest.mark.BGExt
 def test_BG_integration_in_models():
@@ -209,6 +216,13 @@ def test_BG_integration_in_models():
         assert 1 >= prob >= 0
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+    t = 10
+    print("Unsubscribe posterior density")
+    grid = 0.001
+    for n in range(t + 1):
+        values = [model.fitter.unsubscribe_posterior_density(t, n, u) for u in np.arange(0 + grid, 1.0, grid)]
+        assert (all(values) >= 0.0)
 
 
 @pytest.mark.BGExt
@@ -304,6 +318,13 @@ def test_BG_integration_in_models_with_uncertainties():
         assert is_almost_equal(uprob.n, prob)
 
     assert math.fabs(tot_prob - 1.0) < 0.00001
+
+    t = 10
+    print("Unsubscribe posterior density")
+    grid = 0.001
+    for n in range(t + 1):
+        values = [model.unsubscribe_posterior_density(t, n, u) for u in np.arange(0 + grid, 1.0, grid)]
+        assert (all(values) >= 0.0)
 
 
 @pytest.mark.BGExt
