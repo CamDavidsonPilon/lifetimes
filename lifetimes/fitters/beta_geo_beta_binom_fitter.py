@@ -1,5 +1,5 @@
 """Beta Geo Beta BinomFitter."""
-
+from __future__ import division
 from __future__ import print_function
 from collections import OrderedDict
 
@@ -65,6 +65,9 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         @np.vectorize
         def _sum(x, tx, recency_T):
+            if recency_T <= -1:
+                return -np.inf
+
             j = J[:recency_T + 1]
             return log(
                 np.sum(exp(betaln(alpha + x, beta + tx - x + j) - beta_ab +
@@ -84,7 +87,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def fit(self, frequency, recency, n, n_custs, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+            fit_method='Nelder-Mead', maxiter=2000, initial_params=None,
+            **kwargs):
         """
         Fit the BG/BB model.
 
@@ -109,6 +113,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             Set to true to print out convergence diagnostics.
         tol: float, optional
             Tolerance for termination of the function minimization process.
+        initial_params: array_like, optional
+            set the initial parameters for the fitter.
         iterative_fitting: int, optional
             perform iterative_fitting fits over random/warm-started initial params
         index: array_like, optional
@@ -138,7 +144,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             self._negative_log_likelihood,
             [frequency, recency, n, n_custs, self.penalizer_coef],
             iterative_fitting,
-            np.ones(4),
+            initial_params,
             4,
             verbose,
             tol,
