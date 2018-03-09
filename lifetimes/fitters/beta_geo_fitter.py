@@ -230,9 +230,11 @@ class BetaGeoFitter(BaseFitter):
             (alpha + T) / (alpha + recency)) + log(
             a / (b + where(frequency == 0, 1, frequency) - 1))
 
-        return where(frequency == 0, 1.,
-                     where(log_div > ln_exp_max, 0.,
-                           1. / (1 + exp(np.clip(log_div, None, ln_exp_max)))))
+        return float(where(frequency == 0, 1.,
+                           where(log_div > ln_exp_max, 0.,
+                                 1. / (1 + exp(np.clip(log_div,
+                                                       None,
+                                                       ln_exp_max))))))
 
     def conditional_probability_alive_matrix(self, max_frequency=None,
                                              max_recency=None):
