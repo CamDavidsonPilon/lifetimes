@@ -281,11 +281,12 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     extra_columns = t - len(purchase_history)
     customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=['transactions'])
     # add T column
-    customer_history['T'] = np.arange(customer_history.shape[0])
+    customer_history['T'] = np.arange(start=1,stop=customer_history.shape[0]+1)
     # add cumulative transactions column
+    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t>0))
     customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
     # Add t_x column
-    customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
+    customer_history['recency'] = customer_history.apply(lambda row: row['T']-1 if row['transactions'] != 0 else np.nan, axis=1)
     customer_history['recency'] = customer_history['recency'].fillna(method='ffill').fillna(0)
     return customer_history.apply(lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']), axis=1)
 
