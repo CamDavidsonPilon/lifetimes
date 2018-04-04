@@ -175,3 +175,59 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         df.iloc[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
+
+
+def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
+    """
+    Generate artificial data according to the Beta-Geometric/Beta-Binomial
+    Model.
+
+
+    Parameters
+    ----------
+    N: array_like
+        Number of transaction opportunities for new customers.
+    alpha, beta, gamma, delta: float
+        Parameters in the model. See [1]_
+    size: int, optional
+        The number of customers to generate
+
+    Returns
+    -------
+    DataFrame
+        with index as customer_ids and the following columns:
+        'frequency', 'recency', 'n', 'lambda', 'p', 'alive', 'customer_id'
+
+    References
+    ----------
+    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
+       "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
+       Marketing Science, 29 (6), 1086-1108.
+
+    """
+
+    if type(N) in [float, int, np.int64]:
+        N = N * np.ones(size)
+    else:
+        N = np.asarray(N)
+
+    probability_of_post_purchase_death = np.random.beta(a=alpha, b=beta, size=size)
+    thetas = np.random.beta(a=gamma, b=delta, size=size)
+
+    columns = ['frequency', 'recency', 'N', 'p', 'theta', 'alive', 'customer_id']
+    df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
+    for i in range(size):
+        p = probability_of_post_purchase_death[i]
+        theta = thetas[i]
+
+        # hacky until I can find something better
+        current_t = 0
+        alive = True
+        times = []
+        while current_t < N[i] and alive:
+            alive = np.random.binomial(1, theta) == 0
+            if alive and np.random.binomial(1, p) == 1:
+                times.append(current_t)
+            current_t += 1
+        df.iloc[i] = len(times), times[-1] + 1 if len(times) != 0 else 0, N[i], p, theta, alive, i
+    return df

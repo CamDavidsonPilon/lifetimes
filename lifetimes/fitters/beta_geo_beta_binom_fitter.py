@@ -11,6 +11,7 @@ from scipy.special import gammaln, betaln, binom
 
 from ..utils import _fit, _check_inputs
 from . import BaseFitter
+from ..generate_data import beta_geometric_beta_binom_model
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
@@ -157,7 +158,12 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                               columns=['frequency', 'recency', 'n', 'n_custs'])
         if index is not None:
             self.data.index = index
-
+        # Making a large array replicating n by n_custs having n.
+        n_exploded = []
+        for n_, nc in zip(n, n_custs):
+            n_exploded += [n_] * nc
+        self.generate_new_data = lambda size=1: beta_geometric_beta_binom_model(
+            np.array(n_exploded), *self._unload_params('alpha', 'beta', 'gamma', 'delta'), size=size)
         return self
 
     def conditional_expected_number_of_purchases_up_to_time(self, t):
