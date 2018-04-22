@@ -214,7 +214,7 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
     probability_of_post_purchase_death = np.random.beta(a=alpha, b=beta, size=size)
     thetas = np.random.beta(a=gamma, b=delta, size=size)
 
-    columns = ['frequency', 'recency', 'N', 'p', 'theta', 'alive', 'customer_id']
+    columns = ['frequency', 'recency', 'n', 'p', 'theta', 'alive', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
     for i in range(size):
         p = probability_of_post_purchase_death[i]
@@ -229,5 +229,8 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
             if alive and np.random.binomial(1, p) == 1:
                 times.append(current_t)
             current_t += 1
+        # adding in final death opportunity to agree with [1]
+        if alive:
+            alive = np.random.binomial(1, theta) == 0
         df.iloc[i] = len(times), times[-1] + 1 if len(times) != 0 else 0, N[i], p, theta, alive, i
     return df

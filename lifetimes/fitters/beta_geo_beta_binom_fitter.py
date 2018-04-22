@@ -69,7 +69,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             if recency_T <= -1:
                 return -np.inf
 
-            j = J[:recency_T + 1]
+            j = J[:int(recency_T) + 1]
             return log(
                 np.sum(exp(betaln(alpha + x, beta + tx - x + j) - beta_ab +
                            betaln(gamma + 1, delta + tx + j) - beta_gd)))
