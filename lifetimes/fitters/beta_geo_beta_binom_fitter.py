@@ -160,8 +160,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             self.data.index = index
         # Making a large array replicating n by n_custs having n.
         n_exploded = []
-        for n_, nc in zip(n, n_custs):
-            n_exploded += [n_] * nc
+        for n_, n_cust in zip(n, n_custs):
+            n_exploded += [n_] * n_cust
         self.generate_new_data = lambda size=1: beta_geometric_beta_binom_model(
             np.array(n_exploded), *self._unload_params('alpha', 'beta', 'gamma', 'delta'), size=size)
         return self
