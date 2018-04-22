@@ -36,17 +36,17 @@ bbgb_params = OrderedDict([('alpha', 1.204), ('beta', 0.750), ('gamma', 0.657),
 class TestBetaGeoBetaBinomGeneration():
 
     def test_positivity(self):
-        sim_data = beta_geometric_beta_binom_model(N=6, **bbgb_params, size=5000)
+        sim_data = beta_geometric_beta_binom_model(N=6, size=5000, **bbgb_params)
         assert (sim_data['frequency'] >= 0).all()
         assert (sim_data['recency'] >= 0).all()
 
     def test_hitting_max(self):
-        sim_data = beta_geometric_beta_binom_model(N=6, **bbgb_params, size=5000)
+        sim_data = beta_geometric_beta_binom_model(N=6, size=5000, **bbgb_params)
         assert sim_data['frequency'].max() == 6
         assert sim_data['recency'].max() == 6
 
     def test_alive_probs(self):
-        sim_data = beta_geometric_beta_binom_model(N=6, **bbgb_params, size=50000)
+        sim_data = beta_geometric_beta_binom_model(N=6, size=50000, **bbgb_params)
         assert (np.abs(sim_data.loc[(sim_data['frequency'] == 0) & (sim_data['recency'] == 0),
                                     'alive'].mean() - 0.11) < 0.01)
         assert (np.abs(sim_data.loc[(sim_data['frequency'] == 2) & (sim_data['recency'] == 4),
@@ -55,7 +55,7 @@ class TestBetaGeoBetaBinomGeneration():
                                     'alive'].mean() - 0.93) < 0.01)
 
     def test_params_same_from_sim_data(self):
-        sim_data = beta_geometric_beta_binom_model(N=6, **bbgb_params, size=100000)
+        sim_data = beta_geometric_beta_binom_model(N=6, size=100000, **bbgb_params)
         bbtf = estimation.BetaGeoBetaBinomFitter()
         grouped_data = sim_data.groupby(['frequency', 'recency', 'n'])['customer_id'].count()
         grouped_data = grouped_data.reset_index().rename(columns={'customer_id': 'n_custs'})
