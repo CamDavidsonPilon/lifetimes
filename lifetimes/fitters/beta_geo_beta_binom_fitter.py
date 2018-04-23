@@ -14,7 +14,8 @@ from . import BaseFitter
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
-    """Also known as the Beta-Geometric/Beta-Binomial Model [1]_.
+    """
+    Also known as the Beta-Geometric/Beta-Binomial Model [1]_.
 
     Future purchases opportunities are treated as discrete points in time.
     In the literature, the model provides a better fit than the Pareto/NBD
@@ -42,6 +43,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     .. [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
        "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
        Marketing Science, 29 (6), 1086-1108.
+
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -178,7 +180,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             time periods (n+t)
 
         Returns
-        ----------
+        -------
         array_like
             predicted transactions
 

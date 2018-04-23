@@ -291,7 +291,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     # add T column
     customer_history['T'] = np.arange(customer_history.shape[0])
     # add cumulative transactions column
-    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t>0))
+    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t > 0))
     customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
     # Add t_x column
     customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
@@ -300,10 +300,11 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
         lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']),
         axis=1)
 
+
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
          initial_params, params_size, disp, tol=1e-8, fit_method='Nelder-Mead',
          maxiter=2000, **kwargs):
-    """Helper for fitter fit."""
+    """Fit function for fitters."""
     ll = []
     sols = []
 
@@ -315,7 +316,6 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
 
     if iterative_fitting > 1 and initial_params is not None:
         raise ValueError("iterative_fitting and initial_params should not be both set, as no improvement could be made.")
-
 
     # set options for minimize, if specified in kwargs will be overwrittern
     minimize_options = {}
@@ -348,7 +348,8 @@ def _scale_time(age):
 
 
 def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
-    """Validation checks for inputs.
+    """
+    Check validity of inputs.
 
     Raises ValueError when checks failed.
 
@@ -516,7 +517,8 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
 
 
 def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
-    """Helper to save object with attributes from attr_list.
+    """
+    Save object with attributes from attr_list.
 
     Parameters
     ----------
@@ -530,6 +532,7 @@ def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
     values_to_save: list, optional
         Placeholders for original attributes for saving object. If None will be
         extended to attr_list length like [None] * len(attr_list)
+
     """
     if values_to_save is None:
         values_to_save = [None] * len(attr_list)
