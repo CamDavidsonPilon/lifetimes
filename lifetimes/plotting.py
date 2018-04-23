@@ -397,6 +397,8 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
     t: float
         The number of time units since the begining of
         data for which we want to calculate cumulative transactions
+    t_cal: float
+        A marker used to indicate where the vertical line for plotting should be.
     datetime_format: str, optional
         A string that represents the timestamp format. Useful if Pandas
         can't understand the provided format.
@@ -466,6 +468,8 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
     t: float
         The number of time units since the begining of
         data for which we want to calculate cumulative transactions
+    t_cal: float
+        A marker used to indicate where the vertical line for plotting should be.
     datetime_format: str, optional
         A string that represents the timestamp format. Useful if Pandas
         can't understand the provided format.
