@@ -1,10 +1,12 @@
+"""Test lifetimes utils."""
 import pytest
 import pandas as pd
 import numpy as np
 from pandas.util.testing import assert_frame_equal
 from numpy.testing import assert_almost_equal, assert_allclose
 
-from lifetimes import utils, BetaGeoFitter
+from lifetimes import utils, BetaGeoFitter, ParetoNBDFitter
+from lifetimes.datasets import load_dataset
 
 
 @pytest.fixture()
@@ -75,6 +77,42 @@ def large_transaction_level_data_with_monetary_value():
         [6, '2015-02-02', 5],
     ]
     return pd.DataFrame(d, columns=['id', 'date', 'monetary_value'])
+
+
+@pytest.fixture()
+def cdnow_transactions():
+    transactions = load_dataset('CDNOW_sample.txt', header=None, sep=r'\s+')
+    transactions.columns = ['id_total', 'id_sample', 'date', 'num_cd_purc',
+                            'total_value']
+    return transactions[['id_sample', 'date']]
+
+
+@pytest.fixture()
+def df_cum_transactions(cdnow_transactions):
+    datetime_col = 'date'
+    customer_id_col = 'id_sample'
+    t = 25 * 7
+    datetime_format = '%Y%m%d'
+    freq = 'D'
+    observation_period_end = '19970930'
+    freq_multiplier = 7
+
+    transactions_summary = utils.summary_data_from_transaction_data(
+        cdnow_transactions, customer_id_col, datetime_col,
+        datetime_format=datetime_format, freq=freq, freq_multiplier=freq_multiplier,
+        observation_period_end=observation_period_end)
+
+    transactions_summary = transactions_summary.reset_index()
+
+    model = ParetoNBDFitter()
+    model.fit(transactions_summary['frequency'],
+              transactions_summary['recency'],
+              transactions_summary['T'])
+
+    df_cum = utils.expected_cumulative_transactions(
+        model, cdnow_transactions, datetime_col, customer_id_col, t,
+        datetime_format, freq, set_index_date=False, freq_multiplier=freq_multiplier)
+    return df_cum
 
 
 def test_find_first_transactions_returns_correct_results(large_transaction_level_data):
@@ -166,7 +204,7 @@ def test_summary_data_from_transaction_data_works_with_string_customer_ids(trans
         ['Y', '2015-01-05'],
     ]
     df = pd.DataFrame(d, columns=['id', 'date'])
-    actual = utils.summary_data_from_transaction_data(df, 'id', 'date')
+    utils.summary_data_from_transaction_data(df, 'id', 'date')
 
 
 def test_summary_data_from_transaction_data_works_with_int_customer_ids_and_doesnt_coerce_to_float(transaction_level_data):
@@ -409,3 +447,101 @@ def test_expected_cumulative_transactions_dedups_inside_a_time_period(fitted_bg,
     by_week = utils.expected_cumulative_transactions(fitted_bg, example_transaction_data, 'date', 'id', 10, freq='W')
     by_day = utils.expected_cumulative_transactions(fitted_bg, example_transaction_data, 'date', 'id', 10, freq='D')
     assert (by_week['actual'] >= by_day['actual']).all()
+
+
+def test_expected_cumulative_transactions_equals_r_btyd_walktrough(df_cum_transactions):
+    """
+    Validate expected cumulative transactions with BTYD walktrough
+
+    https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf
+
+    cum.tracking[,20:25]
+    # [,1] [,2] [,3] [,4] [,5] [,6]
+    # actual 1359 1414 1484 1517 1573 1672
+    # expected 1309 1385 1460 1533 1604 1674
+
+    """
+    actual_btyd = [1359, 1414, 1484, 1517, 1573, 1672]
+    expected_btyd = [1309, 1385, 1460, 1533, 1604, 1674]
+
+    actual = df_cum_transactions['actual'].iloc[19:25].values
+    predicted = df_cum_transactions['predicted'].iloc[19:25].values.round()
+
+    assert_allclose(actual, actual_btyd)
+    assert_allclose(predicted, expected_btyd)
+
+
+def test_incremental_transactions_equals_r_btyd_walktrough(df_cum_transactions):
+    """
+    Validate incremental transactions with BTYD walktrough
+
+    https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf
+
+    inc.tracking[,20:25]
+    # [,1] [,2] [,3] [,4] [,5] [,6]
+    # actual 73.00 55.00 70.00 33.00 56.00 99.00
+    # expected 78.31 76.42 74.65 72.98 71.41 69.93
+
+    """
+    # get incremental from cumulative transactions
+    df_inc_transactions = df_cum_transactions.apply(lambda x: x - x.shift(1))
+
+    actual_btyd = [73.00, 55.00, 70.00, 33.00, 56.00, 99.00]
+    expected_btyd = [78.31, 76.42, 74.65, 72.98, 71.41, 69.93]
+
+    actual = df_inc_transactions['actual'].iloc[19:25].values
+    predicted = df_inc_transactions['predicted'].iloc[19:25].values.round(2)
+
+    assert_allclose(actual, actual_btyd)
+    assert_allclose(predicted, expected_btyd, atol=1e-2)
+
+
+def test_expected_cumulative_transactions_date_index(cdnow_transactions):
+    """
+    Test set_index as date for cumulative transactions and bgf fitter.
+
+    Get first 14 cdnow transactions dates and validate that date index,
+    freq_multiplier = 1 working and compare with tested data for last 4 records.
+
+    dates = ['1997-01-11', '1997-01-12', '1997-01-13', '1997-01-14']
+    actual_trans = [11, 12, 15, 19]
+    expected_trans = [10.67, 12.67, 14.87, 17.24]
+
+    """
+    datetime_col = 'date'
+    customer_id_col = 'id_sample'
+    t = 14
+    datetime_format = '%Y%m%d'
+    freq = 'D'
+    observation_period_end = '19970930'
+    freq_multiplier = 1
+
+    transactions_summary = utils.summary_data_from_transaction_data(
+        cdnow_transactions, customer_id_col, datetime_col,
+        datetime_format=datetime_format, freq=freq,
+        freq_multiplier=freq_multiplier,
+        observation_period_end=observation_period_end)
+
+    transactions_summary = transactions_summary.reset_index()
+
+    model = BetaGeoFitter()
+    model.fit(transactions_summary['frequency'],
+              transactions_summary['recency'],
+              transactions_summary['T'])
+
+    df_cum = utils.expected_cumulative_transactions(
+        model, cdnow_transactions, datetime_col, customer_id_col, t,
+        datetime_format, freq, set_index_date=True,
+        freq_multiplier=freq_multiplier)
+
+    dates = ['1997-01-11', '1997-01-12', '1997-01-13', '1997-01-14']
+    actual_trans = [11, 12, 15, 19]
+    expected_trans = [10.67, 12.67, 14.87, 17.24]
+
+    date_index = df_cum.iloc[-4:].index.to_timestamp().astype(str)
+    actual = df_cum['actual'].iloc[-4:].values
+    predicted = df_cum['predicted'].iloc[-4:].values.round(2)
+
+    assert all(dates == date_index)
+    assert_allclose(actual, actual_trans)
+    assert_allclose(predicted, expected_trans, atol=1e-2)

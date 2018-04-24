@@ -1,4 +1,6 @@
 """Lifetimes utils and helpers."""
+from __future__ import division
+
 from datetime import datetime
 
 import numpy as np
@@ -102,7 +104,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
 
 def _find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                            observation_period_end=None, freq='D'):
+                             observation_period_end=None, freq='D'):
     """
     Return dataframe with first transactions.
 
@@ -171,7 +173,7 @@ def _find_first_transactions(transactions, customer_id_col, datetime_col, moneta
 
 
 def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                                       observation_period_end=None, freq='D'):
+                                       observation_period_end=None, freq='D', freq_multiplier=1):
     """
     Return summary data from transactions.
 
@@ -197,9 +199,15 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     datetime_format: string, optional
         a string that represents the timestamp format. Useful if Pandas can't understand
         the provided format.
-    freq: string
+    freq: string, optional
         Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
         http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+    freq_multiplier: int, optional
+        Default 1, could be use to get exact recency and T, i.e. with freq='W'
+        row for user id_sample=1 will be recency=30 and T=39 while data in
+        CDNOW summary are different. Exact values could be obtained with
+        freq='D' and freq_multiplier=7 which will lead to recency=30.43
+        and T=38.86
 
     Returns
     -------
@@ -227,8 +235,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
 
-    customers['T'] = (observation_period_end - customers['min'])
-    customers['recency'] = (customers['max'] - customers['min'])
+    customers['T'] = (observation_period_end - customers['min']) / freq_multiplier
+    customers['recency'] = (customers['max'] - customers['min']) / freq_multiplier
 
     summary_columns = ['frequency', 'recency', 'T']
 
@@ -283,7 +291,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     # add T column
     customer_history['T'] = np.arange(customer_history.shape[0])
     # add cumulative transactions column
-    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t>0))
+    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t > 0))
     customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
     # Add t_x column
     customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
@@ -292,10 +300,11 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
         lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']),
         axis=1)
 
+
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
          initial_params, params_size, disp, tol=1e-8, fit_method='Nelder-Mead',
          maxiter=2000, **kwargs):
-    """Helper for fitter fit."""
+    """Fit function for fitters."""
     ll = []
     sols = []
 
@@ -307,7 +316,6 @@ def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
 
     if iterative_fitting > 1 and initial_params is not None:
         raise ValueError("iterative_fitting and initial_params should not be both set, as no improvement could be made.")
-
 
     # set options for minimize, if specified in kwargs will be overwrittern
     minimize_options = {}
@@ -340,7 +348,8 @@ def _scale_time(age):
 
 
 def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
-    """Validation checks for inputs.
+    """
+    Check validity of inputs.
 
     Raises ValueError when checks failed.
 
@@ -414,8 +423,10 @@ def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T
     return df['clv']  # return as a series
 
 
-def expected_cumulative_transactions(model, transactions, datetime_col, customer_id_col, t,
-                                     datetime_format=None, freq='D', set_index_date=False):
+def expected_cumulative_transactions(model, transactions, datetime_col,
+                                     customer_id_col, t, datetime_format=None,
+                                     freq='D', set_index_date=False,
+                                     freq_multiplier=1):
     """
     Get expected and actual repeated cumulative transactions.
 
@@ -433,13 +444,17 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
         the number of time units since the begining of
         data for which we want to calculate cumulative transactions
     datetime_format: string, optional
-        a string that represents the timestamp format. Useful if Pandas can't understand
-        the provided format.
+        a string that represents the timestamp format. Useful if Pandas can't
+        understand the provided format.
     freq: string, optional
         Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
         http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
     set_index_date: bool, optional
         when True set date as Pandas DataFrame index, default False - number of time units
+    freq_multiplier: int, optional
+        Default 1, could be use to get exact cumulative transactions predicted
+        by model, i.e. model trained with freq='W', passed freq to
+        expected_cumulative_transactions is freq='D', and freq_multiplier=7.
 
     Returns
     -------
@@ -447,45 +462,63 @@ def expected_cumulative_transactions(model, transactions, datetime_col, customer
         A dataframe with columns actual, predicted
 
     """
-    transactions = transactions.copy()
+    start_date = pd.to_datetime(transactions[datetime_col],
+                                format=datetime_format).min()
+    start_period = start_date.to_period(freq)
+    observation_period_end = start_period + t
 
-    # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
-    # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
-    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format).dt.to_period(freq)
-    transactions = transactions.drop_duplicates()
+    repeated_and_first_transactions = _find_first_transactions(
+        transactions,
+        customer_id_col,
+        datetime_col,
+        datetime_format=datetime_format,
+        observation_period_end=observation_period_end,
+        freq=freq
+    )
 
-    # find birth dates of users
-    birth_dates = transactions.groupby(customer_id_col, sort=False, as_index=True)[datetime_col].min()
+    first_trans_mask = repeated_and_first_transactions['first']
+    repeated_transactions = repeated_and_first_transactions[~first_trans_mask]
+    first_transactions = repeated_and_first_transactions[first_trans_mask]
 
-    start_date = birth_dates.min()
-    act_cum_transactions = []
+    date_range = pd.date_range(start_date, periods=t + 1, freq=freq)
+    date_periods = date_range.to_period(freq)
+
     pred_cum_transactions = []
+    first_trans_size = first_transactions.groupby('date').size()
+    for i, period in enumerate(date_periods):
+        if i % freq_multiplier == 0 and i > 0:
+            times = period - first_trans_size.index
+            times = times[times > 0].astype(float) / freq_multiplier
+            expected_trans_agg = \
+                model.expected_number_of_purchases_up_to_time(times)
 
-    for date_step in range(t + 1):
-        date_end = start_date + date_step
-        transactions_current = transactions[(transactions[datetime_col] <= date_end)]
-        times = (date_end - birth_dates[birth_dates <= date_end])
-        pred_transactions = model.expected_number_of_purchases_up_to_time(times.values.astype(float)).sum()
-        # actual repeated transactions of users
-        act_transactions = (transactions_current.groupby(customer_id_col).size() - 1).sum()
+            mask = first_trans_size.index < period
+            expected_trans = sum(expected_trans_agg * first_trans_size[mask])
+            pred_cum_transactions.append(expected_trans)
 
-        pred_cum_transactions.append(pred_transactions)
-        act_cum_transactions.append(act_transactions)
+    act_trans = repeated_transactions.groupby('date').size()
+    act_tracking_transactions = act_trans.reindex(date_periods, fill_value=0)
+
+    act_cum_transactions = []
+    for j in range(1, t // freq_multiplier + 1):
+        sum_trans = sum(act_tracking_transactions.iloc[:j * freq_multiplier])
+        act_cum_transactions.append(sum_trans)
 
     if set_index_date:
-        final_date = start_date + t
-        date_index = pd.date_range(start_date.to_timestamp(), final_date.to_timestamp(), freq=freq)
+        index = date_periods[freq_multiplier - 1: -1:freq_multiplier]
     else:
-        date_index = range(t + 1)
+        index = range(0, t // freq_multiplier)
 
     df_cum_transactions = pd.DataFrame({'actual': act_cum_transactions,
-                                        'predicted': pred_cum_transactions}, index=date_index)
+                                        'predicted': pred_cum_transactions},
+                                       index=index)
 
     return df_cum_transactions
 
 
 def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
-    """Helper to save object with attributes from attr_list.
+    """
+    Save object with attributes from attr_list.
 
     Parameters
     ----------
@@ -499,6 +532,7 @@ def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
     values_to_save: list, optional
         Placeholders for original attributes for saving object. If None will be
         extended to attr_list length like [None] * len(attr_list)
+
     """
     if values_to_save is None:
         values_to_save = [None] * len(attr_list)

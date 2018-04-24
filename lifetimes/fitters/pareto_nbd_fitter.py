@@ -15,7 +15,8 @@ from ..generate_data import pareto_nbd_model
 
 
 class ParetoNBDFitter(BaseFitter):
-    """Pareto NBD fitter [7]_.
+    """
+    Pareto NBD fitter [7]_.
 
     Parameters
     ----------
@@ -259,6 +260,7 @@ class ParetoNBDFitter(BaseFitter):
         -------
         matrix:
             A matrix of the form [t_x: historical recency, x: historical frequency]
+
         """
         max_frequency = max_frequency or int(self.data['frequency'].max())
         max_recency = max_recency or int(self.data['T'].max())
@@ -279,10 +281,14 @@ class ParetoNBDFitter(BaseFitter):
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population.
 
-        Parameters:
-            t: a scalar or array of times.
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expectation for.
 
-        Returns: a scalar or array
+        Returns
+        -------
+        array_like
 
         """
         r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
@@ -292,22 +298,31 @@ class ParetoNBDFitter(BaseFitter):
 
     def conditional_probability_of_n_purchases_up_to_time(self, n, t, frequency, recency, T):
         """
-        Return the probability of n purchases up to time t for an individual
+        Return conditional probability of n purchases up to time t.
+
+        Calculate the probability of n purchases up to time t for an individual
         with history frequency, recency and T (age).
+
         From paper:
         http://www.brucehardie.com/notes/028/pareto_nbd_conditional_pmf.pdf
-        Parameters:
-            n: int
-                number of purchases.
-            t: a scalar
-                time up to which probability should be calculated.
-            frequency: float
-                historical frequency of customer.
-            recency: float
-                historical recency of customer.
-            T: float
-                age of the customer.
-        Returns: a scalar or array
+
+        Parameters
+        ----------
+        n: int
+            number of purchases.
+        t: a scalar
+            time up to which probability should be calculated.
+        frequency: float
+            historical frequency of customer.
+        recency: float
+            historical recency of customer.
+        T: float
+            age of the customer.
+
+        Returns
+        -------
+        array_like
+
         """
         if t <= 0:
             return 0
