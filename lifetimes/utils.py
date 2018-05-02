@@ -25,7 +25,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     This function creates a summary of each customer over a calibration and
     holdout period (training and testing, respectively).
-    It accepts transition data, and returns a Dataframe of sufficient statistics.
+    It accepts transaction data, and returns a Dataframe of sufficient statistics.
 
     Parameters
     ----------
