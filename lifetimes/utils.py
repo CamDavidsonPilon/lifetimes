@@ -484,7 +484,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
     date_periods = date_range.to_period(freq)
 
     pred_cum_transactions = []
-    first_trans_size = first_transactions.groupby('date').size()
+    first_trans_size = first_transactions.groupby(datetime_col).size()
     for i, period in enumerate(date_periods):
         if i % freq_multiplier == 0 and i > 0:
             times = period - first_trans_size.index
@@ -496,7 +496,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
             expected_trans = sum(expected_trans_agg * first_trans_size[mask])
             pred_cum_transactions.append(expected_trans)
 
-    act_trans = repeated_transactions.groupby('date').size()
+    act_trans = repeated_transactions.groupby(datetime_col).size()
     act_tracking_transactions = act_trans.reindex(date_periods, fill_value=0)
 
     act_cum_transactions = []
