@@ -50,7 +50,6 @@ def bgf_transactions(cdnow_transactions):
     return bgf
 
 
-
 @pytest.mark.plottest
 class TestPlotting():
 
@@ -64,7 +63,7 @@ class TestPlotting():
         plt.figure()
         plotting.plot_period_transactions(bgf)
         patches = plt.gca().patches
-        assert_allclose( [p.get_height() for p in patches], expected, rtol=0.3)
+        assert_allclose([p.get_height() for p in patches], expected, rtol=0.3)
         plt.close()
 
     def test_plot_period_transactions_pareto(self, cd_data):
@@ -75,7 +74,7 @@ class TestPlotting():
         plt.figure()
         plotting.plot_period_transactions(pnbd)
         patches = plt.gca().patches
-        assert_allclose( [p.get_height() for p in patches], expected, rtol=0.3)
+        assert_allclose([p.get_height() for p in patches], expected, rtol=0.3)
         plt.close()
 
     def test_plot_period_transactions_mbgf(self, cd_data):
@@ -86,22 +85,22 @@ class TestPlotting():
         plt.figure()
         plotting.plot_period_transactions(mbgf)
         patches = plt.gca().patches
-        assert_allclose( [p.get_height() for p in patches], expected, rtol=0.3)
+        assert_allclose([p.get_height() for p in patches], expected, rtol=0.3)
         plt.close()
 
     def test_plot_period_transactions_max_frequency(self, bgf):
         expected = [1411, 439, 214, 100, 62, 38, 29, 23, 7, 5, 5, 5,
-                    1429, 470, 155, 89, 71, 39, 26, 20, 18, 9, 6, 7] 
+                    1429, 470, 155, 89, 71, 39, 26, 20, 18, 9, 6, 7]
         plt.figure()
         plotting.plot_period_transactions(bgf, max_frequency=12)
         patches = plt.gca().patches
-        assert_allclose( [p.get_height() for p in patches], expected, atol=50) #can be large relative differences for small counts
+        assert_allclose([p.get_height() for p in patches], expected, atol=50) #can be large relative differences for small counts
         plt.close()
 
     def test_plot_period_transactions_labels(self, bgf):
         expected = [1411, 439, 214, 100, 62, 38, 29, 1418, 481, 175, 92, 53, 39, 29]
-        labels = ['A','B']
- 
+        labels = ['A', 'B']
+
         plt.figure()
         plotting.plot_period_transactions(bgf, label=labels)
         patches = plt.gca().patches
@@ -111,7 +110,7 @@ class TestPlotting():
         plt.close()
 
     def test_plot_frequency_recency_matrix(self, bgf):
-        shape = (39,30)
+        shape = (39, 30)
         row_idx = 29
         row = [0.005, 0.020, 0.037, 0.054, 0.070, 0.085, 0.099, 0.110, 0.120, 0.127, 0.133,
                0.136, 0.136, 0.135, 0.131, 0.125, 0.119, 0.111, 0.102, 0.093, 0.084, 0.075,
@@ -121,7 +120,7 @@ class TestPlotting():
         plotting.plot_frequency_recency_matrix(bgf)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[row_idx,:].data, row, atol=0.01) #only test one row for brevity
+        assert_allclose(ar[row_idx, :].data, row, atol=0.01) #only test one row for brevity
         plt.close()
 
     def test_plot_frequency_recency_matrix_max_recency(self, bgf):
@@ -138,7 +137,7 @@ class TestPlotting():
         plotting.plot_frequency_recency_matrix(bgf, max_recency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[:,col_idx].data, col, atol=0.01) #only test one column for brevity
+        assert_allclose(ar[:, col_idx].data, col, atol=0.01) #only test one column for brevity
         plt.close()
 
     def test_plot_frequency_recency_matrix_max_frequency(self, bgf):
@@ -159,7 +158,7 @@ class TestPlotting():
         plotting.plot_frequency_recency_matrix(bgf, max_frequency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[row_idx,:].data, row, atol=0.01) #only test one row for brevity
+        assert_allclose(ar[row_idx, :].data, row, atol=0.01) #only test one row for brevity
         plt.close()
 
     def test_plot_frequency_recency_matrix_max_frequency_max_recency(self, bgf):
@@ -180,7 +179,7 @@ class TestPlotting():
         plotting.plot_frequency_recency_matrix(bgf, max_frequency=100, max_recency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[row_idx,:].data, row, atol=0.01) #only test one row for brevity
+        assert_allclose(ar[row_idx, :].data, row, atol=0.01) #only test one row for brevity
         plt.close()
 
     def test_plot_probability_alive_matrix(self, bgf):
@@ -194,7 +193,7 @@ class TestPlotting():
         plotting.plot_probability_alive_matrix(bgf)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[row_idx,:].data, row, atol=0.01) #only test one row for brevity
+        assert_allclose(ar[row_idx, :].data, row, atol=0.01) #only test one row for brevity
         plt.close()
 
     def test_plot_probability_alive_matrix_max_frequency(self, bgf):
@@ -215,13 +214,13 @@ class TestPlotting():
         plotting.plot_probability_alive_matrix(bgf, max_frequency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[row_idx,:].data, row, atol=0.01) #only test one row for brevity
+        assert_allclose(ar[row_idx, :].data, row, atol=0.01) #only test one row for brevity
         plt.close()
 
     def test_plot_probability_alive_matrix_max_recency(self, bgf):
         shape = (101, 30)
         col_idx = 25
-        col = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        col = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.001, 0.001, 0.002, 0.003, 0.004, 0.006,
                0.008, 0.012, 0.017, 0.023, 0.032, 0.043, 0.058, 0.078, 0.103, 0.134, 0.173,
@@ -232,7 +231,7 @@ class TestPlotting():
         plotting.plot_probability_alive_matrix(bgf, max_recency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[:,col_idx].data, col, atol=0.01) #only test one column for brevity
+        assert_allclose(ar[:, col_idx].data, col, atol=0.01) #only test one column for brevity
         plt.close()
 
     def test_plot_probability_alive_matrix_max_frequency_max_recency(self, bgf):
@@ -250,7 +249,7 @@ class TestPlotting():
         plotting.plot_probability_alive_matrix(bgf, max_frequency=100, max_recency=100)
         ar = plt.gca().get_images()[0].get_array()
         assert_array_equal(ar.shape, shape) #test the shape of the image matrix
-        assert_allclose(ar[:,col_idx].data, col, atol=0.01) #only test one column for brevity
+        assert_allclose(ar[:, col_idx].data, col, atol=0.01) #only test one column for brevity
         plt.close()
 
     def test_plot_expected_repeat_purchases(self, bgf):
@@ -404,7 +403,7 @@ class TestPlotting():
                       0.5, 0.51, 0.52, 0.53, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.58, 0.59,
                       0.6, 0.61, 0.62, 0.63, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.69,
                       0.7, 0.71, 0.72, 0.73, 0.74, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.79,
-                      0.8, 0.81, 0.82, 0.83] 
+                      0.8, 0.81, 0.82, 0.83]
         y_expected = [np.inf, 4.44, 3.8, 3.45, 3.21, 3.03, 2.88, 2.75, 2.65, 2.55, 2.46, 2.38,
                       2.31, 2.24, 2.18, 2.12, 2.06, 2.01, 1.96, 1.91, 1.86, 1.82, 1.77, 1.73,
                       1.69, 1.65, 1.61, 1.58, 1.54, 1.51, 1.47, 1.44, 1.41, 1.37, 1.34, 1.31,
@@ -426,7 +425,7 @@ class TestPlotting():
     def test_plot_customer_alive_history(self, bgf):
         from datetime import datetime, timedelta
 
-        x_expected = np.arange(datetime(2014,6,30), datetime(2015,1,17), timedelta(days=1))
+        x_expected = np.arange(datetime(2014, 6, 30), datetime(2015, 1, 17), timedelta(days=1))
         y_expected = [1.0, 1.0, 1.0, 0.75, 0.72, 0.69, 0.67, 0.64, 0.62, 0.59, 0.57, 0.55, 0.81,
                       0.79, 0.77, 0.75, 0.85, 0.87, 0.85, 0.82, 0.8, 0.89, 0.87, 0.84, 0.82, 0.79,
                       0.76, 0.73, 0.69, 0.66, 0.62, 0.59, 0.9, 0.89, 0.87, 0.85, 0.83, 0.81, 0.91,
@@ -456,14 +455,14 @@ class TestPlotting():
         x, y = plt.gca().lines[0].get_data()
         legend = plt.gca().legend_
 
-        assert_allclose([np.round(e,5) for e in y], y_expected, atol=0.01) # y has some weird array shapes
+        assert_allclose([np.round(e, 5) for e in y], y_expected, atol=0.01) # y has some weird array shapes
         assert_array_equal(x, x_expected)
         assert_array_equal([e.get_text() for e in legend.get_texts()], labels)
         plt.close()
 
     def test_plot_calibration_purchases_vs_holdout_purchases(self, transaction_data, bgf):
-        holdout_expected = [ 0.161, 0.233, 0.348, 0.544, 0.710, 0.704, 1.606]
-        predictions_expected = [ 0.270, 0.294, 0.402, 0.422, 0.706, 0.809, 1.019]
+        holdout_expected = [0.161, 0.233, 0.348, 0.544, 0.710, 0.704, 1.606]
+        predictions_expected = [0.270, 0.294, 0.402, 0.422, 0.706, 0.809, 1.019]
         labels = ['frequency_holdout', 'model_predictions']
 
         summary = utils.calibration_and_holdout_data(transaction_data, 'id', 'date', '2014-09-01', '2014-12-31')
@@ -471,7 +470,7 @@ class TestPlotting():
 
         plt.figure()
         plotting.plot_calibration_purchases_vs_holdout_purchases(bgf, summary)
-        
+
         lines = plt.gca().lines
         legend = plt.gca().legend_
         holdout = lines[0].get_data()[1]
@@ -486,7 +485,7 @@ class TestPlotting():
         holdout_expected = [3.954, 3.431, 3.482, 3.484, 2.75, 2.289, 1.968]
         predictions_expected = [4.345, 2.993, 3.236, 2.677, 2.240, 2.608, 2.430]
         labels = ['frequency_holdout', 'model_predictions']
-        
+
         summary = utils.calibration_and_holdout_data(transaction_data, 'id', 'date', '2014-09-01', '2014-12-31')
         bgf.fit(summary['frequency_cal'], summary['recency_cal'], summary['T_cal'])
 
@@ -506,7 +505,7 @@ class TestPlotting():
     def test_plot_cumulative_transactions(self, cdnow_transactions, bgf_transactions):
         """Test plotting cumultative transactions with CDNOW example."""
 
-        actual = [ 0, 3, 17, 44, 67, 122, 173, 240, 313, 375, 466,
+        actual = [0, 3, 17, 44, 67, 122, 173, 240, 313, 375, 466,
                     555, 655, 739, 825, 901, 970, 1033, 1091, 1159, 1217, 1277,
                     1325, 1367, 1444, 1528, 1584, 1632, 1675, 1741, 1813, 1846, 1894,
                     1954, 2002, 2051, 2094, 2141, 2195, 2248, 2299, 2344, 2401, 2452,
