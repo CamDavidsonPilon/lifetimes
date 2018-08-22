@@ -61,6 +61,73 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
     return df.set_index('customer_id')
 
 
+def beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_period_end='2019-1-1',
+                                                freq='D', size=1):
+    """
+    Generate artificial transactional data according to the BG/NBD model.
+
+    See [1] for model details
+
+    Parameters
+    ----------
+    T: int, float or array_like
+        The length of time observing new customers.
+    r, alpha, a, b: float
+        Parameters in the model. See [1]_
+    observation_period_end: date_like
+        The date observation ends
+    freq: string, optional
+        Default 'D' for days, 'W' for weeks, 'h' for hours
+    size: int, optional
+        The number of customers to generate
+
+    Returns
+    -------
+    DataFrame
+        The following columns:
+        'customer_id', 'date'
+
+    References
+    ----------
+    .. [1]: '"Counting Your Customers" the Easy Way: An Alternative to the Pareto/NBD Model'
+       (http://brucehardie.com/papers/bgnbd_2004-04-20.pdf)
+
+    """
+    observation_period_end = pd.to_datetime(observation_period_end)
+
+    if type(T) in [float, int]:
+        start_date = [observation_period_end - pd.Timedelta(T - 1, unit=freq)] * size
+        T = T * np.ones(size)
+    else:
+        start_date = [observation_period_end - pd.Timedelta(T[i] - 1, unit=freq) for i in range(size)]
+        T = np.asarray(T)
+
+    probability_of_post_purchase_death = stats.beta.rvs(a, b, size=size)
+    lambda_ = stats.gamma.rvs(r, scale=1. / alpha, size=size)
+
+    columns = ['customer_id', 'date']
+    df = pd.DataFrame(columns=columns)
+
+    for i in range(size):
+        s = start_date[i]
+        p = probability_of_post_purchase_death[i]
+        l = lambda_[i]
+        age = T[i]
+
+        purchases = [[i, s - pd.Timedelta(1, unit=freq)]]
+        next_purchase_in = stats.expon.rvs(scale=1. / l)
+        alive = True
+
+        while next_purchase_in < age and alive:
+            purchases.append([i, s + pd.Timedelta(next_purchase_in, unit=freq)])
+            next_purchase_in += stats.expon.rvs(scale=1. / l)
+            alive = np.random.random() > p
+
+        df = df.append(pd.DataFrame(purchases, columns=columns))
+
+    return df.reset_index(drop=True)
+
+
 def pareto_nbd_model(T, r, alpha, s, beta, size=1):
     """
     Generate artificial data according to the Pareto/NBD model.
