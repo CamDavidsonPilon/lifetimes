@@ -8,7 +8,8 @@ import scipy.stats as stats
 
 import lifetimes.estimation as estimation
 from lifetimes.generate_data import beta_geometric_nbd_model, pareto_nbd_model, modified_beta_geometric_nbd_model, \
-    beta_geometric_beta_binom_model
+    beta_geometric_beta_binom_model, beta_geometric_nbd_model_transactional_data
+from lifetimes.utils import summary_data_from_transaction_data
 
 
 def setup_module(module):
@@ -65,3 +66,25 @@ class TestBetaGeoBetaBinomGeneration():
                  grouped_data['n_custs'])
         assert ((np.array(list(bbgb_params.values())) - np.array(
             bbtf._unload_params('alpha', 'beta', 'gamma', 'delta'))) < 0.1).all()
+
+
+@pytest.mark.parametrize("T,r,alpha,a,b,observation_period_end,freq,size", [
+                        (100, 0.24, 4.41, 0.79, 2.43, '2019-1-1', 'D', 500),
+                        ([400, 200, 5, 103, 198, 401], 0.24, 4.41, 0.79, 2.43, '2019-1-1', 'D', 6),
+                        (100, 0.24, 4.41, 0.79, 2.43, '2019-1-1', 'h', 500)
+                        ])
+def test_beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_period_end, freq, size):
+    np.random.seed(188898)
+    transaction_data = beta_geometric_nbd_model_transactional_data(
+        T=T,r=r,alpha=alpha,a=a,b=b, observation_period_end=observation_period_end, freq=freq, size=size
+    )
+    actual = summary_data_from_transaction_data(transactions=transaction_data,
+                                                customer_id_col='customer_id', datetime_col='date',
+                                                observation_period_end=observation_period_end, 
+                                                freq=freq)
+    np.random.seed(188898)
+    expected = beta_geometric_nbd_model(T=T,r=r,alpha=alpha,a=a,b=b,size=size)[['frequency', 'recency', 'T']]
+    expected['recency'] = expected['recency'].apply(np.ceil)
+    expected = expected.reset_index(drop=True)
+    actual = actual.reset_index(drop=True)
+    assert expected.equals(actual)
