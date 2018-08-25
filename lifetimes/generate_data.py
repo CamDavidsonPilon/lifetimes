@@ -56,7 +56,7 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
             alive = np.random.random() > p
 
         times = np.array(times).cumsum()
-        df.iloc[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
+        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
 
@@ -179,7 +179,7 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
             next_purchase_in = stats.expon.rvs(scale=1. / l)
 
         times = np.array(times).cumsum()
-        df.iloc[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, mu, time_of_death > T[i], i
+        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, mu, time_of_death > T[i], i
 
     return df.set_index('customer_id')
 
@@ -239,7 +239,7 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
             alive = np.random.random() > p
 
         times = np.array(times).cumsum()
-        df.iloc[i] = len(times), np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
+        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
 
     return df.set_index('customer_id')
 
