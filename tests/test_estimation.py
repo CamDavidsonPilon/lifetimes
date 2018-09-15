@@ -384,7 +384,7 @@ class TestBetaGeoFitter():
         actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
         assert abs(expected - actual) < 0.001
 
-    def test_conditional_expectation_with_invalid_fitted_params(self, cdnow_customers):
+    def test_conditional_expectation_with_negative_hyp2f1_term(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
         bfg.params_ = OrderedDict([('r', 0.5458741247391189), ('alpha', 13.409316394557274), ('a', 0.0009994943799344323), ('b', 0.03899022143378801)])
         t = 180
