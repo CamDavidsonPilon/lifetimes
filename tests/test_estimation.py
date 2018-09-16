@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import math
 import numpy as np
 import pandas as pd
 import numpy.testing as npt
@@ -399,11 +398,11 @@ class TestBetaGeoFitter():
         bfg = estimation.BetaGeoFitter()
         bfg.params_ = OrderedDict([('r', 0.5458741247391189), ('alpha', 13.409316394557274), ('a', 0.0009994943799344323), ('b', 0.03899022143378801)])
         t = 180
-        frequency = 500
+        frequency = 1000
         t_x = 0
         T = 5
         actual = bfg.conditional_expected_number_of_purchases_up_to_time(t, frequency, t_x, T)
-        assert not math.isnan(actual)
+        assert not np.isnan(np.array([actual], dtype=np.float64))
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
