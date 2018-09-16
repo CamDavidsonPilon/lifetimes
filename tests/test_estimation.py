@@ -18,6 +18,7 @@ from lifetimes.datasets import load_cdnow_summary, load_cdnow_summary_data_with_
 def cdnow_customers():
     return load_cdnow_summary()
 
+
 cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 donations = load_donations()
 PATH_SAVE_MODEL = './base_fitter.pkl'
@@ -31,6 +32,8 @@ class TestBaseFitter():
         base_fitter.params_ = dict(x=12.3, y=42)
         base_fitter.data = np.array([1, 2, 3])
         assert repr(base_fitter) == '<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.30, y: 42.00>'
+        base_fitter.data = None
+        assert repr(base_fitter) == '<lifetimes.BaseFitter: x: 12.30, y: 42.00>'
 
     def test_unload_params(self):
         base_fitter = estimation.BaseFitter()
@@ -38,7 +41,6 @@ class TestBaseFitter():
             base_fitter._unload_params()
         base_fitter.params_ = dict(x=12.3, y=42)
         npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params('x', 'y'))
-
 
     def test_save_load_model(self):
         base_fitter = estimation.BaseFitter()
@@ -50,7 +52,6 @@ class TestBaseFitter():
 
         assert repr(base_fitter) == repr(base_fitter_saved)
         os.remove(PATH_SAVE_MODEL)
-
 
 
 class TestBetaGeoBetaBinomFitter():
@@ -92,9 +93,7 @@ class TestBetaGeoBetaBinomFitter():
     def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self):
         """
         Total from Hardie's Conditional Expectations (II) sheet.
-
         http://brucehardie.com/notes/010/BGBB_2011-01-20_XLSX.zip
-
         """
 
         bbtf = estimation.BetaGeoBetaBinomFitter()
@@ -144,6 +143,7 @@ class TestBetaGeoBetaBinomFitter():
             index=None
         )
         assert (bbtf.data.index == index).all() == False
+
 
 class TestGammaGammaFitter():
 
@@ -251,7 +251,7 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         expected = np.array([ 0.553, 10.578, 0.606, 11.669])
-        npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=3)
+        npt.assert_array_almost_equal(expected, np.array(ptf._unload_params('r', 'alpha', 's', 'beta')), decimal=2)
 
     def test_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
         """ From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
@@ -310,7 +310,7 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.params_ = OrderedDict(
             zip(['r', 'alpha', 's', 'beta'],
-            [0.5534, 10.5802, 0.6061, 11.6562]))
+                [0.5534, 10.5802, 0.6061, 11.6562]))
         p_alive = ptf.conditional_probability_alive(26.00, 30.86, 31.00)
         assert abs(p_alive - 0.9979) < 0.001
 
@@ -318,8 +318,8 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         ptf.params_ = OrderedDict(
             zip(['r', 'alpha', 's', 'beta'],
-            [10.465, 7.98565181e-03, 3.0516, 2.820]))
-        freq = np.array([400., 500., 500.])
+                [10.465, 7.98565181e-03, 3.0516, 2.820]))
+        freq = np.array([40., 50., 50.])
         rec = np.array([5., 1., 4.])
         age = np.array([6., 37., 37.])
         assert all([r <= 1 and r >= 0 and not np.isinf(r) and not pd.isnull(r)
@@ -339,8 +339,8 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter()
         index = range(len(cdnow_customers), 0, -1)
         ptf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -348,12 +348,52 @@ class TestParetoNBDFitter():
 
         ptf = estimation.ParetoNBDFitter()
         ptf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )
         assert (ptf.data.index == index).all() == False
+
+    def test_conditional_probability_of_n_purchases_up_to_time_is_between_0_and_1(self, cdnow_customers):
+        """
+        Due to the large parameter space we take a random subset.
+        """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        for freq in np.random.choice(100, 5):
+            for recency in np.random.choice(100, 5):
+                for age in recency + np.random.choice(100, 5):
+                    for t in np.random.choice(100, 5):
+                        for n in np.random.choice(10, 5):
+                            assert (
+                                0.0
+                                <= ptf.conditional_probability_of_n_purchases_up_to_time(n, t, freq, recency, age)
+                                <= 1.0
+                            )
+
+    def test_conditional_probability_of_n_purchases_up_to_time_adds_up_to_1(self, cdnow_customers):
+        """
+        Due to the large parameter space we take a random subset. We also restrict our limits to keep the number of
+        values of n for which the probability needs to be calculated to a sane level.
+        """
+        ptf = estimation.ParetoNBDFitter()
+        ptf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+
+        for freq in np.random.choice(10, 5):
+            for recency in np.random.choice(9, 5):
+                for age in np.random.choice(np.arange(recency, 10, 1), 5):
+                    for t in 1 + np.random.choice(9, 5):
+                        npt.assert_almost_equal(
+                            np.sum([
+                                ptf.conditional_probability_of_n_purchases_up_to_time(n, t, freq, recency, age)
+                                for n in np.arange(0, 20, 1)
+                            ]),
+                            1.0,
+                            decimal=2
+                        )
+
 
 class TestBetaGeoFitter():
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
@@ -438,7 +478,7 @@ class TestBetaGeoFitter():
         bfg1.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
 
         np.random.seed(0)
-        bfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
+        bfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
         assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
 
 
@@ -502,6 +542,7 @@ class TestBetaGeoFitter():
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - bgf.conditional_probability_alive(1, 2, 10)) < 10e-5
 
     def test_save_load_bgnbd(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD."""
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         bgf.save_model(PATH_SAVE_BGNBD_MODEL)
@@ -519,6 +560,7 @@ class TestBetaGeoFitter():
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
     def test_save_load_bgnbd_no_data(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data."""
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False)
@@ -532,7 +574,45 @@ class TestBetaGeoFitter():
         assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
 
-        assert isinstance(bgf_new.__dict__['data'], list)
+        assert bgf_new.__dict__['data'] is None
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_generate_data(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without generate_new_data method."""
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_generate_data_method=False)
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert bgf_new.__dict__['generate_new_data'] is None
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_bgnbd_no_data_replace_with_empty_str(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data with replaced value empty str."""
+        bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
+        bgf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False, values_to_save=[''])
+
+        bgf_new = estimation.BetaGeoFitter()
+        bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgf_new.__dict__['penalizer_coef'] == bgf.__dict__['penalizer_coef']
+        assert bgf_new.__dict__['_scale'] == bgf.__dict__['_scale']
+        assert bgf_new.__dict__['params_'] == bgf.__dict__['params_']
+        assert bgf_new.__dict__['_negative_log_likelihood_'] == bgf.__dict__['_negative_log_likelihood_']
+        assert bgf_new.__dict__['predict'](1, 1, 2, 5) == bgf.__dict__['predict'](1, 1, 2, 5)
+        assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
+
+        assert bgf_new.__dict__['data'] is ''
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
@@ -540,8 +620,8 @@ class TestBetaGeoFitter():
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         index = range(len(cdnow_customers), 0, -1)
         bgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -549,8 +629,8 @@ class TestBetaGeoFitter():
 
         bgf = estimation.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )
@@ -722,8 +802,8 @@ class TestModifiedBetaGammaFitter():
         mbgf = estimation.ModifiedBetaGeoFitter()
         index = range(len(cdnow_customers), 0, -1)
         mbgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=index
         )
@@ -731,8 +811,8 @@ class TestModifiedBetaGammaFitter():
 
         mbgf = estimation.ModifiedBetaGeoFitter()
         mbgf.fit(
-            cdnow_customers['frequency'], 
-            cdnow_customers['recency'], 
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
             cdnow_customers['T'],
             index=None
         )

@@ -1,5 +1,6 @@
 """Beta Geo Fitter, also known as BG/NBD model."""
 from __future__ import print_function
+from __future__ import division
 from collections import OrderedDict
 
 import numpy as np
@@ -17,7 +18,8 @@ from ..generate_data import beta_geometric_nbd_model
 
 
 class BetaGeoFitter(BaseFitter):
-    """Also known as the BG/NBD model.
+    """
+    Also known as the BG/NBD model.
 
     Based on [2]_, this model has the following assumptions:
 
@@ -47,6 +49,7 @@ class BetaGeoFitter(BaseFitter):
     .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
        "Counting Your Customers the Easy Way: An Alternative to the
        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
+
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -56,7 +59,8 @@ class BetaGeoFitter(BaseFitter):
     def fit(self, frequency, recency, T, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
-        """Fit a dataset to the BG/NBD model.
+        """
+        Fit a dataset to the BG/NBD model.
 
         Parameters
         ----------

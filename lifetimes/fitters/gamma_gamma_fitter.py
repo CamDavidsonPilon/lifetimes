@@ -1,5 +1,6 @@
 """Gamma-gamma model."""
 from __future__ import print_function
+from __future__ import division
 from collections import OrderedDict
 
 import numpy as np
@@ -41,6 +42,7 @@ class GammaGammaFitter(BaseFitter):
     .. [4] Peter S. Fader, Bruce G. S. Hardie, and Ka Lok Lee (2005),
        "RFM and CLV: Using iso-value curves for customer base analysis",
        Journal of Marketing Research, 42 (November), 415-430.
+
     """
 
     def __init__(self, penalizer_coef=0.0):

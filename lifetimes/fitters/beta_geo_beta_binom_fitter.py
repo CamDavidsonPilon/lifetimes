@@ -1,5 +1,5 @@
 """Beta Geo Beta BinomFitter."""
-
+from __future__ import division
 from __future__ import print_function
 from collections import OrderedDict
 
@@ -11,10 +11,12 @@ from scipy.special import gammaln, betaln, binom
 
 from ..utils import _fit, _check_inputs
 from . import BaseFitter
+from ..generate_data import beta_geometric_beta_binom_model
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
-    """Also known as the Beta-Geometric/Beta-Binomial Model [1]_.
+    """
+    Also known as the Beta-Geometric/Beta-Binomial Model [1]_.
 
     Future purchases opportunities are treated as discrete points in time.
     In the literature, the model provides a better fit than the Pareto/NBD
@@ -42,6 +44,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     .. [1] Fader, Peter S., Bruce G.S. Hardie, and Jen Shang (2010),
        "Customer-Base Analysis in a Discrete-Time Noncontractual Setting,"
        Marketing Science, 29 (6), 1086-1108.
+
     """
 
     def __init__(self, penalizer_coef=0.):
@@ -65,7 +68,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         @np.vectorize
         def _sum(x, tx, recency_T):
-            j = J[:recency_T + 1]
+            if recency_T <= -1:
+                return -np.inf
+
+            j = J[:int(recency_T) + 1]
             return log(
                 np.sum(exp(betaln(alpha + x, beta + tx - x + j) - beta_ab +
                            betaln(gamma + 1, delta + tx + j) - beta_gd)))
@@ -84,7 +90,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def fit(self, frequency, recency, n, n_custs, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+            fit_method='Nelder-Mead', maxiter=2000, initial_params=None,
+            **kwargs):
         """
         Fit the BG/BB model.
 
@@ -109,6 +116,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             Set to true to print out convergence diagnostics.
         tol: float, optional
             Tolerance for termination of the function minimization process.
+        initial_params: array_like, optional
+            set the initial parameters for the fitter.
         iterative_fitting: int, optional
             perform iterative_fitting fits over random/warm-started initial params
         index: array_like, optional
@@ -138,7 +147,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             self._negative_log_likelihood,
             [frequency, recency, n, n_custs, self.penalizer_coef],
             iterative_fitting,
-            np.ones(4),
+            initial_params,
             4,
             verbose,
             tol,
@@ -151,7 +160,12 @@ class BetaGeoBetaBinomFitter(BaseFitter):
                               columns=['frequency', 'recency', 'n', 'n_custs'])
         if index is not None:
             self.data.index = index
-
+        # Making a large array replicating n by n_custs having n.
+        n_exploded = []
+        for n_, n_cust in zip(n, n_custs):
+            n_exploded += [n_] * n_cust
+        self.generate_new_data = lambda size=1: beta_geometric_beta_binom_model(
+            np.array(n_exploded), *self._unload_params('alpha', 'beta', 'gamma', 'delta'), size=size)
         return self
 
     def conditional_expected_number_of_purchases_up_to_time(self, t):
@@ -172,7 +186,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             time periods (n+t)
 
         Returns
-        ----------
+        -------
         array_like
             predicted transactions
 

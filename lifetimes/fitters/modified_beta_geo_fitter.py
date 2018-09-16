@@ -1,5 +1,6 @@
 """MBG/NBD model."""
 from __future__ import print_function
+from __future__ import division
 
 import numpy as np
 from numpy import log, logaddexp, asarray, any as npany
@@ -23,7 +24,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     References
     ----------
-
     .. [5] Batislam, E.P., M. Denizel, A. Filiztekin (2007),
        "Empirical validation and comparison of models for customer base
        analysis,"

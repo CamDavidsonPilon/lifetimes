@@ -36,7 +36,7 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
 Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
 
-## Documenation and tutorials
+## Documentation and tutorials
 [Official documentation](http://lifetimes.readthedocs.io/en/latest/)
 
 

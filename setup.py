@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
-from distutils.core import setup
+from setuptools import setup
+
 
 exec(compile(open('lifetimes/version.py').read(),
              'lifetimes/version.py', 'exec'))
