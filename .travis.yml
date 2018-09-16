@@ -11,7 +11,7 @@ install:
   - "pip install -r dev_requirements.txt"
 # command to run tests
 script:
-  - py.test --cov lifetimes --mpl --mpl-baseline-path tests/reference_plots/
+  - py.test --cov lifetimes
 after_success:
   coveralls
 # Don't want notifications
