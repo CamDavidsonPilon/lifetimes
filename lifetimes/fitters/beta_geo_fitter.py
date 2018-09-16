@@ -9,6 +9,7 @@ from numpy import ones_like
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1, beta, gamma
 from scipy import misc
+import mpmath as mpm
 
 from . import BaseFitter
 from ..utils import _fit, _scale_time, _check_inputs
@@ -180,7 +181,8 @@ class BetaGeoFitter(BaseFitter):
         _c = a + b + x - 1
         _z = t / (alpha + T + t)
 
-        hyp_term = hyp2f1(_a, _b, _c, _z)
+        hyp_term_array = np.frompyfunc(mpm.hyp2f1, 4, 1)
+        hyp_term = hyp_term_array(_a, _b, _c, _z)
 
         first_term = (a + b + x - 1) / (a - 1)
         second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
