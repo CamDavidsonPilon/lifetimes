@@ -60,7 +60,7 @@ class TestBetaGeoBetaBinomFitter():
         return load_donations()
 
     def test_params_out_is_close_to_Hardie_paper(self, donations):
-
+        donations = donations
         bbtf = estimation.BetaGeoBetaBinomFitter()
         bbtf.fit(
             donations['frequency'],
@@ -71,6 +71,7 @@ class TestBetaGeoBetaBinomFitter():
         expected = np.array([1.204, 0.750, 0.657, 2.783])
         npt.assert_array_almost_equal(expected, np.array(bbtf._unload_params('alpha','beta','gamma','delta')),
                                       decimal=2)
+
 
     def test_prob_alive_is_close_to_Hardie_paper_table_6(self, donations):
         """Table 6: P(Alive in 2002) as a Function of Recency and Frequency"""

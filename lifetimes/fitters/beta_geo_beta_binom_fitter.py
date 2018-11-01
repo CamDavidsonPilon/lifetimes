@@ -7,29 +7,11 @@ import numpy as np
 import pandas as pd
 from numpy import log, exp, logaddexp, asarray, c_ as vconcat
 from pandas import DataFrame
-from scipy.special import gammaln, betaln, binom
+from scipy.special import gammaln, betaln, binom, beta as betaf
 
 from ..utils import _fit, _check_inputs
 from . import BaseFitter
 from ..generate_data import beta_geometric_beta_binom_model
-
-
-def _sum_(x, tx, recency_T, alpha, beta, gamma, delta):
-    if recency_T < 0:
-        return 1.0
-    elif recency_T == 0:
-        j = 1
-        a = beta + tx - x + j
-        b = delta + tx + j
-        return 1 + (a / (a + alpha + x) * b / (b + gamma + 1))
-    else:
-        j = np.arange(0, recency_T + 1)
-        a = beta + tx - x + j
-        b = delta + tx + j
-        return 1 + (a / (a + alpha + x) * b / (b + gamma + 1)).sum()
-
-sum_ = np.vectorize(_sum_, [np.float])
-
 
 
 class BetaGeoBetaBinomFitter(BaseFitter):
@@ -70,7 +52,6 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    @profile
     def _loglikelihood(params, x, tx, T):
         """Loglikelihood for optimizer."""
         alpha, beta, gamma, delta = params
@@ -82,8 +63,20 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         A = (betaln(alpha + x, beta + T - x) - betaln_ab +
                          betaln(gamma, delta + T) - betaln_gd)
 
-        B = log(sum_(x, tx, recency_T, alpha, beta, gamma, delta)) + betaln(alpha + x, beta + tx - x) + betaln(gamma + 1, delta + tx) - betaln_gd - betaln_ab
+        J = np.arange(recency_T.max() + 1)
 
+        def _sum_(x, tx, recency_T):
+            if recency_T <= -1:
+                return 0
+            elif recency_T == 0:
+                return betaf(alpha + x, beta + tx - x) * betaf(gamma + 1, delta + tx)
+            else:
+                j = J[:recency_T + 1]
+                return (betaf(alpha + x, beta + tx - x + j)*betaf(gamma + 1, delta + tx + j)).sum()
+
+        sum_ = np.vectorize(_sum_, [np.float])
+
+        B = log(sum_(x, tx, recency_T))  - betaln_gd - betaln_ab
         return logaddexp(A, B)
 
     @staticmethod
