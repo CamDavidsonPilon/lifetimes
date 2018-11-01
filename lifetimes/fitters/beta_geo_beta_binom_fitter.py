@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from numpy import log, exp, logaddexp, asarray, c_ as vconcat
 from pandas import DataFrame
-from scipy.special import gammaln, betaln, binom, beta as betaf
+from scipy.special import gammaln, betaln, binom
 
 from ..utils import _fit, _check_inputs
 from . import BaseFitter
@@ -15,12 +15,19 @@ from ..generate_data import beta_geometric_beta_binom_model
 
 
 def _sum_(x, tx, recency_T, alpha, beta, gamma, delta):
-    j = np.arange(0, recency_T+1)
-    return log(
-        (1 + (
-            (beta + tx - x + j) / (beta + tx - x + j + alpha + x) * (delta + tx + j) / (delta + tx + j + gamma + 1)
-        ).sum())
-    )
+    if recency_T < 0:
+        return 1.0
+    elif recency_T == 0:
+        j = 1
+        a = beta + tx - x + j
+        b = delta + tx + j
+        return 1 + (a / (a + alpha + x) * b / (b + gamma + 1))
+    else:
+        j = np.arange(0, recency_T + 1)
+        a = beta + tx - x + j
+        b = delta + tx + j
+        return 1 + (a / (a + alpha + x) * b / (b + gamma + 1)).sum()
+
 sum_ = np.vectorize(_sum_, [np.float])
 
 
@@ -70,16 +77,14 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         betaln_ab = betaln(alpha, beta)
         betaln_gd = betaln(gamma, delta)
-
-        indiv_loglike = (betaln(alpha + x, beta + T - x) - betaln_ab +
-                         betaln(gamma, delta + T) - betaln_gd)
-
         recency_T = T - tx - 1
 
-        s = sum_(x, tx, recency_T, alpha, beta, gamma, delta) + betaln(alpha + x, beta + tx - x) + betaln(gamma + 1, delta + tx) - betaln_gd - betaln_ab
-        indiv_loglike = logaddexp(indiv_loglike, s)
+        A = (betaln(alpha + x, beta + T - x) - betaln_ab +
+                         betaln(gamma, delta + T) - betaln_gd)
 
-        return indiv_loglike
+        B = log(sum_(x, tx, recency_T, alpha, beta, gamma, delta)) + betaln(alpha + x, beta + tx - x) + betaln(gamma + 1, delta + tx) - betaln_gd - betaln_ab
+
+        return logaddexp(A, B)
 
     @staticmethod
     def _negative_log_likelihood(params, frequency, recency, n_periods, weights,
