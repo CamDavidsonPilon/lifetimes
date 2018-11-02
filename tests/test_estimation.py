@@ -19,7 +19,6 @@ def cdnow_customers():
     return load_cdnow_summary()
 
 
-cdnow_customers_with_monetary_value = load_cdnow_summary_data_with_monetary_value()
 PATH_SAVE_MODEL = './base_fitter.pkl'
 PATH_SAVE_BGNBD_MODEL = './betageo_fitter.pkl'
 
@@ -187,7 +186,11 @@ class TestBetaGeoBetaBinomFitter():
 
 class TestGammaGammaFitter():
 
-    def test_params_out_is_close_to_Hardie_paper(self):
+    @pytest.fixture()
+    def cdnow_customers_with_monetary_value(self):
+        return load_cdnow_summary_data_with_monetary_value()
+
+    def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers_with_monetary_value):
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
             cdnow_customers_with_monetary_value['frequency'] > 0
         ]
@@ -200,7 +203,7 @@ class TestGammaGammaFitter():
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
 
-    def test_conditional_expected_average_profit(self):
+    def test_conditional_expected_average_profit(self, cdnow_customers_with_monetary_value):
 
         ggf = estimation.GammaGammaFitter()
         ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
@@ -211,7 +214,7 @@ class TestGammaGammaFitter():
 
         npt.assert_allclose(estimates.values, expected, atol=0.1)
 
-    def test_customer_lifetime_value_with_bgf(self):
+    def test_customer_lifetime_value_with_bgf(self, cdnow_customers_with_monetary_value):
 
         ggf = estimation.GammaGammaFitter()
         ggf.params_ = OrderedDict({'p':6.25, 'q':3.74, 'v':15.44})
@@ -240,7 +243,7 @@ class TestGammaGammaFitter():
         )
         npt.assert_equal(ggf_clv.values, utils_clv.values)
 
-    def test_fit_with_index(self):
+    def test_fit_with_index(self, cdnow_customers_with_monetary_value):
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
             cdnow_customers_with_monetary_value['frequency'] > 0
         ]
@@ -442,10 +445,11 @@ class TestBetaGeoFitter():
         x = np.array([1, 3])
         t_x = np.array([2, 2])
         t = np.array([5, 6])
+        weights = np.array([1])
         params = [1, 1, 1, 1]
-        assert bgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-            + bgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == 2 * bgf._negative_log_likelihood(params, x, t_x, t, 0)
+        assert bgf._negative_log_likelihood(params, x[0], np.array([t_x[0]]), np.array([t[0]]), weights[0], 0) \
+            + bgf._negative_log_likelihood(params, x[1], np.array([t_x[1]]), np.array([t[1]]), weights[0], 0) \
+            == 2 * bgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
@@ -670,6 +674,33 @@ class TestBetaGeoFitter():
         np.seterr(**old_settings)
         assert p_alive == 0.
 
+    def test_using_weights_col_gives_correct_results(self, cdnow_customers):
+        cdnow_customers_weights = cdnow_customers.copy()
+        cdnow_customers_weights['weights'] = 1.0
+        cdnow_customers_weights = cdnow_customers_weights.groupby(['frequency', 'recency', 'T'])['weights'].sum()
+        cdnow_customers_weights = cdnow_customers_weights.reset_index()
+        assert (cdnow_customers_weights['weights'] > 1).any()
+
+        bgf_weights = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf_weights.fit(
+            cdnow_customers_weights['frequency'],
+            cdnow_customers_weights['recency'],
+            cdnow_customers_weights['T'],
+            weights=cdnow_customers_weights['weights']
+        )
+
+
+        bgf_no_weights = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf_no_weights.fit(
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
+            cdnow_customers['T']
+        )
+
+        npt.assert_almost_equal(
+            np.array(bgf_no_weights._unload_params('r', 'alpha', 'a', 'b')),
+            np.array(bgf_weights._unload_params('r', 'alpha', 'a', 'b')),
+        decimal=4)
 
 class TestModifiedBetaGammaFitter():
 
@@ -678,10 +709,11 @@ class TestModifiedBetaGammaFitter():
         x = np.array([1, 3])
         t_x = np.array([2, 2])
         t = np.array([5, 6])
+        weights=np.array([1, 1])
         params = [1, 1, 1, 1]
-        assert mbgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-            + mbgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == 2 * mbgf._negative_log_likelihood(params, x, t_x, t, 0)
+        assert mbgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), weights[0], 0) \
+            + mbgf._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[0], 0) \
+            == 2 * mbgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_BTYDplus(self, cdnow_customers):
         """ See https://github.com/mplatzer/BTYDplus """

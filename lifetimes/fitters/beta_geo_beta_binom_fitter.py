@@ -141,7 +141,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         n_periods = asarray(n_periods)
 
         if weights is None:
-            weights = np.ones(recency.shape[0], dtype=np.int64)
+            weights = np.ones_like(recency, dtype=np.int64)
         else:
             weights = asarray(weights)
 
@@ -178,7 +178,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         transaction opportunities by a customer with purchase history
         (x, tx, n).
 
-        .. math:: E(X(n, n+n*)|alpha, beta, gamma, delta, frequency, recency, n_periods)
+        .. math:: E(X(n_periods, n_periods+m_periods_in_future)|alpha, beta, gamma, delta, frequency, recency, n_periods)
 
         See (13) in Fader & Hardie 2010.
 
