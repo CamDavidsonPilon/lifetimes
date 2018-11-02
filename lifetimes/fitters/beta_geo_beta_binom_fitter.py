@@ -67,16 +67,16 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         def _sum_(x, tx, recency_T):
             if recency_T <= -1:
-                return 0
+                return 10e-10
             elif recency_T == 0:
                 return betaf(alpha + x, beta + tx - x) * betaf(gamma + 1, delta + tx)
             else:
                 j = J[:recency_T + 1]
-                return (betaf(alpha + x, beta + tx - x + j)*betaf(gamma + 1, delta + tx + j)).sum()
+                return (betaf(alpha + x, beta + tx - x + j) * betaf(gamma + 1, delta + tx + j)).sum()
 
         sum_ = np.vectorize(_sum_, [np.float])
 
-        B = log(sum_(x, tx, recency_T))  - betaln_gd - betaln_ab
+        B = log(sum_(x, tx, recency_T)) - betaln_gd - betaln_ab
         return logaddexp(A, B)
 
     @staticmethod
@@ -88,7 +88,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def fit(self, frequency, recency, n_periods, weights=None, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, initial_params=None,
+            fit_method='Nelder-Mead', maxiter=200, initial_params=None,
             **kwargs):
         """
         Fit the BG/BB model.
