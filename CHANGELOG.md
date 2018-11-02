@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.10.0
+ - `BetaGeoBetaBinomFitter.fit` has replaced `n_custs` with the more appropriately named `weights` (to align with other statisical libraries). By default and if unspecified, `weights` is equal to an array of 1s. 
+ - The `conditional_` methods on `BetaGeoBetaBinomFitter` have been updated to handle exogenously provided recency, frequency and periods. 
+ 
 ### 0.9.1
  - Added a data generation method, `generate_new_data` to `BetaGeoBetaBinomFitter`. @zscore
  - Fixed a bug in `summary_data_from_transaction_data` that was casting values to `int` prematurely. This was solved by including a new param `freq_multiplier` to be used to scale the resulting durations. See #100 for the original issue.  @aprotopopov

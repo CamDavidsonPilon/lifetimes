@@ -100,7 +100,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         recency: array_like
             Period of most recent transaction
         n_periods: array_like
-            Number of transaction opportunities.
+            Number of transaction opportunities. Previously called `n`.
         weights: None or array_like
             Number of customers with given frequency/recency/T,
             defaults to 1 if not specified. Fader and
@@ -110,7 +110,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             purchase pattern. Instead of calculating individual
             loglikelihood, the loglikelihood is calculated for each
             pattern and multiplied by the number of customers with
-            that pattern.
+            that pattern.  Previously called `n_custs`.
         verbose: boolean, optional
             Set to true to print out convergence diagnostics.
         tol: float, optional
