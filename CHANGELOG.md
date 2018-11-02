@@ -3,6 +3,7 @@
 ### 0.10.0
  - `BetaGeoBetaBinomFitter.fit` has replaced `n_custs` with the more appropriately named `weights` (to align with other statisical libraries). By default and if unspecified, `weights` is equal to an array of 1s. 
  - The `conditional_` methods on `BetaGeoBetaBinomFitter` have been updated to handle exogenously provided recency, frequency and periods. 
+ - Performance improvements in `BetaGeoBetaBinomFitter`. `fit` takes about 50% less time than previously. 
  
 ### 0.9.1
  - Added a data generation method, `generate_new_data` to `BetaGeoBetaBinomFitter`. @zscore

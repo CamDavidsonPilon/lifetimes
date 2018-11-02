@@ -670,6 +670,33 @@ class TestBetaGeoFitter():
         np.seterr(**old_settings)
         assert p_alive == 0.
 
+    def test_using_weights_col_gives_correct_results(self, cdnow_customers):
+        cdnow_customers_weights = cdnow_customers.copy()
+        cdnow_customers_weights['weights'] = 1.0
+        cdnow_customers_weights = cdnow_customers_weights.groupby(['frequency', 'recency', 'T'])['weights'].sum()
+        cdnow_customers_weights = cdnow_customers_weights.reset_index()
+        assert (cdnow_customers_weights['weights'] > 1).any()
+
+        bgf_weights = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf_weights.fit(
+            cdnow_customers_weights['frequency'],
+            cdnow_customers_weights['recency'],
+            cdnow_customers_weights['T'],
+            weights=cdnow_customers_weights['weights']
+        )
+
+
+        bgf_no_weights = estimation.BetaGeoFitter(penalizer_coef=0.0)
+        bgf_no_weights.fit(
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
+            cdnow_customers['T']
+        )
+
+        npt.assert_almost_equal(
+            np.array(bgf_no_weights._unload_params('r', 'alpha', 'a', 'b')),
+            np.array(bgf_weights._unload_params('r', 'alpha', 'a', 'b')),
+        decimal=4)
 
 class TestModifiedBetaGammaFitter():
 
