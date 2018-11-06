@@ -136,9 +136,9 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             fitted and with parameters estimated
 
         """
-        frequency = asarray(frequency)
-        recency = asarray(recency)
-        n_periods = asarray(n_periods)
+        frequency = asarray(frequency).astype(int)
+        recency = asarray(recency).astype(int)
+        n_periods = asarray(n_periods).astype(int)
 
         if weights is None:
             weights = np.ones_like(recency, dtype=np.int64)

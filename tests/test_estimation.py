@@ -463,7 +463,7 @@ class TestParetoNBDFitter():
         npt.assert_array_almost_equal(
             np.array(pnbd_noweights._unload_params('r', 'alpha', 's', 'beta')),
             np.array(pnbd._unload_params('r', 'alpha', 's', 'beta')),
-        decimal=3
+        decimal=2
         )
 
 class TestBetaGeoFitter():

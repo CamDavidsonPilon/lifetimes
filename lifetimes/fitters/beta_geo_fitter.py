@@ -107,7 +107,7 @@ class BetaGeoFitter(BaseFitter):
             with additional properties like params_ and methods like predict
 
         """
-        frequency = asarray(frequency)
+        frequency = asarray(frequency).astype(int)
         recency = asarray(recency)
         T = asarray(T)
         _check_inputs(frequency, recency, T)
