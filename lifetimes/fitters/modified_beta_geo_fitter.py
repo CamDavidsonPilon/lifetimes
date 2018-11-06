@@ -37,7 +37,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """Initialization, set penalizer_coef."""
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, iterative_fitting=1,
+    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
@@ -53,6 +53,16 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             (denoted t_x in literature).
         T: array_like
             customers' age (time units since first purchase)
+        weights: None or array_like
+            Number of customers with given frequency/recency/T,
+            defaults to 1 if not specified. Fader and
+            Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/recency/T. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
         iterative_fitting: int, optional
             perform iterative_fitting fits over random/warm-started initial params
         initial_params: array_like, optional
@@ -83,6 +93,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         super(self.__class__, self).fit(frequency,
                                         recency,
                                         T,
+                                        weights,
                                         iterative_fitting,
                                         initial_params,
                                         verbose,
@@ -99,7 +110,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
         if npany(asarray(params) <= 0):
             return np.inf
 
@@ -113,7 +124,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
                                                      log(alpha + rec))
 
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(A_1 + A_2 + A_3 + logaddexp(A_4, 0)).mean() + penalizer_term
+        return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
