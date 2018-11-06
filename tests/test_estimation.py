@@ -281,11 +281,12 @@ class TestParetoNBDFitter():
         ptf = estimation.ParetoNBDFitter
         x = np.array([1, 3])
         t_x = np.array([2, 2])
+        weights = np.array([1., 1.])
         t = np.array([5, 6])
         params = [1, 1, 1, 1]
-        assert ptf()._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), 0) \
-            + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), 0) \
-            == 2 * ptf()._negative_log_likelihood(params, x, t_x, t, 0)
+        assert ptf()._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), weights[0], 0) \
+            + ptf()._negative_log_likelihood(params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[0], 0) \
+            == 2 * ptf()._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         ptf = estimation.ParetoNBDFitter()
@@ -434,6 +435,33 @@ class TestParetoNBDFitter():
                             decimal=2
                         )
 
+
+    def test_fit_with_and_without_weights(self, cdnow_customers):
+        original_dataset_with_weights = cdnow_customers.copy()
+        original_dataset_with_weights = original_dataset_with_weights.groupby(['frequency', 'recency', 'T']).size()
+        original_dataset_with_weights = original_dataset_with_weights.reset_index()
+        original_dataset_with_weights = original_dataset_with_weights.rename(columns={0:'weights'})
+
+        pnbd_noweights = estimation.ParetoNBDFitter()
+        pnbd_noweights.fit(
+            cdnow_customers['frequency'],
+            cdnow_customers['recency'],
+            cdnow_customers['T'],
+        )
+
+        pnbd = estimation.ParetoNBDFitter()
+        pnbd.fit(
+            original_dataset_with_weights['frequency'],
+            original_dataset_with_weights['recency'],
+            original_dataset_with_weights['T'],
+            original_dataset_with_weights['weights'],
+        )
+
+        npt.assert_array_almost_equal(
+            np.array(pnbd_noweights._unload_params('r', 'alpha', 's', 'beta')),
+            np.array(pnbd._unload_params('r', 'alpha', 's', 'beta')),
+        decimal=3
+        )
 
 class TestBetaGeoFitter():
 

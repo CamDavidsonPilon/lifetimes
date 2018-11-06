@@ -44,7 +44,7 @@ class ParetoNBDFitter(BaseFitter):
         """Initialization, set penalizer_coef."""
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1,
+    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
@@ -60,6 +60,16 @@ class ParetoNBDFitter(BaseFitter):
             (denoted t_x in literature).
         T: array_like
             customers' age (time units since first purchase)
+        weights: None or array_like
+            Number of customers with given frequency/recency/T,
+            defaults to 1 if not specified. Fader and
+            Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/recency/T. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
         iterative_fitting: int, optional
             perform iterative_fitting fits over random/warm-started initial params
         initial_params: array_like, optional
@@ -88,6 +98,13 @@ class ParetoNBDFitter(BaseFitter):
         frequency = asarray(frequency)
         recency = asarray(recency)
         T = asarray(T)
+
+        if weights is None:
+            weights = np.ones(recency.shape[0], dtype=np.int64)
+        else:
+            weights = asarray(weights)
+
+
         _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
@@ -96,7 +113,7 @@ class ParetoNBDFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+            [frequency, scaled_recency, scaled_T, weights, self.penalizer_coef],
             iterative_fitting,
             initial_params,
             4,
@@ -166,7 +183,7 @@ class ParetoNBDFitter(BaseFitter):
         return A_1 + A_2
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
 
         if npany(asarray(params) <= 0.):
             return np.inf
@@ -174,7 +191,7 @@ class ParetoNBDFitter(BaseFitter):
         conditional_log_likelihood = ParetoNBDFitter._conditional_log_likelihood(params, freq, rec, T)
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
 
-        return -conditional_log_likelihood.mean() + penalizer_term
+        return -(weights * conditional_log_likelihood).mean() + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):
