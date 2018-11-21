@@ -213,8 +213,6 @@ def plot_probability_alive_matrix(model,
     ----------
     model: lifetimes model
         A fitted lifetimes model.
-    T: fload, optional
-        Next units of time to make predictions for
     max_frequency: int, optional
         The maximum frequency to plot. Default is max observed frequency.
     max_recency: int, optional
