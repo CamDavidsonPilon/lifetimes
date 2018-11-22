@@ -67,7 +67,7 @@ class TestBetaGeoBetaBinomGeneration():
                  grouped_data['recency'],
                  grouped_data['n_periods'],
                  grouped_data['weights'])
-        npt.assert_array_equal(bbgb_params.values(), bbtf._unload_params('alpha', 'beta', 'gamma', 'delta'))
+        npt.assert_allclose(bbgb_params.values(), bbtf._unload_params('alpha', 'beta', 'gamma', 'delta'), atol=0.1, rtol=1e-2)
 
 
 
