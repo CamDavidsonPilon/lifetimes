@@ -88,7 +88,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def fit(self, frequency, recency, n_periods, weights=None, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None,
-            fit_method='Nelder-Mead', maxiter=1000000, initial_params=None,
+            fit_method='Nelder-Mead', maxiter=2000, initial_params=None,
             **kwargs):
         """
         Fit the BG/BB model.
@@ -167,7 +167,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         self.generate_new_data = lambda size=1: beta_geometric_beta_binom_model(
             # Making a large array replicating n by n_custs having n.
-            np.array(sum([n_] * n_cust for (n_, n_cust) in zip(n_periods, weights))), *self._unload_params('alpha', 'beta', 'gamma', 'delta'), size=size)
+            np.array(sum([n_] * n_cust for (n_, n_cust) in zip(n_periods, weights))),
+            *self._unload_params('alpha', 'beta', 'gamma', 'delta'), size=size)
         return self
 
     def conditional_expected_number_of_purchases_up_to_time(self, m_periods_in_future, frequency, recency, n_periods):
