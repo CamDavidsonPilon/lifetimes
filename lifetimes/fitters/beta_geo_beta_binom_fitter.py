@@ -88,7 +88,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     def fit(self, frequency, recency, n_periods, weights=None, verbose=False,
             tol=1e-4, iterative_fitting=1, index=None,
-            fit_method='Nelder-Mead', maxiter=500, initial_params=None,
+            fit_method='Nelder-Mead', maxiter=1000000, initial_params=None,
             **kwargs):
         """
         Fit the BG/BB model.
