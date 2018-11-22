@@ -296,8 +296,8 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
         alive = True
         times = []
         while current_t < N[i] and alive:
-            alive = (np.random.random() < theta)
-            if alive and (np.random.random() < p):
+            alive = np.random.binomial(1, theta) == 0
+            if alive and np.random.binomial(1, p) == 1:
                 times.append(current_t)
             current_t += 1
         # adding in final death opportunity to agree with [1]

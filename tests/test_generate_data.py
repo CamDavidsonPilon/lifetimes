@@ -62,11 +62,11 @@ class TestBetaGeoBetaBinomGeneration():
         sim_data = beta_geometric_beta_binom_model(N=6, size=100000, **bbgb_params)
         bbtf = estimation.BetaGeoBetaBinomFitter()
         grouped_data = sim_data.groupby(['frequency', 'recency', 'n_periods'])['customer_id'].count()
-        grouped_data = grouped_data.reset_index().rename(columns={'customer_id': 'n_custs'})
+        grouped_data = grouped_data.reset_index().rename(columns={'customer_id': 'weights'})
         bbtf.fit(grouped_data['frequency'],
                  grouped_data['recency'],
                  grouped_data['n_periods'],
-                 grouped_data['n_custs'])
+                 grouped_data['weights'])
         npt.assert_array_equal(bbgb_params.values(), bbtf._unload_params('alpha', 'beta', 'gamma', 'delta'))
 
 
