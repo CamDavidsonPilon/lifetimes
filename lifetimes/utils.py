@@ -302,7 +302,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
 
 
 def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
-         initial_params, params_size, disp, tol=1e-8, fit_method='Nelder-Mead',
+         initial_params, params_size, disp, tol=1e-6, fit_method='Nelder-Mead',
          maxiter=2000, **kwargs):
     """Fit function for fitters."""
     ll = []

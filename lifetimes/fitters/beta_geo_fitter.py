@@ -55,7 +55,7 @@ class BetaGeoFitter(BaseFitter):
         """Initialization, set penalizer_coef."""
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1,
+    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
             initial_params=None, verbose=False, tol=1e-4, index=None,
             fit_method='Nelder-Mead', maxiter=2000, **kwargs):
         """
@@ -71,6 +71,16 @@ class BetaGeoFitter(BaseFitter):
             (denoted t_x in literature).
         T: array_like
             customers' age (time units since first purchase)
+        weights: None or array_like
+            Number of customers with given frequency/recency/T,
+            defaults to 1 if not specified. Fader and
+            Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/recency/T. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
         iterative_fitting: int, optional
             perform iterative_fitting fits over random/warm-started initial params
         initial_params: array_like, optional
@@ -97,10 +107,16 @@ class BetaGeoFitter(BaseFitter):
             with additional properties like params_ and methods like predict
 
         """
-        frequency = asarray(frequency)
+        frequency = asarray(frequency).astype(int)
         recency = asarray(recency)
         T = asarray(T)
         _check_inputs(frequency, recency, T)
+
+        if weights is None:
+            weights = np.ones_like(recency, dtype=np.int64)
+        else:
+            weights = asarray(weights)
+
 
         self._scale = _scale_time(T)
         scaled_recency = recency * self._scale
@@ -108,7 +124,7 @@ class BetaGeoFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, self.penalizer_coef],
+            [frequency, scaled_recency, scaled_T, weights, self.penalizer_coef],
             iterative_fitting,
             initial_params,
             4,
@@ -132,7 +148,7 @@ class BetaGeoFitter(BaseFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
+    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
         if npany(asarray(params) <= 0):
             return np.inf
 
@@ -148,8 +164,8 @@ class BetaGeoFitter(BaseFitter):
             (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(A_1 + A_2 + misc.logsumexp(
-            vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
+        return - (weights * (A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d))).mean() \
+                            + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
                                                             recency, T):

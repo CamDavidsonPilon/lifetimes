@@ -249,6 +249,10 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
     Generate artificial data according to the Beta-Geometric/Beta-Binomial
     Model.
 
+    You may wonder why we can have frequency = n_periods, when frequency excludes their
+    first order. When a customer purchases something, they are born, _and in the next
+    period_ we start asking questions about their alive-ness. So really they customer has
+    bought frequency + 1, and been observed for n_periods + 1
 
     Parameters
     ----------
@@ -263,7 +267,7 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
     -------
     DataFrame
         with index as customer_ids and the following columns:
-        'frequency', 'recency', 'n', 'lambda', 'p', 'alive', 'customer_id'
+        'frequency', 'recency', 'n_periods', 'lambda', 'p', 'alive', 'customer_id'
 
     References
     ----------
@@ -281,7 +285,7 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
     probability_of_post_purchase_death = np.random.beta(a=alpha, b=beta, size=size)
     thetas = np.random.beta(a=gamma, b=delta, size=size)
 
-    columns = ['frequency', 'recency', 'n', 'p', 'theta', 'alive', 'customer_id']
+    columns = ['frequency', 'recency', 'n_periods', 'p', 'theta', 'alive', 'customer_id']
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
     for i in range(size):
         p = probability_of_post_purchase_death[i]

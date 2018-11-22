@@ -30,23 +30,26 @@ class TestModifiedBetaGeoNBDGeneration():
     expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
 
 
-bbgb_params = OrderedDict([('alpha', 1.204), ('beta', 0.750), ('gamma', 0.657),
-                           ('delta', 2.783)])
+
 
 
 class TestBetaGeoBetaBinomGeneration():
 
-    def test_positivity(self):
+    @pytest.fixture()
+    def bbgb_params(self):
+        return OrderedDict([('alpha', 1.204), ('beta', 0.750), ('gamma', 0.657), ('delta', 2.783)])
+
+    def test_positivity(self, bbgb_params):
         sim_data = beta_geometric_beta_binom_model(N=6, size=5000, **bbgb_params)
         assert (sim_data['frequency'] >= 0).all()
         assert (sim_data['recency'] >= 0).all()
 
-    def test_hitting_max(self):
+    def test_hitting_max(self, bbgb_params):
         sim_data = beta_geometric_beta_binom_model(N=6, size=5000, **bbgb_params)
         assert sim_data['frequency'].max() == 6
         assert sim_data['recency'].max() == 6
 
-    def test_alive_probs(self):
+    def test_alive_probs(self, bbgb_params):
         sim_data = beta_geometric_beta_binom_model(N=6, size=50000, **bbgb_params)
         assert (np.abs(sim_data.loc[(sim_data['frequency'] == 0) & (sim_data['recency'] == 0),
                                     'alive'].mean() - 0.11) < 0.01)
@@ -55,17 +58,21 @@ class TestBetaGeoBetaBinomGeneration():
         assert (np.abs(sim_data.loc[(sim_data['frequency'] == 6) & (sim_data['recency'] == 6),
                                     'alive'].mean() - 0.93) < 0.01)
 
-    def test_params_same_from_sim_data(self):
+    def test_params_same_from_sim_data(self, bbgb_params):
         sim_data = beta_geometric_beta_binom_model(N=6, size=100000, **bbgb_params)
         bbtf = estimation.BetaGeoBetaBinomFitter()
-        grouped_data = sim_data.groupby(['frequency', 'recency', 'n'])['customer_id'].count()
-        grouped_data = grouped_data.reset_index().rename(columns={'customer_id': 'n_custs'})
+        grouped_data = sim_data.groupby(['frequency', 'recency', 'n_periods'])['customer_id'].count()
+        grouped_data = grouped_data.reset_index().rename(columns={'customer_id': 'weights'})
         bbtf.fit(grouped_data['frequency'],
                  grouped_data['recency'],
-                 grouped_data['n'],
-                 grouped_data['n_custs'])
-        assert ((np.array(list(bbgb_params.values())) - np.array(
-            bbtf._unload_params('alpha', 'beta', 'gamma', 'delta'))) < 0.1).all()
+                 grouped_data['n_periods'],
+                 grouped_data['weights'])
+
+        npt.assert_allclose(
+            np.asarray(list(bbgb_params.values())).astype(float),
+            np.asarray(bbtf._unload_params('alpha', 'beta', 'gamma', 'delta')).astype(float),
+            atol=0.1, rtol=1e-2)
+
 
 
 @pytest.mark.parametrize("T,r,alpha,a,b,observation_period_end,freq,size", [
@@ -80,7 +87,7 @@ def test_beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observat
     )
     actual = summary_data_from_transaction_data(transactions=transaction_data,
                                                 customer_id_col='customer_id', datetime_col='date',
-                                                observation_period_end=observation_period_end, 
+                                                observation_period_end=observation_period_end,
                                                 freq=freq)
     np.random.seed(188898)
     expected = beta_geometric_nbd_model(T=T,r=r,alpha=alpha,a=a,b=b,size=size)[['frequency', 'recency', 'T']]
