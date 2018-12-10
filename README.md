@@ -24,7 +24,7 @@ If this is too abstract, consider these applications:
  - Understanding how frequently a patient may return to a hospital. (Alive = visiting. Die = maybe the patient moved to a new city, or became deceased.)
  - Predicting individuals who have churned from an app using only their usage history. (Alive = logins. Die = removed the app)
  - Predicting repeat purchases from a customer. (Alive = actively purchasing. Die = became disinterested with your product)
- - Predicting the lifetime values of your customers
+ - Predicting the lifetime value of your customers
 
 ### Specific Application: Customer Lifetime Value
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
