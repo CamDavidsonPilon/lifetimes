@@ -51,10 +51,14 @@ class GammaGammaFitter(BaseFitter):
 
     @staticmethod
     def _negative_log_likelihood(params, frequency, avg_monetary_value,
-                                 penalizer_coef=0):
-        if any(i < 0 for i in params):
-            return np.inf
-
+                                 penalizer_coef=0, q_constraint=True):
+        if q_constraint:
+            if any(i < 0 for i in params) or params[1] < 1:
+                return np.inf
+        else:
+            if any(i < 0 for i in params):
+                return np.inf
+        
         p, q, v = params
 
         x = frequency
@@ -109,7 +113,7 @@ class GammaGammaFitter(BaseFitter):
 
     def fit(self, frequency, monetary_value, iterative_fitting=4,
             initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+            fit_method='Nelder-Mead', maxiter=2000, q_constraint=True, **kwargs):
         """
         Fit the data to the Gamma/Gamma model.
 
@@ -150,7 +154,7 @@ class GammaGammaFitter(BaseFitter):
 
         params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, monetary_value, self.penalizer_coef],
+            [frequency, monetary_value, self.penalizer_coef, q_constraint],
             iterative_fitting,
             initial_params,
             3,
