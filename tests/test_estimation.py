@@ -267,6 +267,27 @@ class TestGammaGammaFitter():
         )
         assert (ggf.data.index == index).all() == False
 
+    def test_params_out_is_close_to_Hardie_paper_with_q_constraint(self, cdnow_customers_with_monetary_value):
+        returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
+            cdnow_customers_with_monetary_value['frequency'] > 0
+        ]
+        ggf = estimation.GammaGammaFitter()
+        ggf.fit(
+            returning_cdnow_customers_with_monetary_value['frequency'],
+            returning_cdnow_customers_with_monetary_value['monetary_value'],
+            iterative_fitting=3,
+            q_constraint=True
+        )
+        expected = np.array([6.25, 3.74, 15.44])
+        npt.assert_array_almost_equal(expected, np.array(ggf._unload_params('p', 'q', 'v')), decimal=2)
+
+    def test_negative_log_likelihood_is_inf_when_q_constraint_true_and_q_lt_one(self):
+        frequency = 25
+        avg_monetary_value = 100
+        ggf = estimation.GammaGammaFitter()
+        assert np.isinf(ggf._negative_log_likelihood([6.25, -3.75, 15.44], frequency, avg_monetary_value, q_constraint=True))
+
+
 
 class TestParetoNBDFitter():
 
