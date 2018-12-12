@@ -52,15 +52,15 @@ class GammaGammaFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(params, frequency, avg_monetary_value,
                                  penalizer_coef=0, q_constraint=True):
-        if q_constraint:
-            if any(i < 0 for i in params) or params[1] < 1:
-                return np.inf
-        else:
-            if any(i < 0 for i in params):
-                return np.inf
-        
-        p, q, v = params
+            
+       
+        if any(i < 0 for i in params):
+            return np.inf
 
+        p, q, v = params
+        if q_constraint and q < 1:
+            return np.inf
+        
         x = frequency
         m = avg_monetary_value
 
@@ -140,6 +140,9 @@ class GammaGammaFitter(BaseFitter):
         maxiter : int, optional
             max iterations for optimizer in scipy.optimize.minimize will be
             overwritten if setted in kwargs.
+        q_constraint: bool, optional
+            population mean will result in a negative value leading to negative CLV 
+            outputs when q < 1. If True, we penalize negative values of q to avoid this issue. 
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
