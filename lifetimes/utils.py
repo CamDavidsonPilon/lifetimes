@@ -138,6 +138,9 @@ def _find_first_transactions(transactions, customer_id_col, datetime_col, moneta
     if observation_period_end is None:
         observation_period_end = transactions[datetime_col].max()
 
+    if isinstance(observation_period_end, pd.Period):
+        observation_period_end = observation_period_end.to_timestamp()
+
     select_columns = [customer_id_col, datetime_col]
 
     if monetary_value_col:
@@ -169,6 +172,9 @@ def _find_first_transactions(transactions, customer_id_col, datetime_col, moneta
     # mark the initial transactions as True
     period_transactions.loc[first_transactions, 'first'] = True
     select_columns.append('first')
+    # reset datetime_col to period
+    period_transactions[datetime_col] = pd.Index(period_transactions[datetime_col]).to_period(freq)
+
     return period_transactions[select_columns]
 
 
@@ -216,8 +222,9 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     """
     if observation_period_end is None:
-        observation_period_end = transactions[datetime_col].max().to_period(freq).to_timestamp()
-    observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq).to_timestamp()
+        observation_period_end = pd.to_datetime(transactions[datetime_col].max(), format=datetime_format).to_period(freq).to_timestamp()
+    else:
+        observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq).to_timestamp()
 
     # label all of the repeated transactions
     repeated_transactions = _find_first_transactions(
@@ -229,6 +236,9 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         observation_period_end,
         freq
     )
+    # reset datetime_col to timestamp
+    repeated_transactions[datetime_col] = pd.Index(repeated_transactions[datetime_col]).to_timestamp()
+
     # count all orders by customer.
     customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(['min', 'max', 'count'])
 
