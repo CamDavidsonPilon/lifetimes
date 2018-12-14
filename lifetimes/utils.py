@@ -148,7 +148,7 @@ def _find_first_transactions(transactions, customer_id_col, datetime_col, moneta
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
-    transactions = transactions.set_index(datetime_col).to_period(freq)
+    transactions = transactions.set_index(datetime_col).to_period(freq).to_timestamp()
 
     transactions = transactions.loc[(transactions.index <= observation_period_end)].reset_index()
 
@@ -216,8 +216,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     """
     if observation_period_end is None:
-        observation_period_end = transactions[datetime_col].max()
-    observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq)
+        observation_period_end = transactions[datetime_col].max().to_period(freq).to_timestamp()
+    observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq).to_timestamp()
 
     # label all of the repeated transactions
     repeated_transactions = _find_first_transactions(
@@ -235,8 +235,8 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
     # subtract 1 from count, as we ignore their first order.
     customers['frequency'] = customers['count'] - 1
 
-    customers['T'] = (observation_period_end - customers['min']) / freq_multiplier
-    customers['recency'] = (customers['max'] - customers['min']) / freq_multiplier
+    customers['T'] = (observation_period_end - customers['min']) / np.timedelta64(1, freq) / freq_multiplier
+    customers['recency'] = (customers['max'] - customers['min']) / np.timedelta64(1, freq) / freq_multiplier
 
     summary_columns = ['frequency', 'recency', 'T']
 
