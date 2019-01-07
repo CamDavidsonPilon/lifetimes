@@ -306,6 +306,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     # Add t_x column
     customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
     customer_history['recency'] = customer_history['recency'].fillna(method='ffill').fillna(0)
+
     return customer_history.apply(
         lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']),
         axis=1)
