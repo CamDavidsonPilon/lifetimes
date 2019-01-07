@@ -7,7 +7,6 @@ import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1, betaln
-from scipy import misc
 from scipy.special import logsumexp
 
 from . import BaseFitter

@@ -8,8 +8,7 @@ from numpy import log, asarray, any as npany, c_ as vconcat, isinf, isnan, \
     where, exp
 from numpy import ones_like
 from pandas import DataFrame
-from scipy.special import gammaln, hyp2f1, beta, gamma
-from scipy import misc
+from scipy.special import gammaln, hyp2f1, beta, gamma, logsumexp
 
 from . import BaseFitter
 from ..utils import _fit, _scale_time, _check_inputs
@@ -164,7 +163,7 @@ class BetaGeoFitter(BaseFitter):
             (r + freq) * log(rec + alpha)
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return - (weights * (A_1 + A_2 + misc.logsumexp(vconcat[A_3, A_4], axis=1, b=d))).mean() \
+        return - (weights * (A_1 + A_2 + logsumexp(vconcat[A_3, A_4], axis=1, b=d))).mean() \
                             + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
