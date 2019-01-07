@@ -35,10 +35,10 @@ setup(name='Lifetimes',
           "Topic :: Scientific/Engineering",
       ],
       install_requires=[
-          "numpy",
+          "numpy>=1.10.0",
           "scipy>=1.0.0",
           "pandas>=0.19",
-          "dill"
+          "dill>=0.2.6"
       ],
       package_data={
           "lifetimes": [
