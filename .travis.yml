@@ -2,10 +2,14 @@ language: python
 dist: trusty
 python:
    - "2.7"
-   - "3.4"
    - "3.5"
    - "3.6"
-before_install:
+# Enable newer 3.7 without globally enabling sudo and dist: xenial for other build jobs
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: truebefore_install:
   - sudo apt-get update
 install:
   - "pip install -r dev_requirements.txt"
