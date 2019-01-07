@@ -15,7 +15,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     Also known as the MBG/NBD model.
 
     Based on [5]_, [6]_, this model has the following assumptions:
-    1) Each individual, i, has a hidden lambda_i and p_i parameter
+    1) Each individual, ``i``, has a hidden ``lambda_i`` and ``p_i`` parameter
     2) These come from a population wide Gamma and a Beta distribution
        respectively.
     3) Individuals purchases follow a Poisson process with rate :math:`\lambda_i*t` .
@@ -85,7 +85,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Returns
         -------
         ModifiedBetaGeoFitter:
-            With additional properties and methods like params_ and predict
+            With additional properties and methods like ``params_`` and ``predict``
 
         """
         # although the parent method is called, this class's

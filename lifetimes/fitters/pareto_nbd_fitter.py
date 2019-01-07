@@ -92,7 +92,7 @@ class ParetoNBDFitter(BaseFitter):
         Returns
         -------
         ParetoNBDFitter
-            with additional properties like params_ and methods like predict
+            with additional properties like ``params_`` and methods like ``predict``
 
         """
         frequency = asarray(frequency).astype(int)

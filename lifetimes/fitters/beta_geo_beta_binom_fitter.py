@@ -172,14 +172,14 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         return self
 
     def conditional_expected_number_of_purchases_up_to_time(self, m_periods_in_future, frequency, recency, n_periods):
-        """
+        r"""
         Conditional expected purchases in future time period.
 
         The  expected  number  of  future  transactions across the next m_periods_in_future
         transaction opportunities by a customer with purchase history
         (x, tx, n).
 
-        .. math:: E(X(n_periods, n_periods+m_periods_in_future)|alpha, beta, gamma, delta, frequency, recency, n_periods)
+        .. math:: E(X(n_{periods}, n_{periods}+m_{periods_in_future})| \alpha, \beta, \gamma, \delta, frequency, recency, n_{periods})
 
         See (13) in Fader & Hardie 2010.
 
@@ -243,14 +243,14 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         return exp(p1 + p2) / exp(p3)
 
     def expected_number_of_transactions_in_first_n_periods(self, n):
-        """
+        r"""
         Return expected number of transactions in first n n_periods.
 
         Expected number of transactions occurring across first n transaction
         opportunities.
         Used by Fader and Hardie to assess in-sample fit.
 
-        .. math:: Pr(X(n) = x|alpha, beta, gamma, delta)
+        .. math:: Pr(X(n) = x| \alpha, \beta, \gamma, \delta)
 
         See (7) in Fader & Hardie 2010.
 
