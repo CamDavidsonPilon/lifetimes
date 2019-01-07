@@ -7,7 +7,7 @@ import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1, betaln
-from scipy import misc
+from scipy.special import logsumexp
 
 from . import BaseFitter
 from ..utils import _fit, _check_inputs, _scale_time
@@ -162,7 +162,7 @@ class ParetoNBDFitter(BaseFitter):
         except TypeError:
             sign = 1
 
-        return (misc.logsumexp([log(p_1) + rsf * log(q_2), log(p_2) +
+        return (logsumexp([log(p_1) + rsf * log(q_2), log(p_2) +
                 rsf * log(q_1)], axis=0, b=[sign, -sign]) -
                 rsf * log(q_1 * q_2))
 
@@ -376,7 +376,7 @@ class ParetoNBDFitter(BaseFitter):
         zeroth_term = (n == 0) * (1 - exp(log_p_zero))
         first_term = n * log(t) - gammaln(n + 1) + log_B_one - log_l
         second_term = log_B_two - log_l
-        third_term = misc.logsumexp(
+        third_term = logsumexp(
             [i * log(t) - gammaln(i + 1) + _log_B_three(i) - log_l for i in range(n + 1)],
             axis=0
         )
@@ -389,7 +389,7 @@ class ParetoNBDFitter(BaseFitter):
 
         # In some scenarios (e.g. large n) tiny numerical errors in the calculation of second_term and third_term
         # cause sumexp to be ever so slightly negative and logsumexp throws an error. Hence we ignore the sign here.
-        return zeroth_term + exp(misc.logsumexp(
+        return zeroth_term + exp(logsumexp(
             [first_term, second_term, third_term], b=[sign, sign, -sign],
             axis=0,
             return_sign=True

@@ -31,16 +31,14 @@ setup(name='Lifetimes',
           "License :: OSI Approved :: MIT License",
           "Programming Language :: Python",
           "Programming Language :: Python :: 2.7",
-          "Programming Language :: Python :: 3.3",
-          "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
           "Topic :: Scientific/Engineering",
       ],
       install_requires=[
-          "numpy",
-          "scipy",
+          "numpy>=1.10.0",
+          "scipy>=1.0.0",
           "pandas>=0.19",
-          "dill"
+          "dill>=0.2.6"
       ],
       package_data={
           "lifetimes": [

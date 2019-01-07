@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.10.1
+ - performance improvements to `generate_data.py` for large datasets #195
+ - performance improvements to `summary_data_from_transaction_data`, thanks @MichaelSchreier
+ - Previously, `GammaGammaFitter` would have an infinite mean when its `q` parameter was less than 1. This was possible for some datasets. In 0.10.1, a new argument is added to `GammaGammaFitter` to constrain that `q` is greater than 1. This can be done with `q_constraint=True` in the call to `GammaGammaFitter.fit`. See issue #146. Thanks @vruvora 
+ - Stop support of scipy < 1.0.
+ - Stop support of < Python 3.5.
+
 ### 0.10.0
  - `BetaGeoBetaBinomFitter.fit` has replaced `n_custs` with the more appropriately named `weights` (to align with other statisical libraries). By default and if unspecified, `weights` is equal to an array of 1s. 
  - The `conditional_` methods on `BetaGeoBetaBinomFitter` have been updated to handle exogenously provided recency, frequency and periods. 
