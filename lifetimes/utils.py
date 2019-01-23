@@ -393,7 +393,7 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
     # more order-periods than periods.
 
 
-def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
+def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01, freq="D"):
     """
     Compute the average lifetime value for a group of one or more customers.
 
@@ -415,6 +415,8 @@ def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T
         the lifetime expected for the user in months. Default: 12
     discount_rate: float, optional
         the monthly adjusted discount rate. Default: 1
+    freq: string, optional
+        Default 'D' for days, 'W' for weeks, 'M' for months
 
     Returns
     -------
@@ -425,11 +427,19 @@ def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T
     df = pd.DataFrame(index=frequency.index)
     df['clv'] = 0  # initialize the clv column to zeros
 
-    for i in range(30, (time * 30) + 1, 30):
+    steps = np.arange(1,time+1)
+    factor = 30
+    if freq == "W":
+        factor = 4.3
+    if freq == "M":
+        factor = 1
+    for i in steps*factor:
         # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
-        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
+        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency,
+                                                                               T) - transaction_prediction_model.predict(
+            i - factor, frequency, recency, T)
         # sum up the CLV estimates of all of the periods
-        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
+        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / factor)
 
     return df['clv']  # return as a series
 

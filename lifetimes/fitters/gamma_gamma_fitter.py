@@ -52,15 +52,14 @@ class GammaGammaFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(params, frequency, avg_monetary_value,
                                  penalizer_coef=0, q_constraint=False):
-            
-       
+
         if any(i < 0 for i in params):
             return np.inf
 
         p, q, v = params
         if q_constraint and q < 1:
             return np.inf
-        
+
         x = frequency
         m = avg_monetary_value
 
@@ -109,7 +108,7 @@ class GammaGammaFitter(BaseFitter):
         individual_weight = p * frequency / (p * frequency + q - 1)
         population_mean = v * p / (q - 1)
         return (1 - individual_weight) * population_mean + \
-            individual_weight * monetary_value
+               individual_weight * monetary_value
 
     def fit(self, frequency, monetary_value, iterative_fitting=4,
             initial_params=None, verbose=False, tol=1e-4, index=None,
@@ -141,8 +140,8 @@ class GammaGammaFitter(BaseFitter):
             max iterations for optimizer in scipy.optimize.minimize will be
             overwritten if setted in kwargs.
         q_constraint: bool, optional
-            when q < 1, population mean will result in a negative value 
-            leading to negative CLV outputs. If True, we penalize negative values of q to avoid this issue. 
+            when q < 1, population mean will result in a negative value
+            leading to negative CLV outputs. If True, we penalize negative values of q to avoid this issue.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -216,4 +215,4 @@ class GammaGammaFitter(BaseFitter):
             frequency, monetary_value)
         return _customer_lifetime_value(transaction_prediction_model, frequency,
                                         recency, T, adjusted_monetary_value,
-                                        time, discount_rate)
+                                        time, discount_rate, freq='D')
