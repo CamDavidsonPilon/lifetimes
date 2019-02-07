@@ -259,9 +259,11 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
         customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
         summary_columns.append('monetary_value')
 
-    # fixes issue with pandas 0.24.*
-    customers['T'] = customers['T'].apply(lambda x: x.n)
-    customers['recency'] = customers['recency'].apply(lambda x: x.n)
+    # fixes issue with pandas 0.24.* where columns below are offsets
+    if customers['T'].dtype != float:
+        customers['T'] = customers['T'].apply(lambda x: x.n)
+    if customers['recency'].dtype != float:
+        customers['recency'] = customers['recency'].apply(lambda x: x.n)
     return customers[summary_columns].astype(float)
 
 
