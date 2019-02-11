@@ -32,7 +32,7 @@ def transaction_data():
 
 @pytest.fixture()
 def cdnow_transactions():
-    transactions = load_dataset('CDNOW_sample.txt', header=None, sep='\s+')
+    transactions = load_dataset('CDNOW_sample.txt', header=None, sep=r'\s+')
     transactions.columns = ['id_total', 'id_sample', 'date', 'num_cd_purc',
                             'total_value']
     return transactions[['id_sample', 'date']]
