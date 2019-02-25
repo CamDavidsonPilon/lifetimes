@@ -160,7 +160,7 @@ class BetaGeoFitter(BaseFitter):
 
         d = vconcat[ones_like(freq), (freq > 0)]
         A_4 = log(a) - log(b + where(freq == 0, 1, freq) - 1) - \
-            (r + freq) * log(rec + alpha)
+            (r + freq) * log(rec + alpha) if (a > 0 and (b + where(freq == 0, 1, freq) - 1) > 0 and (rec + alpha) > 0) else 0
         A_4[isnan(A_4) | isinf(A_4)] = 0
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
         return - (weights * (A_1 + A_2 + logsumexp(vconcat[A_3, A_4], axis=1, b=d))).mean() \
