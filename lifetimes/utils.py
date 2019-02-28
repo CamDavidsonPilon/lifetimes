@@ -304,7 +304,7 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
     ----------
     model:
         A fitted lifetimes model
-    transactions: :obj: dataframe
+    transactions: DataFrame
         a Pandas DataFrame containing the transactions history of the customer_id
     datetime_col: string
         the column in the transactions that denotes the datetime the purchase was made
