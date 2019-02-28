@@ -98,11 +98,6 @@ class BetaGeoFitter(BaseFitter):
             tolerance for termination of the function minimization process.
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
-        fit_method : string, optional
-            fit_method to passing to scipy.optimize.minimize
-        maxiter : int, optional
-            max iterations for optimizer in scipy.optimize.minimize will be
-            overwritten if setted in kwargs.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -135,15 +130,13 @@ class BetaGeoFitter(BaseFitter):
             4,
             verbose,
             tol,
-            fit_method,
-            maxiter,
             **kwargs
         )
 
         self.params_ = OrderedDict(zip(["r", "alpha", "a", "b"], np.exp(log_params)))
         self.params_["alpha"] /= self._scale
 
-        self.data = DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
+        self.data = DataFrame({"frequency": frequency, "recency": recency, "T": T})
         if index is not None:
             self.data.index = index
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(
@@ -163,10 +156,9 @@ class BetaGeoFitter(BaseFitter):
         A_3 = -(r + freq) * log(alpha + T)
         A_4 = log(a) - log(b + np.maximum(freq, 1) - 1) - (r + freq) * log(rec + alpha)
 
-        penalizer_term = penalizer_coef * sum(params ** 2) # TODO: log_params?
+        penalizer_term = penalizer_coef * sum(params ** 2)  # TODO: log_params?
         ll = weights * (A_1 + A_2 + log(exp(A_3) + exp(A_4) * (freq > 0)))
         return -ll.mean() + penalizer_term
-
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
@@ -241,12 +233,12 @@ class BetaGeoFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
-        log_div = (r + frequency) * log((alpha + T) / (alpha + recency)) + log(
-            a / (b + np.maximum(frequency, 1) - 1)
-        )
+        log_div = (r + frequency) * log((alpha + T) / (alpha + recency)) + log(a / (b + np.maximum(frequency, 1) - 1))
 
         return np.where(
-            frequency == 0, 1.0, np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + exp(np.clip(log_div, None, ln_exp_max))))
+            frequency == 0,
+            1.0,
+            np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + exp(np.clip(log_div, None, ln_exp_max)))),
         )
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):

@@ -4,16 +4,16 @@ from lifetimes.utils import calculate_alive_path, expected_cumulative_transactio
 from scipy import stats
 
 __all__ = [
-    'plot_period_transactions',
-    'plot_calibration_purchases_vs_holdout_purchases',
-    'plot_frequency_recency_matrix',
-    'plot_probability_alive_matrix',
-    'plot_expected_repeat_purchases',
-    'plot_history_alive',
-    'plot_cumulative_transactions',
-    'plot_incremental_transactions',
-    'plot_transaction_rate_heterogeneity',
-    'plot_dropout_rate_heterogeneity'
+    "plot_period_transactions",
+    "plot_calibration_purchases_vs_holdout_purchases",
+    "plot_frequency_recency_matrix",
+    "plot_probability_alive_matrix",
+    "plot_expected_repeat_purchases",
+    "plot_history_alive",
+    "plot_cumulative_transactions",
+    "plot_incremental_transactions",
+    "plot_transaction_rate_heterogeneity",
+    "plot_dropout_rate_heterogeneity",
 ]
 
 
@@ -21,12 +21,14 @@ def coalesce(*args):
     return next(s for s in args if s is not None)
 
 
-def plot_period_transactions(model,
-                             max_frequency=7,
-                             title='Frequency of Repeat Transactions',
-                             xlabel='Number of Calibration Period Transactions',
-                             ylabel='Customers',
-                             **kwargs):
+def plot_period_transactions(
+    model,
+    max_frequency=7,
+    title="Frequency of Repeat Transactions",
+    xlabel="Number of Calibration Period Transactions",
+    ylabel="Customers",
+    **kwargs
+):
     """
     Plot a figure with period actual and predicted transactions.
 
@@ -51,17 +53,18 @@ def plot_period_transactions(model,
 
     """
     from matplotlib import pyplot as plt
-    labels = kwargs.pop('label', ['Actual', 'Model'])
+
+    labels = kwargs.pop("label", ["Actual", "Model"])
 
     n = model.data.shape[0]
     simulated_data = model.generate_new_data(size=n)
 
-    model_counts = pd.DataFrame(model.data['frequency'].value_counts().sort_index().iloc[:max_frequency])
-    simulated_counts = pd.DataFrame(simulated_data['frequency'].value_counts().sort_index().iloc[:max_frequency])
-    combined_counts = model_counts.merge(simulated_counts, how='outer', left_index=True, right_index=True).fillna(0)
+    model_counts = pd.DataFrame(model.data["frequency"].value_counts().sort_index().iloc[:max_frequency])
+    simulated_counts = pd.DataFrame(simulated_data["frequency"].value_counts().sort_index().iloc[:max_frequency])
+    combined_counts = model_counts.merge(simulated_counts, how="outer", left_index=True, right_index=True).fillna(0)
     combined_counts.columns = labels
 
-    ax = combined_counts.plot(kind='bar', **kwargs)
+    ax = combined_counts.plot(kind="bar", **kwargs)
 
     plt.legend()
     plt.title(title)
@@ -70,11 +73,9 @@ def plot_period_transactions(model,
     return ax
 
 
-def plot_calibration_purchases_vs_holdout_purchases(model,
-                                                    calibration_holdout_matrix,
-                                                    kind="frequency_cal",
-                                                    n=7,
-                                                    **kwargs):
+def plot_calibration_purchases_vs_holdout_purchases(
+    model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs
+):
     """
     Plot calibration purchases vs holdout.
 
@@ -104,35 +105,47 @@ def plot_calibration_purchases_vs_holdout_purchases(model,
         "frequency_cal": "Purchases in calibration period",
         "recency_cal": "Age of customer at last purchase",
         "T_cal": "Age of customer at the end of calibration period",
-        "time_since_last_purchase": "Time since user made last purchase"
+        "time_since_last_purchase": "Time since user made last purchase",
     }
     summary = calibration_holdout_matrix.copy()
-    duration_holdout = summary.iloc[0]['duration_holdout']
+    duration_holdout = summary.iloc[0]["duration_holdout"]
 
-    summary['model_predictions'] = summary.apply(lambda r: model.conditional_expected_number_of_purchases_up_to_time(duration_holdout, r['frequency_cal'], r['recency_cal'], r['T_cal']), axis=1)
+    summary["model_predictions"] = summary.apply(
+        lambda r: model.conditional_expected_number_of_purchases_up_to_time(
+            duration_holdout, r["frequency_cal"], r["recency_cal"], r["T_cal"]
+        ),
+        axis=1,
+    )
 
     if kind == "time_since_last_purchase":
         summary["time_since_last_purchase"] = summary["T_cal"] - summary["recency_cal"]
-        ax = summary.groupby(["time_since_last_purchase"])[['frequency_holdout', 'model_predictions']].mean().iloc[:n].plot(**kwargs)
+        ax = (
+            summary.groupby(["time_since_last_purchase"])[["frequency_holdout", "model_predictions"]]
+            .mean()
+            .iloc[:n]
+            .plot(**kwargs)
+        )
     else:
-        ax = summary.groupby(kind)[['frequency_holdout', 'model_predictions']].mean().iloc[:n].plot(**kwargs)
+        ax = summary.groupby(kind)[["frequency_holdout", "model_predictions"]].mean().iloc[:n].plot(**kwargs)
 
-    plt.title('Actual Purchases in Holdout Period vs Predicted Purchases')
+    plt.title("Actual Purchases in Holdout Period vs Predicted Purchases")
     plt.xlabel(x_labels[kind])
-    plt.ylabel('Average of Purchases in Holdout Period')
+    plt.ylabel("Average of Purchases in Holdout Period")
     plt.legend()
 
     return ax
 
 
-def plot_frequency_recency_matrix(model,
-                                  T=1,
-                                  max_frequency=None,
-                                  max_recency=None,
-                                  title=None,
-                                  xlabel="Customer's Historical Frequency",
-                                  ylabel="Customer's Recency",
-                                  **kwargs):
+def plot_frequency_recency_matrix(
+    model,
+    T=1,
+    max_frequency=None,
+    max_recency=None,
+    title=None,
+    xlabel="Customer's Historical Frequency",
+    ylabel="Customer's Recency",
+    **kwargs
+):
     """
     Plot recency frequecy matrix as heatmap.
 
@@ -166,25 +179,27 @@ def plot_frequency_recency_matrix(model,
     from matplotlib import pyplot as plt
 
     if max_frequency is None:
-        max_frequency = int(model.data['frequency'].max())
+        max_frequency = int(model.data["frequency"].max())
 
     if max_recency is None:
-        max_recency = int(model.data['T'].max())
+        max_recency = int(model.data["T"].max())
 
     Z = np.zeros((max_recency + 1, max_frequency + 1))
     for i, recency in enumerate(np.arange(max_recency + 1)):
         for j, frequency in enumerate(np.arange(max_frequency + 1)):
             Z[i, j] = model.conditional_expected_number_of_purchases_up_to_time(T, frequency, recency, max_recency)
 
-    interpolation = kwargs.pop('interpolation', 'none')
+    interpolation = kwargs.pop("interpolation", "none")
 
     ax = plt.subplot(111)
     PCM = ax.imshow(Z, interpolation=interpolation, **kwargs)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     if title is None:
-        title = 'Expected Number of Future Purchases for {} Unit{} of Time,'. \
-            format(T, "s"[T == 1:]) + '\nby Frequency and Recency of a Customer'
+        title = (
+            "Expected Number of Future Purchases for {} Unit{} of Time,".format(T, "s"[T == 1 :])
+            + "\nby Frequency and Recency of a Customer"
+        )
     plt.title(title)
 
     # turn matrix into square
@@ -196,13 +211,15 @@ def plot_frequency_recency_matrix(model,
     return ax
 
 
-def plot_probability_alive_matrix(model,
-                                  max_frequency=None,
-                                  max_recency=None,
-                                  title='Probability Customer is Alive,\nby Frequency and Recency of a Customer',
-                                  xlabel="Customer's Historical Frequency",
-                                  ylabel="Customer's Recency",
-                                  **kwargs):
+def plot_probability_alive_matrix(
+    model,
+    max_frequency=None,
+    max_recency=None,
+    title="Probability Customer is Alive,\nby Frequency and Recency of a Customer",
+    xlabel="Customer's Historical Frequency",
+    ylabel="Customer's Recency",
+    **kwargs
+):
     """
     Plot probability alive matrix as heatmap.
 
@@ -236,7 +253,7 @@ def plot_probability_alive_matrix(model,
 
     z = model.conditional_probability_alive_matrix(max_frequency, max_recency)
 
-    interpolation = kwargs.pop('interpolation', 'none')
+    interpolation = kwargs.pop("interpolation", "none")
 
     ax = plt.subplot(111)
     PCM = ax.imshow(z, interpolation=interpolation, **kwargs)
@@ -253,12 +270,14 @@ def plot_probability_alive_matrix(model,
     return ax
 
 
-def plot_expected_repeat_purchases(model,
-                                   title='Expected Number of Repeat Purchases per Customer',
-                                   xlabel='Time Since First Purchase',
-                                   ax=None,
-                                   label=None,
-                                   **kwargs):
+def plot_expected_repeat_purchases(
+    model,
+    title="Expected Number of Repeat Purchases per Customer",
+    xlabel="Time Since First Purchase",
+    ax=None,
+    label=None,
+    **kwargs
+):
     """
     Plot expected repeat purchases on calibration period .
 
@@ -291,27 +310,26 @@ def plot_expected_repeat_purchases(model,
 
     if plt.matplotlib.__version__ >= "1.5":
         color_cycle = ax._get_lines.prop_cycler
-        color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle)['color'])
+        color = coalesce(kwargs.pop("c", None), kwargs.pop("color", None), next(color_cycle)["color"])
     else:
         color_cycle = ax._get_lines.color_cycle
-        color = coalesce(kwargs.pop('c', None), kwargs.pop('color', None), next(color_cycle))
+        color = coalesce(kwargs.pop("c", None), kwargs.pop("color", None), next(color_cycle))
 
-    max_T = model.data['T'].max()
+    max_T = model.data["T"].max()
 
     times = np.linspace(0, max_T, 100)
     ax.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, label=label, **kwargs)
 
     times = np.linspace(max_T, 1.5 * max_T, 100)
-    ax.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls='--', **kwargs)
+    ax.plot(times, model.expected_number_of_purchases_up_to_time(times), color=color, ls="--", **kwargs)
 
     plt.title(title)
     plt.xlabel(xlabel)
-    plt.legend(loc='lower right')
+    plt.legend(loc="lower right")
     return ax
 
 
-def plot_history_alive(model, t, transactions, datetime_col, freq='D',
-                       start_date=None, ax=None, **kwargs):
+def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_date=None, ax=None, **kwargs):
     """
     Draw a graph showing the probablility of being alive for a customer in time.
 
@@ -352,33 +370,44 @@ def plot_history_alive(model, t, transactions, datetime_col, freq='D',
     customer_history.index = pd.DatetimeIndex(customer_history[datetime_col])
 
     # Add transactions column
-    customer_history['transactions'] = 1
+    customer_history["transactions"] = 1
     customer_history = customer_history.resample(freq).sum()
 
     # plot alive_path
     path = calculate_alive_path(model, transactions, datetime_col, t, freq)
     path_dates = pd.date_range(start=min(transactions[datetime_col]), periods=len(path), freq=freq)
-    plt.plot(path_dates, path, '-', label='P_alive')
+    plt.plot(path_dates, path, "-", label="P_alive")
 
     # plot buying dates
-    payment_dates = customer_history[customer_history['transactions'] >= 1].index
-    plt.vlines(payment_dates.values, ymin=0, ymax=1, colors='r', linestyles='dashed', label='purchases')
+    payment_dates = customer_history[customer_history["transactions"] >= 1].index
+    plt.vlines(payment_dates.values, ymin=0, ymax=1, colors="r", linestyles="dashed", label="purchases")
 
     plt.ylim(0, 1.0)
     plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlim(start_date, path_dates[-1])
     plt.legend(loc=3)
-    plt.ylabel('P_alive')
-    plt.title('History of P_alive')
+    plt.ylabel("P_alive")
+    plt.title("History of P_alive")
 
     return ax
 
 
-def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_col, t, t_cal,
-                                 datetime_format=None, freq='D', set_index_date=False,
-                                 title='Tracking Cumulative Transactions',
-                                 xlabel='day', ylabel='Cumulative Transactions',
-                                 ax=None, **kwargs):
+def plot_cumulative_transactions(
+    model,
+    transactions,
+    datetime_col,
+    customer_id_col,
+    t,
+    t_cal,
+    datetime_format=None,
+    freq="D",
+    set_index_date=False,
+    title="Tracking Cumulative Transactions",
+    xlabel="day",
+    ylabel="Cumulative Transactions",
+    ax=None,
+    **kwargs
+):
     """
     Plot a figure of the predicted and actual cumulative transactions of users.
 
@@ -427,29 +456,46 @@ def plot_cumulative_transactions(model, transactions, datetime_col, customer_id_
     if ax is None:
         ax = plt.subplot(111)
 
-    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col,
-                                                           customer_id_col, t,
-                                                           datetime_format=datetime_format, freq=freq,
-                                                           set_index_date=set_index_date)
+    df_cum_transactions = expected_cumulative_transactions(
+        model,
+        transactions,
+        datetime_col,
+        customer_id_col,
+        t,
+        datetime_format=datetime_format,
+        freq=freq,
+        set_index_date=set_index_date,
+    )
 
     ax = df_cum_transactions.plot(ax=ax, title=title, **kwargs)
 
     if set_index_date:
         x_vline = df_cum_transactions.index[int(t_cal)]
-        xlabel = 'date'
+        xlabel = "date"
     else:
         x_vline = t_cal
-    ax.axvline(x=x_vline, color='r', linestyle='--')
+    ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     return ax
 
 
-def plot_incremental_transactions(model, transactions, datetime_col, customer_id_col, t, t_cal,
-                                  datetime_format=None, freq='D', set_index_date=False,
-                                  title='Tracking Daily Transactions',
-                                  xlabel='day', ylabel='Transactions',
-                                  ax=None, **kwargs):
+def plot_incremental_transactions(
+    model,
+    transactions,
+    datetime_col,
+    customer_id_col,
+    t,
+    t_cal,
+    datetime_format=None,
+    freq="D",
+    set_index_date=False,
+    title="Tracking Daily Transactions",
+    xlabel="day",
+    ylabel="Transactions",
+    ax=None,
+    **kwargs
+):
     """
     Plot a figure of the predicted and actual cumulative transactions of users.
 
@@ -498,10 +544,16 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
     if ax is None:
         ax = plt.subplot(111)
 
-    df_cum_transactions = expected_cumulative_transactions(model, transactions, datetime_col,
-                                                           customer_id_col, t,
-                                                           datetime_format=datetime_format, freq=freq,
-                                                           set_index_date=set_index_date)
+    df_cum_transactions = expected_cumulative_transactions(
+        model,
+        transactions,
+        datetime_col,
+        customer_id_col,
+        t,
+        datetime_format=datetime_format,
+        freq=freq,
+        set_index_date=set_index_date,
+    )
 
     # get incremental from cumulative transactions
     df_cum_transactions = df_cum_transactions.apply(lambda x: x - x.shift(1))
@@ -509,21 +561,23 @@ def plot_incremental_transactions(model, transactions, datetime_col, customer_id
 
     if set_index_date:
         x_vline = df_cum_transactions.index[int(t_cal)]
-        xlabel = 'date'
+        xlabel = "date"
     else:
         x_vline = t_cal
-    ax.axvline(x=x_vline, color='r', linestyle='--')
+    ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     return ax
 
 
-def plot_transaction_rate_heterogeneity(model,
-                                        suptitle='Heterogeneity in Transaction Rate',
-                                        xlabel='Transaction Rate',
-                                        ylabel='Density',
-                                        suptitle_fontsize=14,
-                                        **kwargs):
+def plot_transaction_rate_heterogeneity(
+    model,
+    suptitle="Heterogeneity in Transaction Rate",
+    xlabel="Transaction Rate",
+    ylabel="Density",
+    suptitle_fontsize=14,
+    **kwargs
+):
     """
     Plot the estimated gamma distribution of lambda (customers' propensities to purchase).
 
@@ -547,7 +601,7 @@ def plot_transaction_rate_heterogeneity(model,
     """
     from matplotlib import pyplot as plt
 
-    r, alpha = model._unload_params('r', 'alpha')
+    r, alpha = model._unload_params("r", "alpha")
     rate_mean = r / alpha
     rate_var = r / alpha ** 2
 
@@ -556,10 +610,9 @@ def plot_transaction_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.suptitle('Heterogeneity in Transaction Rate',
-                 fontsize=suptitle_fontsize, fontweight='bold')
+    fig.suptitle("Heterogeneity in Transaction Rate", fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title('mean: {:.3f}, var: {:.3f}'.format(rate_mean, rate_var))
+    ax.set_title("mean: {:.3f}, var: {:.3f}".format(rate_mean, rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
@@ -568,12 +621,14 @@ def plot_transaction_rate_heterogeneity(model,
     return ax
 
 
-def plot_dropout_rate_heterogeneity(model,
-                                    suptitle='Heterogeneity in Dropout Probability',
-                                    xlabel='Dropout Probability p',
-                                    ylabel='Density',
-                                    suptitle_fontsize=14,
-                                    **kwargs):
+def plot_dropout_rate_heterogeneity(
+    model,
+    suptitle="Heterogeneity in Dropout Probability",
+    xlabel="Dropout Probability p",
+    ylabel="Density",
+    suptitle_fontsize=14,
+    **kwargs
+):
     """
     Plot the estimated gamma distribution of p.
 
@@ -599,7 +654,7 @@ def plot_dropout_rate_heterogeneity(model,
     """
     from matplotlib import pyplot as plt
 
-    a, b = model._unload_params('a', 'b')
+    a, b = model._unload_params("a", "b")
     beta_mean = a / (a + b)
     beta_var = a * b / ((a + b) ** 2) / (a + b + 1)
 
@@ -608,9 +663,9 @@ def plot_dropout_rate_heterogeneity(model,
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight='bold')
+    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title('mean: {:.3f}, var: {:.3f}'.format(beta_mean, beta_var))
+    ax.set_title("mean: {:.3f}, var: {:.3f}".format(beta_mean, beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 

@@ -15,21 +15,19 @@ class BaseFitter(object):
             subj_str = ""
 
         try:
-            param_str = ", ".join("{}: {:.2f}".format(par, val) for par, val
-                                  in sorted(self.params_.items()))
+            param_str = ", ".join("{}: {:.2f}".format(par, val) for par, val in sorted(self.params_.items()))
             return "<lifetimes.{classname}:{subj_str} {param_str}>".format(
-                classname=classname, subj_str=subj_str, param_str=param_str)
+                classname=classname, subj_str=subj_str, param_str=param_str
+            )
         except AttributeError:
             return "<lifetimes.{classname}>".format(classname=classname)
 
     def _unload_params(self, *args):
-        if not hasattr(self, 'params_'):
-            raise ValueError("Model has not been fit yet. Please call the .fit"
-                             " method first.")
+        if not hasattr(self, "params_"):
+            raise ValueError("Model has not been fit yet. Please call the .fit" " method first.")
         return [self.params_[x] for x in args]
 
-    def save_model(self, path, save_data=True, save_generate_data_method=True,
-                   values_to_save=None):
+    def save_model(self, path, save_data=True, save_generate_data_method=True, values_to_save=None):
         """
         Save model with dill package.
 
@@ -47,10 +45,8 @@ class BaseFitter(object):
             will be extended to attr_list length like [None] * len(attr_list)
 
         """
-        attr_list = ['data' * (not save_data),
-                     'generate_new_data' * (not save_generate_data_method)]
-        _save_obj_without_attr(self, attr_list, path,
-                               values_to_save=values_to_save)
+        attr_list = ["data" * (not save_data), "generate_new_data" * (not save_generate_data_method)]
+        _save_obj_without_attr(self, attr_list, path, values_to_save=values_to_save)
 
     def load_model(self, path):
         """
@@ -62,5 +58,5 @@ class BaseFitter(object):
             From what path load model.
 
         """
-        with open(path, 'rb') as in_file:
+        with open(path, "rb") as in_file:
             self.__dict__.update(dill.load(in_file).__dict__)

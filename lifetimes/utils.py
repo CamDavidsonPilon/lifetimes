@@ -11,16 +11,25 @@ from autograd import value_and_grad
 
 pd.options.mode.chained_assignment = None
 
-__all__ = ['calibration_and_holdout_data',
-           'summary_data_from_transaction_data',
-           '_find_first_transactions',
-           'calculate_alive_path',
-           'expected_cumulative_transactions']
+__all__ = [
+    "calibration_and_holdout_data",
+    "summary_data_from_transaction_data",
+    "_find_first_transactions",
+    "calculate_alive_path",
+    "expected_cumulative_transactions",
+]
 
 
-def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, calibration_period_end,
-                                 observation_period_end=None, freq='D', datetime_format=None,
-                                 monetary_value_col=None):
+def calibration_and_holdout_data(
+    transactions,
+    customer_id_col,
+    datetime_col,
+    calibration_period_end,
+    observation_period_end=None,
+    freq="D",
+    datetime_format=None,
+    monetary_value_col=None,
+):
     """
     Create a summary of each customer over a calibration and holdout period.
 
@@ -58,6 +67,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
         monetary_value_holdout.
 
     """
+
     def to_period(d):
         return d.to_period(freq)
 
@@ -75,38 +85,52 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
 
     # create calibration dataset
     calibration_transactions = transactions.loc[transactions[datetime_col] <= calibration_period_end]
-    calibration_summary_data = summary_data_from_transaction_data(calibration_transactions,
-                                                                  customer_id_col,
-                                                                  datetime_col,
-                                                                  datetime_format=datetime_format,
-                                                                  observation_period_end=calibration_period_end,
-                                                                  freq=freq,
-                                                                  monetary_value_col=monetary_value_col)
-    calibration_summary_data.columns = [c + '_cal' for c in calibration_summary_data.columns]
+    calibration_summary_data = summary_data_from_transaction_data(
+        calibration_transactions,
+        customer_id_col,
+        datetime_col,
+        datetime_format=datetime_format,
+        observation_period_end=calibration_period_end,
+        freq=freq,
+        monetary_value_col=monetary_value_col,
+    )
+    calibration_summary_data.columns = [c + "_cal" for c in calibration_summary_data.columns]
 
     # create holdout dataset
-    holdout_transactions = transactions.loc[(observation_period_end >= transactions[datetime_col]) &
-                                            (transactions[datetime_col] > calibration_period_end)]
+    holdout_transactions = transactions.loc[
+        (observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)
+    ]
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
-    holdout_summary_data = holdout_transactions.groupby([customer_id_col, datetime_col], sort=False).agg(lambda r: 1)\
-                                               .groupby(level=customer_id_col).agg(['count'])
-    holdout_summary_data.columns = ['frequency_holdout']
+    holdout_summary_data = (
+        holdout_transactions.groupby([customer_id_col, datetime_col], sort=False)
+        .agg(lambda r: 1)
+        .groupby(level=customer_id_col)
+        .agg(["count"])
+    )
+    holdout_summary_data.columns = ["frequency_holdout"]
     if monetary_value_col:
-        holdout_summary_data['monetary_value_holdout'] = \
-            holdout_transactions.groupby(customer_id_col)[monetary_value_col].mean()
+        holdout_summary_data["monetary_value_holdout"] = holdout_transactions.groupby(customer_id_col)[
+            monetary_value_col
+        ].mean()
 
-    combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
+    combined_data = calibration_summary_data.join(holdout_summary_data, how="left")
     combined_data.fillna(0, inplace=True)
 
-
     delta_time = (to_period(observation_period_end) - to_period(calibration_period_end)).n
-    combined_data['duration_holdout'] = delta_time
+    combined_data["duration_holdout"] = delta_time
 
     return combined_data
 
 
-def _find_first_transactions(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                             observation_period_end=None, freq='D'):
+def _find_first_transactions(
+    transactions,
+    customer_id_col,
+    datetime_col,
+    monetary_value_col=None,
+    datetime_format=None,
+    observation_period_end=None,
+    freq="D",
+):
     """
     Return dataframe with first transactions.
 
@@ -168,20 +192,28 @@ def _find_first_transactions(transactions, customer_id_col, datetime_col, moneta
         period_transactions = period_groupby.head(1)
 
     # initialize a new column where we will indicate which are the first transactions
-    period_transactions['first'] = False
+    period_transactions["first"] = False
     # find all of the initial transactions and store as an index
     first_transactions = period_transactions.groupby(customer_id_col, sort=True, as_index=False).head(1).index
     # mark the initial transactions as True
-    period_transactions.loc[first_transactions, 'first'] = True
-    select_columns.append('first')
+    period_transactions.loc[first_transactions, "first"] = True
+    select_columns.append("first")
     # reset datetime_col to period
     period_transactions[datetime_col] = pd.Index(period_transactions[datetime_col]).to_period(freq)
 
     return period_transactions[select_columns]
 
 
-def summary_data_from_transaction_data(transactions, customer_id_col, datetime_col, monetary_value_col=None, datetime_format=None,
-                                       observation_period_end=None, freq='D', freq_multiplier=1):
+def summary_data_from_transaction_data(
+    transactions,
+    customer_id_col,
+    datetime_col,
+    monetary_value_col=None,
+    datetime_format=None,
+    observation_period_end=None,
+    freq="D",
+    freq_multiplier=1,
+):
     """
     Return summary data from transactions.
 
@@ -224,47 +256,47 @@ def summary_data_from_transaction_data(transactions, customer_id_col, datetime_c
 
     """
     if observation_period_end is None:
-        observation_period_end = pd.to_datetime(transactions[datetime_col].max(), format=datetime_format).to_period(freq).to_timestamp()
+        observation_period_end = (
+            pd.to_datetime(transactions[datetime_col].max(), format=datetime_format).to_period(freq).to_timestamp()
+        )
     else:
-        observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq).to_timestamp()
+        observation_period_end = (
+            pd.to_datetime(observation_period_end, format=datetime_format).to_period(freq).to_timestamp()
+        )
 
     # label all of the repeated transactions
     repeated_transactions = _find_first_transactions(
-        transactions,
-        customer_id_col,
-        datetime_col,
-        monetary_value_col,
-        datetime_format,
-        observation_period_end,
-        freq
+        transactions, customer_id_col, datetime_col, monetary_value_col, datetime_format, observation_period_end, freq
     )
     # reset datetime_col to timestamp
     repeated_transactions[datetime_col] = pd.Index(repeated_transactions[datetime_col]).to_timestamp()
 
     # count all orders by customer.
-    customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(['min', 'max', 'count'])
+    customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(["min", "max", "count"])
 
     # subtract 1 from count, as we ignore their first order.
-    customers['frequency'] = customers['count'] - 1
+    customers["frequency"] = customers["count"] - 1
 
-    customers['T'] = (observation_period_end - customers['min']) / np.timedelta64(1, freq) / freq_multiplier
-    customers['recency'] = (customers['max'] - customers['min']) / np.timedelta64(1, freq) / freq_multiplier
+    customers["T"] = (observation_period_end - customers["min"]) / np.timedelta64(1, freq) / freq_multiplier
+    customers["recency"] = (customers["max"] - customers["min"]) / np.timedelta64(1, freq) / freq_multiplier
 
-    summary_columns = ['frequency', 'recency', 'T']
+    summary_columns = ["frequency", "recency", "T"]
 
     if monetary_value_col:
         # create an index of all the first purchases
-        first_purchases = repeated_transactions[repeated_transactions['first']].index
+        first_purchases = repeated_transactions[repeated_transactions["first"]].index
         # by setting the monetary_value cells of all the first purchases to NaN,
         # those values will be excluded from the mean value calculation
         repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
-        customers['monetary_value'] = repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
-        summary_columns.append('monetary_value')
+        customers["monetary_value"] = (
+            repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
+        )
+        summary_columns.append("monetary_value")
 
     return customers[summary_columns].astype(float)
 
 
-def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
+def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
     """
     Calculate alive path for plotting alive history of user.
 
@@ -291,52 +323,53 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
     customer_history[datetime_col] = pd.to_datetime(customer_history[datetime_col])
     customer_history = customer_history.set_index(datetime_col)
     # Add transactions column
-    customer_history['transactions'] = 1
+    customer_history["transactions"] = 1
 
     # for some reason fillna(0) not working for resample in pandas with python 3.x,
     # changed to replace
-    purchase_history = (customer_history.resample(freq).sum().replace(np.nan, 0)
-                        ['transactions'].values)
+    purchase_history = customer_history.resample(freq).sum().replace(np.nan, 0)["transactions"].values
 
     extra_columns = t + 1 - len(purchase_history)
-    customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=['transactions'])
+    customer_history = pd.DataFrame(np.append(purchase_history, [0] * extra_columns), columns=["transactions"])
     # add T column
-    customer_history['T'] = np.arange(customer_history.shape[0])
+    customer_history["T"] = np.arange(customer_history.shape[0])
     # add cumulative transactions column
-    customer_history['transactions'] = customer_history['transactions'].apply(lambda t: int(t > 0))
-    customer_history['frequency'] = customer_history['transactions'].cumsum() - 1  # first purchase is ignored
+    customer_history["transactions"] = customer_history["transactions"].apply(lambda t: int(t > 0))
+    customer_history["frequency"] = customer_history["transactions"].cumsum() - 1  # first purchase is ignored
     # Add t_x column
-    customer_history['recency'] = customer_history.apply(lambda row: row['T'] if row['transactions'] != 0 else np.nan, axis=1)
-    customer_history['recency'] = customer_history['recency'].fillna(method='ffill').fillna(0)
+    customer_history["recency"] = customer_history.apply(
+        lambda row: row["T"] if row["transactions"] != 0 else np.nan, axis=1
+    )
+    customer_history["recency"] = customer_history["recency"].fillna(method="ffill").fillna(0)
 
     return customer_history.apply(
-        lambda row: model.conditional_probability_alive(row['frequency'], row['recency'], row['T']),
-        axis=1)
+        lambda row: model.conditional_probability_alive(row["frequency"], row["recency"], row["T"]), axis=1
+    )
 
 
-def _fit(minimizing_function, minimizing_function_args,
-         initial_params, params_size, disp, tol=1e-6, fit_method='Nelder-Mead',
-         maxiter=2000, **kwargs):
+def _fit(minimizing_function, minimizing_function_args, initial_params, params_size, disp, tol=1e-6, **kwargs):
     # set options for minimize, if specified in kwargs will be overwritten
     minimize_options = {}
-    minimize_options['disp'] = disp
-    minimize_options['maxiter'] = maxiter
+    minimize_options["disp"] = disp
     minimize_options.update(kwargs)
 
     current_init_params = np.zeros(params_size)
-    output = minimize(value_and_grad(minimizing_function), 
-                      jac=True,
-                      method=None, tol=tol,
-                      x0=current_init_params,
-                      args=minimizing_function_args,
-                      options=minimize_options)
+    output = minimize(
+        value_and_grad(minimizing_function),
+        jac=True,
+        method=None,
+        tol=tol,
+        x0=current_init_params,
+        args=minimizing_function_args,
+        options=minimize_options,
+    )
 
     return output.x, output.fun
 
 
 def _scale_time(age):
     """Create a scalar such that the maximum age is 1."""
-    return 1. / age.max()
+    return 1.0 / age.max()
 
 
 def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
@@ -374,7 +407,9 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
     # more order-periods than periods.
 
 
-def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01):
+def _customer_lifetime_value(
+    transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01
+):
     """
     Compute the average lifetime value for a group of one or more customers.
 
@@ -404,21 +439,30 @@ def _customer_lifetime_value(transaction_prediction_model, frequency, recency, T
 
     """
     df = pd.DataFrame(index=frequency.index)
-    df['clv'] = 0  # initialize the clv column to zeros
+    df["clv"] = 0  # initialize the clv column to zeros
 
     for i in range(30, (time * 30) + 1, 30):
         # since the prediction of number of transactions is cumulative, we have to subtract off the previous periods
-        expected_number_of_transactions = transaction_prediction_model.predict(i, frequency, recency, T) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
+        expected_number_of_transactions = transaction_prediction_model.predict(
+            i, frequency, recency, T
+        ) - transaction_prediction_model.predict(i - 30, frequency, recency, T)
         # sum up the CLV estimates of all of the periods
-        df['clv'] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
+        df["clv"] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / 30)
 
-    return df['clv']  # return as a series
+    return df["clv"]  # return as a series
 
 
-def expected_cumulative_transactions(model, transactions, datetime_col,
-                                     customer_id_col, t, datetime_format=None,
-                                     freq='D', set_index_date=False,
-                                     freq_multiplier=1):
+def expected_cumulative_transactions(
+    model,
+    transactions,
+    datetime_col,
+    customer_id_col,
+    t,
+    datetime_format=None,
+    freq="D",
+    set_index_date=False,
+    freq_multiplier=1,
+):
     """
     Get expected and actual repeated cumulative transactions.
 
@@ -454,8 +498,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
         A dataframe with columns actual, predicted
 
     """
-    start_date = pd.to_datetime(transactions[datetime_col],
-                                format=datetime_format).min()
+    start_date = pd.to_datetime(transactions[datetime_col], format=datetime_format).min()
     start_period = start_date.to_period(freq)
     observation_period_end = start_period + t
 
@@ -465,10 +508,10 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
         datetime_col,
         datetime_format=datetime_format,
         observation_period_end=observation_period_end,
-        freq=freq
+        freq=freq,
     )
 
-    first_trans_mask = repeated_and_first_transactions['first']
+    first_trans_mask = repeated_and_first_transactions["first"]
     repeated_transactions = repeated_and_first_transactions[~first_trans_mask]
     first_transactions = repeated_and_first_transactions[first_trans_mask]
 
@@ -481,8 +524,7 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
         if i % freq_multiplier == 0 and i > 0:
             times = np.array([d.n for d in period - first_trans_size.index])
             times = times[times > 0].astype(float) / freq_multiplier
-            expected_trans_agg = \
-                model.expected_number_of_purchases_up_to_time(times)
+            expected_trans_agg = model.expected_number_of_purchases_up_to_time(times)
 
             mask = first_trans_size.index < period
             expected_trans = sum(expected_trans_agg * first_trans_size[mask])
@@ -493,17 +535,17 @@ def expected_cumulative_transactions(model, transactions, datetime_col,
 
     act_cum_transactions = []
     for j in range(1, t // freq_multiplier + 1):
-        sum_trans = sum(act_tracking_transactions.iloc[:j * freq_multiplier])
+        sum_trans = sum(act_tracking_transactions.iloc[: j * freq_multiplier])
         act_cum_transactions.append(sum_trans)
 
     if set_index_date:
-        index = date_periods[freq_multiplier - 1: -1:freq_multiplier]
+        index = date_periods[freq_multiplier - 1 : -1 : freq_multiplier]
     else:
         index = range(0, t // freq_multiplier)
 
-    df_cum_transactions = pd.DataFrame({'actual': act_cum_transactions,
-                                        'predicted': pred_cum_transactions},
-                                       index=index)
+    df_cum_transactions = pd.DataFrame(
+        {"actual": act_cum_transactions, "predicted": pred_cum_transactions}, index=index
+    )
 
     return df_cum_transactions
 
@@ -536,7 +578,7 @@ def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
             saved_attr_dict[attr] = item
             setattr(obj, attr, val_save)
 
-    with open(path, 'wb') as out_file:
+    with open(path, "wb") as out_file:
         dill.dump(obj, out_file)
 
     for attr, item in saved_attr_dict.items():

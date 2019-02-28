@@ -1,4 +1,3 @@
-"""MBG/NBD model."""
 from __future__ import print_function
 from __future__ import division
 from pandas import DataFrame
@@ -40,9 +39,9 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """Initialization, set penalizer_coef."""
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, weights=None,
-            initial_params=None, verbose=False, tol=1e-6, index=None,
-            **kwargs):
+    def fit(
+        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-6, index=None, **kwargs
+    ):
         """
         Fit the data to the MBG/NBD model.
 
@@ -63,22 +62,15 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             observed combinations of frequency/recency/T. This
             parameter represents the count of customers with a given
             purchase pattern. Instead of calculating individual
-            loglikelihood, the loglikelihood is calculated for each
+            log-likelihood, the log-likelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
-        initial_params: array_like, optional
-            set the initial parameters for the fitter.
         verbose : bool, optional
             set to true to print out convergence diagnostics.
         tol : float, optional
             tolerance for termination of the function minimization process.
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
-        fit_method : string, optional
-            fit_method to passing to scipy.optimize.minimize
-        maxiter : int, optional
-            max iterations for optimizer in scipy.optimize.minimize will be
-            overwritten if setted in kwargs.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -91,21 +83,12 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         # although the parent method is called, this class's
         # _negative_log_likelihood is referenced
-        super(self.__class__, self).fit(frequency,
-                                        recency,
-                                        T,
-                                        weights,
-                                        initial_params,
-                                        verbose,
-                                        tol,
-                                        index=index,
-                                        fit_method=fit_method,
-                                        maxiter=maxiter,
-                                        **kwargs)
+        super(self.__class__, self).fit(
+            frequency, recency, T, weights, initial_params, verbose, tol, index=index, **kwargs
+        )
         # this needs to be reassigned from the parent method
-        self.generate_new_data = (
-            lambda size=1: modified_beta_geometric_nbd_model(
-                T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(
+            T, *self._unload_params("r", "alpha", "a", "b"), size=size
         )
         return self
 
@@ -115,11 +98,9 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         r, alpha, a, b = params
 
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
-        A_2 = (gammaln(a + b) + gammaln(b + freq + 1) - gammaln(b) -
-               gammaln(a + b + freq + 1))
+        A_2 = gammaln(a + b) + gammaln(b + freq + 1) - gammaln(b) - gammaln(a + b + freq + 1)
         A_3 = -(r + freq) * log(alpha + T)
-        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) -
-                                                     log(alpha + rec))
+        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
         penalizer_term = penalizer_coef * sum(params ** 2)
         return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).mean() + penalizer_term
@@ -134,21 +115,20 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Parameters
         ----------
         t: array_like
-            times to calculate the expection for
+            times to calculate the expectation for
 
         Returns
         -------
         array_like
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         hyp = hyp2f1(r, b + 1, a + b, t / (alpha + t))
         return b / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
-        Conditinal expected number of repeat purchases up to time t.
+        Conditional expected number of repeat purchases up to time t.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
@@ -172,16 +152,14 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         """
         x = frequency
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         hyp_term = hyp2f1(r + x, b + x + 1, a + b + x, t / (alpha + T + t))
         first_term = (a + b + x) / (a - 1)
-        second_term = (1 - hyp_term *
-                       ((alpha + T) / (alpha + t + T)) ** (r + x))
+        second_term = 1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x)
         numerator = first_term * second_term
 
-        denominator = (1 + (a / (b + x)) *
-                       ((alpha + T) / (alpha + recency)) ** (r + x))
+        denominator = 1 + (a / (b + x)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
@@ -211,12 +189,10 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             value representing a probability
 
         """  # noqa
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        return 1. / (1 + (a / (b + frequency)) *
-                     ((alpha + T) / (alpha + recency)) ** (r + frequency))
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
+        return 1.0 / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
 
-    def conditional_probability_alive_matrix(self, max_frequency=None,
-                                             max_recency=None):
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
         Compute the probability alive matrix.
 
@@ -234,8 +210,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             A matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
-        return super(self.__class__, self) \
-            .conditional_probability_alive_matrix(max_frequency, max_recency)
+        return super(self.__class__, self).conditional_probability_alive_matrix(max_frequency, max_recency)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         r"""
@@ -259,15 +234,19 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             Probability to have n purchases up to t units of time
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         _j = np.arange(0, n)
 
-        first_term = (beta(a, b + n + 1) / beta(a, b) * gamma(r + n) /
-                      gamma(r) / gamma(n + 1) *
-                      (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n)
-        finite_sum = (gamma(r + _j) / gamma(r) / gamma(_j + 1) *
-                      (t / (alpha + t)) ** _j).sum()
-        second_term = (beta(a + 1, b + n) / beta(a, b) *
-                       (1 - (alpha / (alpha + t)) ** r * finite_sum))
+        first_term = (
+            beta(a, b + n + 1)
+            / beta(a, b)
+            * gamma(r + n)
+            / gamma(r)
+            / gamma(n + 1)
+            * (alpha / (alpha + t)) ** r
+            * (t / (alpha + t)) ** n
+        )
+        finite_sum = (gamma(r + _j) / gamma(r) / gamma(_j + 1) * (t / (alpha + t)) ** _j).sum()
+        second_term = beta(a + 1, b + n) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term

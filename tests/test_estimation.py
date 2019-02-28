@@ -222,8 +222,7 @@ class TestGammaGammaFitter():
         bgf = estimation.BetaGeoFitter()
         bgf.fit(cdnow_customers_with_monetary_value['frequency'],
                 cdnow_customers_with_monetary_value['recency'],
-                cdnow_customers_with_monetary_value['T'],
-                iterative_fitting=3)
+                cdnow_customers_with_monetary_value['T'])
 
         ggf_clv = ggf.customer_lifetime_value(
                 bgf,

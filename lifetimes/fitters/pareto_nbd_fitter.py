@@ -44,9 +44,21 @@ class ParetoNBDFitter(BaseFitter):
         """Initialization, set penalizer_coef."""
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+    def fit(
+        self,
+        frequency,
+        recency,
+        T,
+        weights=None,
+        iterative_fitting=1,
+        initial_params=None,
+        verbose=False,
+        tol=1e-4,
+        index=None,
+        fit_method="Nelder-Mead",
+        maxiter=2000,
+        **kwargs
+    ):
         """
         Pareto/NBD model fitter.
 
@@ -104,7 +116,6 @@ class ParetoNBDFitter(BaseFitter):
         else:
             weights = asarray(weights)
 
-
         _check_inputs(frequency, recency, T)
 
         self._scale = _scale_time(T)
@@ -121,18 +132,17 @@ class ParetoNBDFitter(BaseFitter):
             tol,
             fit_method,
             maxiter,
-            **kwargs)
+            **kwargs
+        )
 
-        self.params_ = OrderedDict(zip(['r', 'alpha', 's', 'beta'], params))
-        self.params_['alpha'] /= self._scale
-        self.params_['beta'] /= self._scale
+        self.params_ = OrderedDict(zip(["r", "alpha", "s", "beta"], params))
+        self.params_["alpha"] /= self._scale
+        self.params_["beta"] /= self._scale
 
-        self.data = DataFrame(vconcat[frequency, recency, T],
-                              columns=['frequency', 'recency', 'T'])
+        self.data = DataFrame(vconcat[frequency, recency, T], columns=["frequency", "recency", "T"])
         if index is not None:
             self.data.index = index
-        self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params,
-                                                                 size=size)
+        self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
         return self
@@ -149,11 +159,9 @@ class ParetoNBDFitter(BaseFitter):
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
         rsf = r + s + freq
-        p_1 = hyp2f1(rsf, t, rsf + 1., abs_alpha_beta /
-                     (max_of_alpha_beta + recency))
+        p_1 = hyp2f1(rsf, t, rsf + 1.0, abs_alpha_beta / (max_of_alpha_beta + recency))
         q_1 = max_of_alpha_beta + recency
-        p_2 = hyp2f1(rsf, t, rsf + 1., abs_alpha_beta /
-                     (max_of_alpha_beta + age))
+        p_2 = hyp2f1(rsf, t, rsf + 1.0, abs_alpha_beta / (max_of_alpha_beta + age))
         q_2 = max_of_alpha_beta + age
 
         try:
@@ -162,9 +170,9 @@ class ParetoNBDFitter(BaseFitter):
         except TypeError:
             sign = 1
 
-        return (logsumexp([log(p_1) + rsf * log(q_2), log(p_2) +
-                rsf * log(q_1)], axis=0, b=[sign, -sign]) -
-                rsf * log(q_1 * q_2))
+        return logsumexp([log(p_1) + rsf * log(q_2), log(p_2) + rsf * log(q_1)], axis=0, b=[sign, -sign]) - rsf * log(
+            q_1 * q_2
+        )
 
     @staticmethod
     def _conditional_log_likelihood(params, freq, rec, T):
@@ -177,15 +185,14 @@ class ParetoNBDFitter(BaseFitter):
         A_1 = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta)
         log_A_0 = ParetoNBDFitter._log_A_0(params, x, rec, T)
 
-        A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T),
-                        log(s) + log_A_0 - log(r_s_x))
+        A_2 = logaddexp(-(r + x) * log(alpha + T) - s * log(beta + T), log(s) + log_A_0 - log(r_s_x))
 
         return A_1 + A_2
 
     @staticmethod
     def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
 
-        if npany(asarray(params) <= 0.):
+        if npany(asarray(params) <= 0.0):
             return np.inf
 
         conditional_log_likelihood = ParetoNBDFitter._conditional_log_likelihood(params, freq, rec, T)
@@ -193,8 +200,7 @@ class ParetoNBDFitter(BaseFitter):
 
         return -(weights * conditional_log_likelihood).mean() + penalizer_term
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Conditional expected number of purchases up to time.
 
@@ -219,15 +225,15 @@ class ParetoNBDFitter(BaseFitter):
 
         """
         x, t_x = frequency, recency
-        params = self._unload_params('r', 'alpha', 's', 'beta')
+        params = self._unload_params("r", "alpha", "s", "beta")
         r, alpha, s, beta = params
 
         likelihood = self._conditional_log_likelihood(params, x, t_x, T)
-        first_term = gammaln(r + x) - gammaln(r) + r * log(alpha) + s * \
-            log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
+        first_term = (
+            gammaln(r + x) - gammaln(r) + r * log(alpha) + s * log(beta) - (r + x) * log(alpha + T) - s * log(beta + T)
+        )
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
-        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) /
-                         (s - 1))
+        third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) / (s - 1))
         return exp(first_term + second_term + third_term - likelihood)
 
     def conditional_probability_alive(self, frequency, recency, T):
@@ -255,13 +261,11 @@ class ParetoNBDFitter(BaseFitter):
 
         """
         x, t_x = frequency, recency
-        r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
+        r, alpha, s, beta = self._unload_params("r", "alpha", "s", "beta")
         A_0 = self._log_A_0([r, alpha, s, beta], x, t_x, T)
-        return 1. / (1. + exp(log(s) - log(r + s + x) +
-                              (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
+        return 1.0 / (1.0 + exp(log(s) - log(r + s + x) + (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
 
-    def conditional_probability_alive_matrix(self, max_frequency=None,
-                                             max_recency=None):
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
         Compute the probability alive matrix.
 
@@ -279,15 +283,13 @@ class ParetoNBDFitter(BaseFitter):
             A matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
-        max_frequency = max_frequency or int(self.data['frequency'].max())
-        max_recency = max_recency or int(self.data['T'].max())
+        max_frequency = max_frequency or int(self.data["frequency"].max())
+        max_recency = max_recency or int(self.data["T"].max())
 
         Z = np.zeros((max_recency + 1, max_frequency + 1))
         for i, recency in enumerate(np.arange(max_recency + 1)):
             for j, frequency in enumerate(np.arange(max_frequency + 1)):
-                Z[i, j] = self.conditional_probability_alive(frequency,
-                                                             recency,
-                                                             max_recency)
+                Z[i, j] = self.conditional_probability_alive(frequency, recency, max_recency)
 
         return Z
 
@@ -308,7 +310,7 @@ class ParetoNBDFitter(BaseFitter):
         array_like
 
         """
-        r, alpha, s, beta = self._unload_params('r', 'alpha', 's', 'beta')
+        r, alpha, s, beta = self._unload_params("r", "alpha", "s", "beta")
         first_term = r * beta / alpha / (s - 1)
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
         return first_term * second_term
@@ -345,7 +347,7 @@ class ParetoNBDFitter(BaseFitter):
             return 0
 
         x, t_x = frequency, recency
-        params = self._unload_params('r', 'alpha', 's', 'beta')
+        params = self._unload_params("r", "alpha", "s", "beta")
         r, alpha, s, beta = params
 
         if alpha < beta:
@@ -355,31 +357,41 @@ class ParetoNBDFitter(BaseFitter):
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
         log_l = self._conditional_log_likelihood(params, x, t_x, T)
-        log_p_zero = gammaln(r + x) + r * log(alpha) + s * log(beta) - (
-            gammaln(r) + (r + x) * log(alpha + T) + s * log(beta + T) +
-            log_l
+        log_p_zero = (
+            gammaln(r + x)
+            + r * log(alpha)
+            + s * log(beta)
+            - (gammaln(r) + (r + x) * log(alpha + T) + s * log(beta + T) + log_l)
         )
-        log_B_one = gammaln(r + x + n) + r * log(alpha) + s * log(beta) - (
-            gammaln(r) + (r + x + n) * log(alpha + T + t) + s * log(beta + T + t)
+        log_B_one = (
+            gammaln(r + x + n)
+            + r * log(alpha)
+            + s * log(beta)
+            - (gammaln(r) + (r + x + n) * log(alpha + T + t) + s * log(beta + T + t))
         )
-        log_B_two = r * log(alpha) + s * log(beta) + gammaln(r + s + x) + betaln(r + x + n, s + 1) + \
-            log(hyp2f1(r + s + x, p, r + s + x + n + 1, abs_alpha_beta / (max_of_alpha_beta + T))) - (
-                gammaln(r) + gammaln(s) + (r + s + x) * log(max_of_alpha_beta + T)
+        log_B_two = (
+            r * log(alpha)
+            + s * log(beta)
+            + gammaln(r + s + x)
+            + betaln(r + x + n, s + 1)
+            + log(hyp2f1(r + s + x, p, r + s + x + n + 1, abs_alpha_beta / (max_of_alpha_beta + T)))
+            - (gammaln(r) + gammaln(s) + (r + s + x) * log(max_of_alpha_beta + T))
         )
 
         def _log_B_three(i):
-            return r * log(alpha) + s * log(beta) + gammaln(r + s + x + i) + betaln(r + x + n, s + 1) + \
-                log(hyp2f1(r + s + x + i, p, r + s + x + n + 1, abs_alpha_beta / (max_of_alpha_beta + T + t))) - (
-                    gammaln(r) + gammaln(s) + (r + s + x + i) * log(max_of_alpha_beta + T + t)
+            return (
+                r * log(alpha)
+                + s * log(beta)
+                + gammaln(r + s + x + i)
+                + betaln(r + x + n, s + 1)
+                + log(hyp2f1(r + s + x + i, p, r + s + x + n + 1, abs_alpha_beta / (max_of_alpha_beta + T + t)))
+                - (gammaln(r) + gammaln(s) + (r + s + x + i) * log(max_of_alpha_beta + T + t))
             )
 
         zeroth_term = (n == 0) * (1 - exp(log_p_zero))
         first_term = n * log(t) - gammaln(n + 1) + log_B_one - log_l
         second_term = log_B_two - log_l
-        third_term = logsumexp(
-            [i * log(t) - gammaln(i + 1) + _log_B_three(i) - log_l for i in range(n + 1)],
-            axis=0
-        )
+        third_term = logsumexp([i * log(t) - gammaln(i + 1) + _log_B_three(i) - log_l for i in range(n + 1)], axis=0)
 
         try:
             size = len(x)
@@ -389,8 +401,6 @@ class ParetoNBDFitter(BaseFitter):
 
         # In some scenarios (e.g. large n) tiny numerical errors in the calculation of second_term and third_term
         # cause sumexp to be ever so slightly negative and logsumexp throws an error. Hence we ignore the sign here.
-        return zeroth_term + exp(logsumexp(
-            [first_term, second_term, third_term], b=[sign, sign, -sign],
-            axis=0,
-            return_sign=True
-        )[0])
+        return zeroth_term + exp(
+            logsumexp([first_term, second_term, third_term], b=[sign, sign, -sign], axis=0, return_sign=True)[0]
+        )
