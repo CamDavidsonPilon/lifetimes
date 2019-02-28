@@ -1,10 +1,13 @@
 """MBG/NBD model."""
 from __future__ import print_function
 from __future__ import division
+from pandas import DataFrame
 
-import numpy as np
-from numpy import log, logaddexp, asarray, any as npany
-from scipy.special import gammaln, hyp2f1, beta, gamma
+import autograd.numpy as np
+from autograd.numpy import log, exp, logaddexp
+from autograd.scipy.special import gammaln, beta, gamma
+from autograd.scipy.misc import logsumexp
+from scipy.special import hyp2f1
 
 from .beta_geo_fitter import BetaGeoFitter
 from ..generate_data import modified_beta_geometric_nbd_model
@@ -37,9 +40,9 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """Initialization, set penalizer_coef."""
         super(self.__class__, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+    def fit(self, frequency, recency, T, weights=None,
+            initial_params=None, verbose=False, tol=1e-6, index=None,
+            **kwargs):
         """
         Fit the data to the MBG/NBD model.
 
@@ -63,8 +66,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             loglikelihood, the loglikelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
-        iterative_fitting: int, optional
-            perform iterative_fitting fits over random/warm-started initial params
         initial_params: array_like, optional
             set the initial parameters for the fitter.
         verbose : bool, optional
@@ -94,7 +95,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
                                         recency,
                                         T,
                                         weights,
-                                        iterative_fitting,
                                         initial_params,
                                         verbose,
                                         tol,
@@ -110,10 +110,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
-        if npany(asarray(params) <= 0):
-            return np.inf
-
+    def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+        params = np.exp(log_params)
         r, alpha, a, b = params
 
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
@@ -123,7 +121,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) -
                                                      log(alpha + rec))
 
-        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
+        penalizer_term = penalizer_coef * sum(params ** 2)
         return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).mean() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):

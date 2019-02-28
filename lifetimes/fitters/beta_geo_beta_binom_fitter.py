@@ -5,9 +5,9 @@ from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-from numpy import log, exp, logaddexp, asarray, c_ as vconcat
+from autograd.numpy import log, exp, logaddexp, asarray, c_ as vconcat
 from pandas import DataFrame
-from scipy.special import gammaln, betaln, binom, beta as betaf
+from autograd.scipy.special import gammaln, betaln, binom, beta as betaf
 
 from ..utils import _fit, _check_inputs
 from . import BaseFitter
@@ -80,9 +80,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         return logaddexp(A, B)
 
     @staticmethod
-    def _negative_log_likelihood(params, frequency, recency, n_periods, weights,
+    def _negative_log_likelihood(log_params, frequency, recency, n_periods, weights,
                                  penalizer_coef=0):
-        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
+        params = np.exp(log_params)
+        penalizer_term = penalizer_coef * sum(params ** 2)
         return -np.mean(BetaGeoBetaBinomFitter._loglikelihood(
             params, frequency, recency, n_periods) * weights) + penalizer_term
 

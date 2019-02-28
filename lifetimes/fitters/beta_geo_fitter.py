@@ -3,12 +3,12 @@ from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
-import numpy as np
-from numpy import log, asarray, any as npany, c_ as vconcat, isinf, isnan, \
-    where, exp
-from numpy import ones_like
+import autograd.numpy as np
+from autograd.numpy import log, exp
 from pandas import DataFrame
-from scipy.special import gammaln, hyp2f1, beta, gamma, logsumexp
+from autograd.scipy.special import gammaln, beta, gamma
+from autograd.scipy.misc import logsumexp
+from scipy.special import hyp2f1
 
 from . import BaseFitter
 from ..utils import _fit, _scale_time, _check_inputs
@@ -54,9 +54,19 @@ class BetaGeoFitter(BaseFitter):
         """Initialization, set penalizer_coef."""
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+    def fit(
+        self,
+        frequency,
+        recency,
+        T,
+        weights=None,
+        initial_params=None,
+        verbose=False,
+        tol=1e-6,
+        index=None,
+        maxiter=2000,
+        **kwargs
+    ):
         """
         Fit a dataset to the BG/NBD model.
 
@@ -80,8 +90,6 @@ class BetaGeoFitter(BaseFitter):
             loglikelihood, the loglikelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
-        iterative_fitting: int, optional
-            perform iterative_fitting fits over random/warm-started initial params
         initial_params: array_like, optional
             set the initial parameters for the fitter.
         verbose : bool, optional
@@ -106,68 +114,61 @@ class BetaGeoFitter(BaseFitter):
             with additional properties like ``params_`` and methods like ``predict``
 
         """
-        frequency = asarray(frequency).astype(int)
-        recency = asarray(recency)
-        T = asarray(T)
+        frequency = np.asarray(frequency).astype(int)
+        recency = np.asarray(recency)
+        T = np.asarray(T)
         _check_inputs(frequency, recency, T)
 
         if weights is None:
-            weights = np.ones_like(recency, dtype=np.int64)
+            weights = np.ones_like(recency, dtype=int)
         else:
-            weights = asarray(weights)
-
+            weights = np.asarray(weights)
 
         self._scale = _scale_time(T)
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        params, self._negative_log_likelihood_ = _fit(
+        log_params, self._negative_log_likelihood_ = _fit(
             self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, weights, self.penalizer_coef],
-            iterative_fitting,
+            (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             initial_params,
             4,
             verbose,
             tol,
             fit_method,
             maxiter,
-            **kwargs)
+            **kwargs
+        )
 
-        self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
-        self.params_['alpha'] /= self._scale
+        self.params_ = OrderedDict(zip(["r", "alpha", "a", "b"], np.exp(log_params)))
+        self.params_["alpha"] /= self._scale
 
-        self.data = DataFrame(vconcat[frequency, recency, T],
-                              columns=['frequency', 'recency', 'T'])
+        self.data = DataFrame({'frequency': frequency, 'recency': recency, 'T': T})
         if index is not None:
             self.data.index = index
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(
-            T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+            T, *self._unload_params("r", "alpha", "a", "b"), size=size
+        )
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
-        if npany(asarray(params) <= 0):
-            return np.inf
-
+    def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+        params = np.exp(log_params)
         r, alpha, a, b = params
 
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
-        A_2 = (gammaln(a + b) + gammaln(b + freq) - gammaln(b) -
-               gammaln(a + b + freq))
+        A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
         A_3 = -(r + freq) * log(alpha + T)
+        A_4 = log(a) - log(b + np.maximum(freq, 1) - 1) - (r + freq) * log(rec + alpha)
 
-        d = vconcat[ones_like(freq), (freq > 0)]
-        A_4 = log(a) - log(b + where(freq == 0, 1, freq) - 1) - \
-            (r + freq) * log(rec + alpha)
-        A_4[isnan(A_4) | isinf(A_4)] = 0
-        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return - (weights * (A_1 + A_2 + logsumexp(vconcat[A_3, A_4], axis=1, b=d))).mean() \
-                            + penalizer_term
+        penalizer_term = penalizer_coef * sum(params ** 2) # TODO: log_params?
+        ll = weights * (A_1 + A_2 + log(exp(A_3) + exp(A_4) * (freq > 0)))
+        return -ll.mean() + penalizer_term
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
+
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
         Conditional expected number of purchases up to time.
 
@@ -192,7 +193,7 @@ class BetaGeoFitter(BaseFitter):
 
         """
         x = frequency
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         _a = r + x
         _b = b + x
@@ -202,21 +203,17 @@ class BetaGeoFitter(BaseFitter):
 
         # if the value is inf, we are using a different but equivalent
         # formula to compute the function evaluation.
-        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + \
-            (_c - _a - _b) * np.log(1 - _z)
-        ln_hyp_term = where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
+        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
+        ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = (1 - exp(ln_hyp_term + (r + x) *
-                               np.log((alpha + T) / (alpha + t + T))))
+        second_term = 1 - exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
 
         numerator = first_term * second_term
-        denominator = 1 + (x > 0) * (a / (b + x - 1)) * \
-            ((alpha + T) / (alpha + recency)) ** (r + x)
+        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, frequency, recency, T,
-                                      ln_exp_max=300):
+    def conditional_probability_alive(self, frequency, recency, T, ln_exp_max=300):
         """
         Compute conditional probability alive.
 
@@ -242,18 +239,17 @@ class BetaGeoFitter(BaseFitter):
             value representing a probability
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
-        log_div = (r + frequency) * log(
-            (alpha + T) / (alpha + recency)) + log(
-            a / (b + where(frequency == 0, 1, frequency) - 1))
+        log_div = (r + frequency) * log((alpha + T) / (alpha + recency)) + log(
+            a / (b + np.maximum(frequency, 1) - 1)
+        )
 
-        return where(frequency == 0, 1.,
-                     where(log_div > ln_exp_max, 0.,
-                           1. / (1 + exp(np.clip(log_div, None, ln_exp_max)))))
+        return np.where(
+            frequency == 0, 1.0, np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + exp(np.clip(log_div, None, ln_exp_max))))
+        )
 
-    def conditional_probability_alive_matrix(self, max_frequency=None,
-                                             max_recency=None):
+    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """
         Compute the probability alive matrix.
 
@@ -271,12 +267,12 @@ class BetaGeoFitter(BaseFitter):
             A matrix of the form [t_x: historical recency, x: historical frequency]
 
         """
-        max_frequency = max_frequency or int(self.data['frequency'].max())
-        max_recency = max_recency or int(self.data['T'].max())
+        max_frequency = max_frequency or int(self.data["frequency"].max())
+        max_recency = max_recency or int(self.data["T"].max())
 
-        return np.fromfunction(self.conditional_probability_alive,
-                               (max_frequency + 1, max_recency + 1),
-                               T=max_recency).T
+        return np.fromfunction(
+            self.conditional_probability_alive, (max_frequency + 1, max_recency + 1), T=max_recency
+        ).T
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
@@ -295,7 +291,7 @@ class BetaGeoFitter(BaseFitter):
         array_like
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
@@ -321,20 +317,22 @@ class BetaGeoFitter(BaseFitter):
             Probability to have n purchases up to t units of time
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
-        first_term = (beta(a, b + n) / beta(a, b) *
-                      gamma(r + n) / gamma(r) /
-                      gamma(n + 1) * (alpha / (alpha + t)) ** r *
-                      (t / (alpha + t)) ** n)
+        first_term = (
+            beta(a, b + n)
+            / beta(a, b)
+            * gamma(r + n)
+            / gamma(r)
+            / gamma(n + 1)
+            * (alpha / (alpha + t)) ** r
+            * (t / (alpha + t)) ** n
+        )
 
         if n > 0:
             j = np.arange(0, n)
-            finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) *
-                          (t / (alpha + t)) ** j).sum()
-            second_term = (beta(a + 1, b + n - 1) /
-                           beta(a, b) * (1 - (alpha / (alpha + t)) ** r *
-                           finite_sum))
+            finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j).sum()
+            second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
         return first_term + second_term

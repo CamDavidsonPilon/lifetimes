@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import dill
 from scipy.optimize import minimize
+from autograd import value_and_grad
 
 pd.options.mode.chained_assignment = None
 
@@ -97,8 +98,7 @@ def calibration_and_holdout_data(transactions, customer_id_col, datetime_col, ca
     combined_data = calibration_summary_data.join(holdout_summary_data, how='left')
     combined_data.fillna(0, inplace=True)
 
-    #import pdb
-    #pdb.set_trace()
+
     delta_time = (to_period(observation_period_end) - to_period(calibration_period_end)).n
     combined_data['duration_holdout'] = delta_time
 
@@ -314,45 +314,24 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq='D'):
         axis=1)
 
 
-def _fit(minimizing_function, minimizing_function_args, iterative_fitting,
+def _fit(minimizing_function, minimizing_function_args,
          initial_params, params_size, disp, tol=1e-6, fit_method='Nelder-Mead',
          maxiter=2000, **kwargs):
-    """Fit function for fitters."""
-    ll = []
-    sols = []
-
-    def _func_caller(params, func_args, function):
-        return function(params, *func_args)
-
-    if iterative_fitting <= 0:
-        raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
-
-    if iterative_fitting > 1 and initial_params is not None:
-        raise ValueError("iterative_fitting and initial_params should not be both set, as no improvement could be made.")
-
-    # set options for minimize, if specified in kwargs will be overwrittern
+    # set options for minimize, if specified in kwargs will be overwritten
     minimize_options = {}
     minimize_options['disp'] = disp
     minimize_options['maxiter'] = maxiter
     minimize_options.update(kwargs)
 
-    total_count = 0
+    current_init_params = np.zeros(params_size)
+    output = minimize(value_and_grad(minimizing_function), 
+                      jac=True,
+                      method=None, tol=tol,
+                      x0=current_init_params,
+                      args=minimizing_function_args,
+                      options=minimize_options)
 
-    while total_count < iterative_fitting:
-        current_init_params = np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
-        if minimize_options['disp']:
-            print('Optimize function with {}'.format(fit_method))
-        output = minimize(_func_caller, method=fit_method, tol=tol,
-                          x0=current_init_params,
-                          args=(minimizing_function_args, minimizing_function),
-                          options=minimize_options)
-        sols.append(output.x)
-        ll.append(output.fun)
-
-        total_count += 1
-    argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
-    minimizing_params = sols[argmin_ll]
-    return minimizing_params, min_ll
+    return output.x, output.fun
 
 
 def _scale_time(age):

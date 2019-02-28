@@ -283,7 +283,7 @@ def test_summary_data_from_transaction_data_will_choose_the_correct_first_order_
 def test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_aggregations():
     # see http://brucehardie.com/papers/rfm_clv_2005-02-16.pdf
     # RFM and CLV: Using Iso-value Curves for Customer Base Analysis
-    df = pd.read_csv('lifetimes/datasets/CDNOW_sample.txt', sep='\s+', header=None, names=['_id', 'id', 'date', 'cds_bought', 'spent'])
+    df = pd.read_csv('lifetimes/datasets/CDNOW_sample.txt', sep=r'\s+', header=None, names=['_id', 'id', 'date', 'cds_bought', 'spent'])
     df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
     df_train = df[df['date'] < '1997-10-01']
     summary = utils.summary_data_from_transaction_data(df_train, 'id', 'date', 'spent')
@@ -306,6 +306,17 @@ def test_calibration_and_holdout_data(large_transaction_level_data):
 
     with pytest.raises(KeyError):
         actual.loc[6]
+
+
+def test_calibration_and_holdout_data_is_okay_with_other_indexes(large_transaction_level_data):
+    n = large_transaction_level_data.shape[0]
+    large_transaction_level_data.index = np.random.randint(0, n, size=n)
+    today = '2015-02-07'
+    calibration_end = '2015-02-01'
+    actual = utils.calibration_and_holdout_data(large_transaction_level_data, 'id', 'date', calibration_end, observation_period_end=today)
+    assert actual.loc[1]['frequency_holdout'] == 1
+    assert actual.loc[2]['frequency_holdout'] == 0
+
 
 
 def test_calibration_and_holdout_data_works_with_specific_frequency(large_transaction_level_data):

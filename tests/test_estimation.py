@@ -495,16 +495,16 @@ class TestBetaGeoFitter():
         t_x = np.array([2, 2])
         t = np.array([5, 6])
         weights = np.array([1])
-        params = [1, 1, 1, 1]
+        params = np.array([1, 1, 1, 1])
         assert bgf._negative_log_likelihood(params, x[0], np.array([t_x[0]]), np.array([t[0]]), weights[0], 0) \
             + bgf._negative_log_likelihood(params, x[1], np.array([t_x[1]]), np.array([t[1]]), weights[0], 0) \
             == 2 * bgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
-        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
+        bfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         expected = np.array([0.243, 4.414, 0.793, 2.426])
-        npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
+        npt.assert_array_almost_equal(expected, np.array(bfg._unload_params('r', 'alpha', 'a', 'b')), decimal=2)
 
     def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
         bfg = estimation.BetaGeoFitter()
@@ -541,19 +541,6 @@ class TestBetaGeoFitter():
             for j in range(0, 100, 10):
                 for k in range(j, 100, 10):
                     assert 0 <= bfg.conditional_probability_alive(i, j, k) <= 1.0
-
-
-    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
-        bfg1 = estimation.BetaGeoFitter()
-        bfg2 = estimation.BetaGeoFitter()
-
-        np.random.seed(0)
-        bfg1.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
-
-        np.random.seed(0)
-        bfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
-        assert bfg1._negative_log_likelihood_ >= bfg2._negative_log_likelihood_
-
 
     def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         bfg_no_penalizer = estimation.BetaGeoFitter()
@@ -608,7 +595,7 @@ class TestBetaGeoFitter():
         bgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10
         bgf_with_large_inputs = estimation.BetaGeoFitter()
-        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'], iterative_fitting=2)
+        bgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'])
         assert bgf_with_large_inputs._scale < 1.
 
         assert abs(bgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - bgf.conditional_probability_alive(1, 1, 2)) < 10e-5
@@ -749,7 +736,7 @@ class TestBetaGeoFitter():
         npt.assert_almost_equal(
             np.array(bgf_no_weights._unload_params('r', 'alpha', 'a', 'b')),
             np.array(bgf_weights._unload_params('r', 'alpha', 'a', 'b')),
-        decimal=4)
+        decimal=3)
 
 class TestModifiedBetaGammaFitter():
 
@@ -767,7 +754,7 @@ class TestModifiedBetaGammaFitter():
     def test_params_out_is_close_to_BTYDplus(self, cdnow_customers):
         """ See https://github.com/mplatzer/BTYDplus """
         mbfg = estimation.ModifiedBetaGeoFitter()
-        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
+        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         expected = np.array([0.525, 6.183, 0.891, 1.614])
         npt.assert_array_almost_equal(expected, np.array(mbfg._unload_params('r', 'alpha', 'a', 'b')), decimal=3)
 
@@ -784,7 +771,7 @@ class TestModifiedBetaGammaFitter():
 
     def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
         mbfg = estimation.ModifiedBetaGeoFitter()
-        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6, iterative_fitting=3)
+        mbfg.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], tol=1e-6)
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
@@ -807,29 +794,18 @@ class TestModifiedBetaGammaFitter():
                 for k in range(j, 100, 10):
                     assert 0 <= mbfg.conditional_probability_alive(i, j, k) <= 1.0
 
-    def test_fit_method_allows_for_better_accuracy_by_using_iterative_fitting(self, cdnow_customers):
-        mbfg1 = estimation.ModifiedBetaGeoFitter()
-        mbfg2 = estimation.ModifiedBetaGeoFitter()
-
-        np.random.seed(0)
-        mbfg1.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
-
-        np.random.seed(0)
-        mbfg2.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
-        assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
-
     def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         mbfg_no_penalizer = estimation.ModifiedBetaGeoFitter()
         mbfg_no_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         params_1 = np.array(list(mbfg_no_penalizer.params_.values()))
 
         mbfg_with_penalizer = estimation.ModifiedBetaGeoFitter(penalizer_coef=0.1)
-        mbfg_with_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=3)
+        mbfg_with_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         params_2 = np.array(list(mbfg_with_penalizer.params_.values()))
         assert params_2.sum() < params_1.sum()
 
         mbfg_with_more_penalizer = estimation.ModifiedBetaGeoFitter(penalizer_coef=1.)
-        mbfg_with_more_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'], iterative_fitting=5)
+        mbfg_with_more_penalizer.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         params_3 = np.array(list(mbfg_with_more_penalizer.params_.values()))
         assert params_3.sum() < params_2.sum()
 
@@ -863,23 +839,12 @@ class TestModifiedBetaGammaFitter():
         mbgf.fit(cdnow_customers['frequency'], cdnow_customers['recency'], cdnow_customers['T'])
         scale = 10.
         mbgf_with_large_inputs = estimation.ModifiedBetaGeoFitter()
-        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'], iterative_fitting=2)
+        mbgf_with_large_inputs.fit(cdnow_customers['frequency'], scale * cdnow_customers['recency'], scale * cdnow_customers['T'])
         assert mbgf_with_large_inputs._scale < 1.
 
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2) - mbgf.conditional_probability_alive(1, 1, 2)) < 10e-2
         assert abs(mbgf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10) - mbgf.conditional_probability_alive(1, 2, 10)) < 10e-2
 
-    def test_mgbf_does_not_hang_for_small_datasets_but_can_be_improved_with_iterative_fitting(self, cdnow_customers):
-        reduced_dataset = cdnow_customers.iloc[:2]
-        mbfg1 = estimation.ModifiedBetaGeoFitter()
-        mbfg2 = estimation.ModifiedBetaGeoFitter()
-
-        np.random.seed(0)
-        mbfg1.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'])
-
-        np.random.seed(0)
-        mbfg2.fit(reduced_dataset['frequency'], reduced_dataset['recency'], reduced_dataset['T'], iterative_fitting=10)
-        assert mbfg1._negative_log_likelihood_ >= mbfg2._negative_log_likelihood_
 
     def test_purchase_predictions_do_not_differ_much_if_looking_at_hourly_or_daily_frequencies(self):
         transaction_data = load_transaction_data(parse_dates=['date'])

@@ -9,11 +9,8 @@ exec(compile(open('lifetimes/version.py').read(),
 
 readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert_file(readme_path, 'rst')
-except(ImportError):
-    long_description = open(readme_path).read()
+
+long_description = open(readme_path).read()
 
 
 setup(name='Lifetimes',
@@ -26,6 +23,7 @@ setup(name='Lifetimes',
       keywords="customer lifetime value, clv, ltv, BG/NBD, pareto/NBD, frequency, recency",
       url="https://github.com/CamDavidsonPilon/lifetimes",
       long_description=long_description,
+      long_description_content_type='text/markdown', 
       classifiers=[
           "Development Status :: 4 - Beta",
           "License :: OSI Approved :: MIT License",
@@ -38,6 +36,7 @@ setup(name='Lifetimes',
           "numpy>=1.10.0",
           "scipy>=1.0.0",
           "pandas>=0.19",
+          "autograd>-1.2.0",
           "dill>=0.2.6"
       ],
       package_data={
