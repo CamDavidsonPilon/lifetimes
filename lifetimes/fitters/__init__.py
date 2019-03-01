@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 """Base fitter for other classes."""
 import dill
 import numpy as np
+from textwrap import dedent
 from scipy.optimize import minimize
-from autograd import value_and_grad
+from autograd import value_and_grad, hessian
 from ..utils import _save_obj_without_attr
 
 
@@ -64,13 +66,13 @@ class BaseFitter(object):
         with open(path, "rb") as in_file:
             self.__dict__.update(dill.load(in_file).__dict__)
 
-    def _fit(self, minimizing_function_args, initial_params, params_size, disp, tol=1e-6, **kwargs):
+    def _fit(self, minimizing_function_args, initial_params, params_size, disp, tol=1e-7, bounds=None, **kwargs):
         # set options for minimize, if specified in kwargs will be overwritten
         minimize_options = {}
         minimize_options["disp"] = disp
         minimize_options.update(kwargs)
 
-        current_init_params = np.zeros(params_size) if initial_params is None else initial_params
+        current_init_params = 0.1 * np.ones(params_size) if initial_params is None else initial_params
         output = minimize(
             value_and_grad(self._negative_log_likelihood),
             jac=True,
@@ -79,6 +81,17 @@ class BaseFitter(object):
             x0=current_init_params,
             args=minimizing_function_args,
             options=minimize_options,
+            bounds=bounds,
         )
 
-        return output.x, output.fun
+        if output.success:
+            hessian_ = hessian(self._negative_log_likelihood)(output.x, *minimizing_function_args)
+            return output.x, output.fun, hessian_
+        print(output)
+        raise ConvergenceError(
+            dedent(
+                """
+            The model did not converge. Try adding a larger penalizer to see if that helps convergence.
+            """
+            )
+        )

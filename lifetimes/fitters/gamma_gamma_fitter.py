@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Gamma-gamma model."""
 from __future__ import print_function
 from __future__ import division
@@ -53,10 +54,8 @@ class GammaGammaFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(log_params, frequency, avg_monetary_value, penalizer_coef=0, q_constraint=False):
 
-        params = exp(log_params)
+        params = np.exp(log_params)
         p, q, v = params
-        if q_constraint and q < 1:
-            return np.inf
 
         x = frequency
         m = avg_monetary_value
@@ -114,7 +113,7 @@ class GammaGammaFitter(BaseFitter):
         monetary_value,
         initial_params=None,
         verbose=False,
-        tol=1e-4,
+        tol=1e-7,
         index=None,
         q_constraint=False,
         **kwargs
@@ -139,8 +138,8 @@ class GammaGammaFitter(BaseFitter):
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
         q_constraint: bool, optional
-            when q < 1, population mean will result in a negative value 
-            leading to negative CLV outputs. If True, we penalize negative values of q to avoid this issue. 
+            when q < 1, population mean will result in a negative value
+            leading to negative CLV outputs. If True, we penalize negative values of q to avoid this issue.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -156,12 +155,13 @@ class GammaGammaFitter(BaseFitter):
         frequency = np.asarray(frequency).astype(float)
         monetary_value = np.asarray(monetary_value).astype(float)
 
-        log_params, self._negative_log_likelihood_ = self._fit(
-            (frequency, monetary_value, self.penalizer_coef, q_constraint),
+        log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
+            (frequency, monetary_value, self.penalizer_coef),
             initial_params,
             3,
             verbose,
             tol,
+            bounds=((None, None), (None, None), (None, None)) if q_constraint else None,
             **kwargs
         )
 

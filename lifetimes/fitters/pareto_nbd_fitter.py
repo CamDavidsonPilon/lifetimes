@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Pareto/NBD model."""
 from __future__ import print_function
 from __future__ import division
@@ -10,9 +11,9 @@ from scipy.special import gammaln, hyp2f1, betaln
 from scipy.special import logsumexp
 from scipy.optimize import minimize
 
-from . import BaseFitter
-from ..utils import _check_inputs, _scale_time
-from ..generate_data import pareto_nbd_model
+from lifetimes.fitters import BaseFitter
+from lifetimes.utils import _check_inputs, _scale_time
+from lifetimes.generate_data import pareto_nbd_model
 
 
 class ParetoNBDFitter(BaseFitter):
@@ -134,7 +135,7 @@ class ParetoNBDFitter(BaseFitter):
             maxiter,
             **kwargs
         )
-
+        self._hessian_ = None
         self.params_ = OrderedDict(zip(["r", "alpha", "s", "beta"], params))
         self.params_["alpha"] /= self._scale
         self.params_["beta"] /= self._scale

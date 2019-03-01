@@ -1,10 +1,10 @@
+# -*- coding: utf-8 -*-
 """Beta Geo Fitter, also known as BG/NBD model."""
 from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
 import autograd.numpy as np
-from autograd.numpy import log, exp
 from pandas import DataFrame
 from autograd.scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
@@ -54,7 +54,7 @@ class BetaGeoFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     def fit(
-        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-6, index=None, **kwargs
+        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-7, index=None, **kwargs
     ):
         """
         Fit a dataset to the BG/NBD model.
@@ -112,7 +112,7 @@ class BetaGeoFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        log_params, self._negative_log_likelihood_ = self._fit(
+        log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
             (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             initial_params,
             4,
@@ -139,13 +139,13 @@ class BetaGeoFitter(BaseFitter):
         params = np.exp(log_params)
         r, alpha, a, b = params
 
-        A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
+        A_1 = gammaln(r + freq) - gammaln(r) + r * np.log(alpha)
         A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
-        A_3 = -(r + freq) * log(alpha + T)
-        A_4 = log(a) - log(b + np.maximum(freq, 1) - 1) - (r + freq) * log(rec + alpha)
+        A_3 = -(r + freq) * np.log(alpha + T)
+        A_4 = np.log(a) - np.log(b + np.maximum(freq, 1) - 1) - (r + freq) * np.log(rec + alpha)
 
         penalizer_term = penalizer_coef * sum(params ** 2)  # TODO: log_params?
-        ll = weights * (A_1 + A_2 + log(exp(A_3) + exp(A_4) * (freq > 0)))
+        ll = weights * (A_1 + A_2 + np.log(np.exp(A_3) + np.exp(A_4) * (freq > 0)))
         return -ll.mean() + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
@@ -186,7 +186,7 @@ class BetaGeoFitter(BaseFitter):
         ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
         ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = 1 - exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
+        second_term = 1 - np.exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
 
         numerator = first_term * second_term
         denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
@@ -221,12 +221,14 @@ class BetaGeoFitter(BaseFitter):
         """
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
-        log_div = (r + frequency) * log((alpha + T) / (alpha + recency)) + log(a / (b + np.maximum(frequency, 1) - 1))
+        log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
+            a / (b + np.maximum(frequency, 1) - 1)
+        )
 
         return np.where(
             frequency == 0,
             1.0,
-            np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + exp(np.clip(log_div, None, ln_exp_max)))),
+            np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + np.exp(np.clip(log_div, None, ln_exp_max)))),
         )
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):

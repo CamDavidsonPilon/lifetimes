@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Lifetimes utils and helpers."""
 from __future__ import division
 
@@ -96,6 +97,12 @@ def calibration_and_holdout_data(
     holdout_transactions = transactions.loc[
         (observation_period_end >= transactions[datetime_col]) & (transactions[datetime_col] > calibration_period_end)
     ]
+
+    if holdout_transactions.empty:
+        raise ValueError(
+            "There is no data available. Check the `observation_period_end` and  `calibration_period_end` and confirm that values in `transactions` occur prior to those dates."
+        )
+
     holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
     holdout_summary_data = (
         holdout_transactions.groupby([customer_id_col, datetime_col], sort=False)
@@ -373,7 +380,7 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
             raise ValueError("There exist non-zero recency values when frequency is zero.")
         if np.any(recency < 0):
             raise ValueError("There exist negative recency (ex: last order set before first order)")
-        if any(x.shape[0]==0 for x in [recency, frequency, T]):
+        if any(x.shape[0] == 0 for x in [recency, frequency, T]):
             raise ValueError("There exists a zero length vector in one of frequency, recency or T.")
     if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
         raise ValueError("There exist non-integer values in the frequency vector.")
@@ -394,7 +401,7 @@ def _customer_lifetime_value(
     Parameters
     ----------
     transaction_prediction_model:
-        the model to predict future transactions, literature uses pareto/nbd but we can also use a different model like bg
+        the model to predict future transactions
     frequency: array_like
         the frequency vector of customers' purchases (denoted x in literature).
     recency: array_like

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Beta Geo Beta BinomFitter."""
 from __future__ import division
 from __future__ import print_function
@@ -5,7 +6,7 @@ from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-from autograd.numpy import log, exp, logaddexp, asarray, c_ as vconcat
+from autograd.numpy import log, exp, logaddexp, c_ as vconcat
 from pandas import DataFrame
 from autograd.scipy.special import gammaln, betaln, beta as betaf
 from scipy.special import binom
@@ -88,7 +89,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         weights=None,
         initial_params=None,
         verbose=False,
-        tol=1e-6,
+        tol=1e-7,
         index=None,
         **kwargs
     ):
@@ -140,14 +141,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         _check_inputs(frequency, recency, n_periods)
 
-        log_params, self._negative_log_likelihood_ = self._fit(
-            (frequency, recency, n_periods, weights, self.penalizer_coef),
-            initial_params,
-            4,
-            verbose,
-            tol,
-            **kwargs
+        log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
+            (frequency, recency, n_periods, weights, self.penalizer_coef), initial_params, 4, verbose, tol, **kwargs
         )
+
         self.params_ = OrderedDict(zip(["alpha", "beta", "gamma", "delta"], np.exp(log_params)))
         self.data = DataFrame(
             vconcat[frequency, recency, n_periods, weights],  # TODO
@@ -260,7 +257,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
         alpha, beta, gamma, delta = params
 
         x_counts = self.data.groupby("frequency")["weights"].sum()
-        x = asarray(x_counts.index)
+        x = np.asarray(x_counts.index)
 
         p1 = binom(n, x) * exp(
             betaln(alpha + x, beta + n - x) - betaln(alpha, beta) + betaln(gamma, delta + n) - betaln(gamma, delta)

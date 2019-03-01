@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import division
 
@@ -6,8 +7,8 @@ from autograd.numpy import log, logaddexp
 from autograd.scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 
-from .beta_geo_fitter import BetaGeoFitter
-from ..generate_data import modified_beta_geometric_nbd_model
+from lifetimes import BetaGeoFitter
+from lifetimes.generate_data import modified_beta_geometric_nbd_model
 
 
 class ModifiedBetaGeoFitter(BetaGeoFitter):
@@ -38,7 +39,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         super(ModifiedBetaGeoFitter, self).__init__(penalizer_coef)
 
     def fit(
-        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-6, index=None, **kwargs
+        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-7, index=None, **kwargs
     ):
         """
         Fit the data to the MBG/NBD model.

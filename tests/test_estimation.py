@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
 import numpy as np
@@ -15,6 +16,9 @@ from lifetimes.datasets import (
     load_donations,
     load_transaction_data,
 )
+
+PATH_SAVE_MODEL = "./base_fitter.pkl"
+PATH_SAVE_BGNBD_MODEL = "./betageo_fitter.pkl"
 
 
 @pytest.fixture
@@ -40,10 +44,6 @@ class TestBaseFitter:
         npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params("x", "y"))
 
     def test_save_load_model(self):
-
-        PATH_SAVE_MODEL = "./base_fitter.pkl"
-        PATH_SAVE_BGNBD_MODEL = "./betageo_fitter.pkl"
-
         base_fitter = lt.BaseFitter()
         base_fitter.save_model(PATH_SAVE_MODEL)
         assert os.path.exists(PATH_SAVE_MODEL) == True
@@ -165,7 +165,6 @@ class TestGammaGammaFitter:
         ggf.fit(
             returning_cdnow_customers_with_monetary_value["frequency"],
             returning_cdnow_customers_with_monetary_value["monetary_value"],
-            iterative_fitting=3,
         )
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params("p", "q", "v")), decimal=2)
@@ -224,7 +223,6 @@ class TestGammaGammaFitter:
         ggf.fit(
             returning_cdnow_customers_with_monetary_value["frequency"],
             returning_cdnow_customers_with_monetary_value["monetary_value"],
-            iterative_fitting=1,
             index=index,
         )
         assert (ggf.data.index == index).all() == True
@@ -233,7 +231,6 @@ class TestGammaGammaFitter:
         ggf.fit(
             returning_cdnow_customers_with_monetary_value["frequency"],
             returning_cdnow_customers_with_monetary_value["monetary_value"],
-            iterative_fitting=1,
             index=None,
         )
         assert (ggf.data.index == index).all() == False
@@ -242,23 +239,14 @@ class TestGammaGammaFitter:
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
             cdnow_customers_with_monetary_value["frequency"] > 0
         ]
-        ggf = lt.GammaGammaFitter()
+        ggf = lt.GammaGammaFitter(penalizer_coef=0.0)
         ggf.fit(
             returning_cdnow_customers_with_monetary_value["frequency"],
             returning_cdnow_customers_with_monetary_value["monetary_value"],
-            iterative_fitting=3,
             q_constraint=True,
         )
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params("p", "q", "v")), decimal=2)
-
-    def test_negative_log_likelihood_is_inf_when_q_constraint_true_and_q_lt_one(self):
-        frequency = 25
-        avg_monetary_value = 100
-        ggf = lt.GammaGammaFitter()
-        assert np.isinf(
-            ggf._negative_log_likelihood([6.25, -3.75, 15.44], frequency, avg_monetary_value, q_constraint=True)
-        )
 
 
 class TestParetoNBDFitter:

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytest
 
 import matplotlib
@@ -21,7 +22,7 @@ def cd_data():
 @pytest.fixture()
 def bgf(cd_data):
     bgf_model = BetaGeoFitter()
-    bgf_model.fit(cd_data["frequency"], cd_data["recency"], cd_data["T"], iterative_fitting=1)
+    bgf_model.fit(cd_data["frequency"], cd_data["recency"], cd_data["T"])
     return bgf_model
 
 
@@ -69,7 +70,7 @@ class TestPlotting:
     def test_plot_period_transactions_mbgf(self, cd_data):
 
         mbgf = ModifiedBetaGeoFitter()
-        mbgf.fit(cd_data["frequency"], cd_data["recency"], cd_data["T"], iterative_fitting=1)
+        mbgf.fit(cd_data["frequency"], cd_data["recency"], cd_data["T"])
 
         ax = plotting.plot_period_transactions(mbgf)
 

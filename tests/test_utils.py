@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Test lifetimes utils."""
 import pytest
 import pandas as pd
@@ -381,6 +382,19 @@ def test_calibration_and_holdout_data(large_transaction_level_data):
 
     with pytest.raises(KeyError):
         actual.loc[6]
+
+
+def test_calibration_and_holdout_data_throws_better_error_if_observation_period_end_is_too_early(
+    large_transaction_level_data
+):
+    # max date is 2015-02-02
+    today = "2014-02-07"
+    calibration_end = "2014-02-01"
+
+    with pytest.raises(ValueError, match="There is no data available"):
+        utils.calibration_and_holdout_data(
+            large_transaction_level_data, "id", "date", calibration_end, observation_period_end=today
+        )
 
 
 def test_calibration_and_holdout_data_is_okay_with_other_indexes(large_transaction_level_data):

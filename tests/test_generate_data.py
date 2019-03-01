@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from collections import OrderedDict
 import pytest
 import pandas as pd
@@ -6,7 +7,7 @@ import numpy.testing as npt
 
 import scipy.stats as stats
 
-import lifetimes.estimation as estimation
+from lifetimes import BetaGeoBetaBinomFitter
 from lifetimes.generate_data import (
     beta_geometric_nbd_model,
     pareto_nbd_model,
@@ -67,7 +68,7 @@ class TestBetaGeoBetaBinomGeneration:
 
     def test_params_same_from_sim_data(self, bbgb_params):
         sim_data = beta_geometric_beta_binom_model(N=6, size=100000, **bbgb_params)
-        bbtf = estimation.BetaGeoBetaBinomFitter()
+        bbtf = BetaGeoBetaBinomFitter()
         grouped_data = sim_data.groupby(["frequency", "recency", "n_periods"])["customer_id"].count()
         grouped_data = grouped_data.reset_index().rename(columns={"customer_id": "weights"})
         bbtf.fit(grouped_data["frequency"], grouped_data["recency"], grouped_data["n_periods"], grouped_data["weights"])
