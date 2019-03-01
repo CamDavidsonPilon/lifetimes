@@ -146,7 +146,6 @@ class BetaGeoFitter(BaseFitter):
 
         penalizer_term = penalizer_coef * sum(params ** 2)  # TODO: log_params?
         ll = weights * (A_1 + A_2 + np.log(np.exp(A_3) + np.exp(A_4) * (freq > 0)))
-        print(ll)
         return -ll.sum() / weights.sum() + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
