@@ -4,7 +4,7 @@ ifeq ($(TRAVIS), true)
 		pip install pandas==${PANDAS_VERSION}
 		pip list --local
 else
-		pip install -r reqs/dev-requirements.txt
+		pip install -r dev_requirements.txt
 		pre-commit install
 endif
 
