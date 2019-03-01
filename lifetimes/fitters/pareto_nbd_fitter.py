@@ -199,7 +199,7 @@ class ParetoNBDFitter(BaseFitter):
         conditional_log_likelihood = ParetoNBDFitter._conditional_log_likelihood(params, freq, rec, T)
         penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
 
-        return -(weights * conditional_log_likelihood).mean() + penalizer_term
+        return -(weights * conditional_log_likelihood).sum() / weights.mean() + penalizer_term
 
     def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """

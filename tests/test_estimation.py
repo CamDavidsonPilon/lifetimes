@@ -269,8 +269,8 @@ class TestParetoNBDFitter:
         assert ptf()._negative_log_likelihood(
             params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), weights[0], 0
         ) + ptf()._negative_log_likelihood(
-            params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[0], 0
-        ) == 2 * ptf()._negative_log_likelihood(
+            params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[1], 0
+        ) == ptf()._negative_log_likelihood(
             params, x, t_x, t, weights, 0
         )
 
@@ -455,15 +455,12 @@ class TestBetaGeoFitter:
         x = np.array([1, 3])
         t_x = np.array([2, 2])
         t = np.array([5, 6])
-        weights = np.array([1])
+        weights = np.array([1, 1])
         params = np.array([1, 1, 1, 1])
-        assert bgf._negative_log_likelihood(
-            params, x[0], np.array([t_x[0]]), np.array([t[0]]), weights[0], 0
-        ) + bgf._negative_log_likelihood(
-            params, x[1], np.array([t_x[1]]), np.array([t[1]]), weights[0], 0
-        ) == 2 * bgf._negative_log_likelihood(
-            params, x, t_x, t, weights, 0
-        )
+        assert (
+            bgf._negative_log_likelihood(params, x[0], np.array([t_x[0]]), np.array([t[0]]), weights[0], 0)
+            + bgf._negative_log_likelihood(params, x[1], np.array([t_x[1]]), np.array([t[1]]), weights[1], 0)
+        ) / 2 == bgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_Hardie_paper(self, cdnow_customers):
         bfg = lt.BetaGeoFitter()
@@ -716,13 +713,12 @@ class TestModifiedBetaGammaFitter:
         t = np.array([5, 6])
         weights = np.array([1, 1])
         params = [1, 1, 1, 1]
-        assert mbgf._negative_log_likelihood(
-            params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), weights[0], 0
-        ) + mbgf._negative_log_likelihood(
-            params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[0], 0
-        ) == 2 * mbgf._negative_log_likelihood(
-            params, x, t_x, t, weights, 0
-        )
+        assert (
+            mbgf._negative_log_likelihood(params, np.array([x[0]]), np.array([t_x[0]]), np.array([t[0]]), weights[0], 0)
+            + mbgf._negative_log_likelihood(
+                params, np.array([x[1]]), np.array([t_x[1]]), np.array([t[1]]), weights[1], 0
+            )
+        ) / 2 == mbgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_BTYDplus(self, cdnow_customers):
         """ See https://github.com/mplatzer/BTYDplus """

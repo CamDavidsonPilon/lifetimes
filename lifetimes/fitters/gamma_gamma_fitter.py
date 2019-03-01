@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Gamma-gamma model."""
 from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
 from autograd import numpy as np
-from autograd.numpy import exp, asarray, c_ as vconcat
+from autograd.numpy import c_ as vconcat
 from pandas import DataFrame
 from autograd.scipy.special import gammaln
 
@@ -160,7 +159,7 @@ class GammaGammaFitter(BaseFitter):
             initial_params,
             3,
             verbose,
-            tol,
+            tol=tol,
             bounds=((None, None), (None, None), (None, None)) if q_constraint else None,
             **kwargs
         )

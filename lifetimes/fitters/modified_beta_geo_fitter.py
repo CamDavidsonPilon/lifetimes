@@ -82,7 +82,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         # although the parent method is called, this class's
         # _negative_log_likelihood is referenced
-        super(self.__class__, self).fit(
+        super(ModifiedBetaGeoFitter, self).fit(
             frequency, recency, T, weights, initial_params, verbose, tol, index=index, **kwargs
         )
         # this needs to be reassigned from the parent method
@@ -102,7 +102,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
         penalizer_term = penalizer_coef * sum(params ** 2)
-        return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).mean() + penalizer_term
+        return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).sum() / weights.sum() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """

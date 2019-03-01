@@ -17,6 +17,10 @@ __all__ = [
 ]
 
 
+class ConvergenceError(ValueError):
+    pass
+
+
 def calibration_and_holdout_data(
     transactions,
     customer_id_col,

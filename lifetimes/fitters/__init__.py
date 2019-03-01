@@ -5,7 +5,7 @@ import numpy as np
 from textwrap import dedent
 from scipy.optimize import minimize
 from autograd import value_and_grad, hessian
-from ..utils import _save_obj_without_attr
+from ..utils import _save_obj_without_attr, ConvergenceError
 
 
 class BaseFitter(object):
@@ -83,7 +83,6 @@ class BaseFitter(object):
             options=minimize_options,
             bounds=bounds,
         )
-
         if output.success:
             hessian_ = hessian(self._negative_log_likelihood)(output.x, *minimizing_function_args)
             return output.x, output.fun, hessian_

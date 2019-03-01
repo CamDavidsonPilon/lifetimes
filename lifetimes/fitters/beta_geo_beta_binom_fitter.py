@@ -75,9 +75,11 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(log_params, frequency, recency, n_periods, weights, penalizer_coef=0):
         params = exp(log_params)
+        print(weights.sum())
         penalizer_term = penalizer_coef * sum(params ** 2)
         return (
-            -(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n_periods) * weights).mean()
+            -(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n_periods) * weights).sum()
+            / weights.sum()
             + penalizer_term
         )
 
