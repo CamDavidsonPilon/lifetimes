@@ -173,23 +173,21 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         Parameters
         ----------
-        frequency: float
+        frequency: array or float
             historical frequency of customer.
-        recency: float
+        recency: array or float
             historical recency of customer.
-        T: float
+        T: array or float
             age of the customer.
-        ln_exp_max: int
-            to what value clip log_div equation
 
         Returns
         -------
-        float
-            value representing a probability
+        array:
+            value representing probability of being alive
 
-        """  # noqa
+        """
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
-        return 1.0 / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
+        return np.atleast_1d(1.0 / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency)))
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         r"""

@@ -8,7 +8,7 @@ import autograd.numpy as np
 from pandas import DataFrame
 from autograd.scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
-
+from scipy.special import expit
 from . import BaseFitter
 from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
@@ -193,7 +193,7 @@ class BetaGeoFitter(BaseFitter):
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, frequency, recency, T, ln_exp_max=300):
+    def conditional_probability_alive(self, frequency, recency, T):
         """
         Compute conditional probability alive.
 
@@ -204,18 +204,16 @@ class BetaGeoFitter(BaseFitter):
 
         Parameters
         ----------
-        frequency: float
+        frequency: array or scalar
             historical frequency of customer.
-        recency: float
+        recency: array or scalar
             historical recency of customer.
-        T: float
+        T: array or scalar
             age of the customer.
-        ln_exp_max: int
-            to what value clip log_div equation
 
         Returns
         -------
-        float
+        array
             value representing a probability
 
         """
@@ -224,12 +222,7 @@ class BetaGeoFitter(BaseFitter):
         log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
             a / (b + np.maximum(frequency, 1) - 1)
         )
-
-        return np.where(
-            frequency == 0,
-            1.0,
-            np.where(log_div > ln_exp_max, 0.0, 1.0 / (1 + np.exp(np.clip(log_div, None, ln_exp_max)))),
-        )
+        return np.atleast_1d(np.where(frequency == 0, 1.0, expit(-log_div)))
 
     def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
         """

@@ -1,7 +1,8 @@
 # Changelog
 
 ### 0.11.0
- - Move most models to autograd for automatic differentiation of their likelihood. This results in faster and more successful convergence, plus allows for some really exciting extensions (coming soon).
+ - Move most models (all but Pareto) to autograd for automatic differentiation of their likelihood. This results in faster (at least 3x) and more successful convergence, plus allows for some really exciting extensions (coming soon).
+ -
 
 
 ### 0.10.1
