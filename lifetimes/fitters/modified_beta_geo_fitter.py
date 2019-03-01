@@ -1,11 +1,9 @@
 from __future__ import print_function
 from __future__ import division
-from pandas import DataFrame
 
 import autograd.numpy as np
-from autograd.numpy import log, exp, logaddexp
+from autograd.numpy import log, logaddexp
 from autograd.scipy.special import gammaln, beta, gamma
-from autograd.scipy.misc import logsumexp
 from scipy.special import hyp2f1
 
 from .beta_geo_fitter import BetaGeoFitter
@@ -37,7 +35,7 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     def __init__(self, penalizer_coef=0.0):
         """Initialization, set penalizer_coef."""
-        super(self.__class__, self).__init__(penalizer_coef)
+        super(ModifiedBetaGeoFitter, self).__init__(penalizer_coef)
 
     def fit(
         self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-6, index=None, **kwargs
@@ -191,26 +189,6 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """  # noqa
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         return 1.0 / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency))
-
-    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
-        """
-        Compute the probability alive matrix.
-
-        Parameters
-        ----------
-        max_frequency: float, optional
-            the maximum frequency to plot. Default is max observed frequency.
-        max_recency: float, optional
-            the maximum recency to plot. This also determines the age of the
-            customer. Default to max observed age.
-
-        Returns
-        -------
-        matrix:
-            A matrix of the form [t_x: historical recency, x: historical frequency]
-
-        """
-        return super(self.__class__, self).conditional_probability_alive_matrix(max_frequency, max_recency)
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         r"""

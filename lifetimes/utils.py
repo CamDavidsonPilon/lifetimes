@@ -1,13 +1,9 @@
 """Lifetimes utils and helpers."""
 from __future__ import division
 
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
 import dill
-from scipy.optimize import minimize
-from autograd import value_and_grad
 
 pd.options.mode.chained_assignment = None
 
@@ -35,7 +31,7 @@ def calibration_and_holdout_data(
 
     This function creates a summary of each customer over a calibration and
     holdout period (training and testing, respectively).
-    It accepts transaction data, and returns a Dataframe of sufficient statistics.
+    It accepts transaction data, and returns a DataFrame of sufficient statistics.
 
     Parameters
     ----------
@@ -134,7 +130,7 @@ def _find_first_transactions(
     """
     Return dataframe with first transactions.
 
-    This takes a Dataframe of transaction data of the form:
+    This takes a DataFrame of transaction data of the form:
         customer_id, datetime [, monetary_value]
     and appends a column named 'repeated' to the transaction log which indicates which rows
     are repeated transactions for that customer_id.
@@ -164,7 +160,7 @@ def _find_first_transactions(
     if observation_period_end is None:
         observation_period_end = transactions[datetime_col].max()
 
-    if isinstance(observation_period_end, pd.Period):
+    if type(observation_period_end) == pd.Period:
         observation_period_end = observation_period_end.to_timestamp()
 
     select_columns = [customer_id_col, datetime_col]
@@ -217,9 +213,9 @@ def summary_data_from_transaction_data(
     """
     Return summary data from transactions.
 
-    This transforms a Dataframe of transaction data of the form:
+    This transforms a DataFrame of transaction data of the form:
         customer_id, datetime [, monetary_value]
-    to a Dataframe of the form:
+    to a DataFrame of the form:
         customer_id, frequency, recency, T [, monetary_value]
 
     Parameters
@@ -251,7 +247,7 @@ def summary_data_from_transaction_data(
 
     Returns
     -------
-    :obj: Dataframe:
+    :obj: DataFrame:
         customer_id, frequency, recency, T [, monetary_value]
 
     """
@@ -347,26 +343,6 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
     )
 
 
-def _fit(minimizing_function, minimizing_function_args, initial_params, params_size, disp, tol=1e-6, **kwargs):
-    # set options for minimize, if specified in kwargs will be overwritten
-    minimize_options = {}
-    minimize_options["disp"] = disp
-    minimize_options.update(kwargs)
-
-    current_init_params = np.zeros(params_size)
-    output = minimize(
-        value_and_grad(minimizing_function),
-        jac=True,
-        method=None,
-        tol=tol,
-        x0=current_init_params,
-        args=minimizing_function_args,
-        options=minimize_options,
-    )
-
-    return output.x, output.fun
-
-
 def _scale_time(age):
     """Create a scalar such that the maximum age is 1."""
     return 1.0 / age.max()
@@ -397,7 +373,7 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
             raise ValueError("There exist non-zero recency values when frequency is zero.")
         if np.any(recency < 0):
             raise ValueError("There exist negative recency (ex: last order set before first order)")
-        if any(len(x) == 0 for x in [recency, frequency, T]):
+        if any(x.shape[0]==0 for x in [recency, frequency, T]):
             raise ValueError("There exists a zero length vector in one of frequency, recency or T.")
     if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
         raise ValueError("There exist non-integer values in the frequency vector.")

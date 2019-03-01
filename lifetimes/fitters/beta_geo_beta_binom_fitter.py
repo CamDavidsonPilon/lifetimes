@@ -10,7 +10,7 @@ from pandas import DataFrame
 from autograd.scipy.special import gammaln, betaln, beta as betaf
 from scipy.special import binom
 
-from ..utils import _fit, _check_inputs
+from ..utils import _check_inputs
 from . import BaseFitter
 from ..generate_data import beta_geometric_beta_binom_model
 
@@ -140,8 +140,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         _check_inputs(frequency, recency, n_periods)
 
-        log_params, self._negative_log_likelihood_ = _fit(
-            self._negative_log_likelihood,
+        log_params, self._negative_log_likelihood_ = self._fit(
             (frequency, recency, n_periods, weights, self.penalizer_coef),
             initial_params,
             4,

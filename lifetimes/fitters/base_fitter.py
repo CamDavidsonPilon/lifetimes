@@ -1,5 +1,8 @@
 """Base fitter for other classes."""
 import dill
+import numpy as np
+from scipy.optimize import minimize
+from autograd import value_and_grad
 from ..utils import _save_obj_without_attr
 
 
@@ -60,3 +63,22 @@ class BaseFitter(object):
         """
         with open(path, "rb") as in_file:
             self.__dict__.update(dill.load(in_file).__dict__)
+
+    def _fit(self, minimizing_function_args, initial_params, params_size, disp, tol=1e-6, **kwargs):
+        # set options for minimize, if specified in kwargs will be overwritten
+        minimize_options = {}
+        minimize_options["disp"] = disp
+        minimize_options.update(kwargs)
+
+        current_init_params = np.zeros(params_size) if initial_params is None else initial_params
+        output = minimize(
+            value_and_grad(self._negative_log_likelihood),
+            jac=True,
+            method=None,
+            tol=tol,
+            x0=current_init_params,
+            args=minimizing_function_args,
+            options=minimize_options,
+        )
+
+        return output.x, output.fun

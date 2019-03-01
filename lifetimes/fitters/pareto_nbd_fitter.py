@@ -8,9 +8,10 @@ from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1, betaln
 from scipy.special import logsumexp
+from scipy.optimize import minimize
 
 from . import BaseFitter
-from ..utils import _fit, _check_inputs, _scale_time
+from ..utils import _check_inputs, _scale_time
 from ..generate_data import pareto_nbd_model
 
 
@@ -79,7 +80,7 @@ class ParetoNBDFitter(BaseFitter):
             observed combinations of frequency/recency/T. This
             parameter represents the count of customers with a given
             purchase pattern. Instead of calculating individual
-            loglikelihood, the loglikelihood is calculated for each
+            log-likelihood, the log-likelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
         iterative_fitting: int, optional
@@ -96,7 +97,7 @@ class ParetoNBDFitter(BaseFitter):
             fit_method to passing to scipy.optimize.minimize
         maxiter : int, optional
             max iterations for optimizer in scipy.optimize.minimize will be
-            overwritten if setted in kwargs.
+            overwritten if set in kwargs.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -122,9 +123,8 @@ class ParetoNBDFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        params, self._negative_log_likelihood_ = _fit(
-            self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, weights, self.penalizer_coef],
+        params, self._negative_log_likelihood_ = self._fit(
+            (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             iterative_fitting,
             initial_params,
             4,
@@ -351,9 +351,9 @@ class ParetoNBDFitter(BaseFitter):
         r, alpha, s, beta = params
 
         if alpha < beta:
-            min_of_alpha_beta, max_of_alpha_beta, p, p_l_1, p_l_2 = (alpha, beta, r + x + n, r + x, r + x + 1)
+            min_of_alpha_beta, max_of_alpha_beta, p, _, _ = (alpha, beta, r + x + n, r + x, r + x + 1)
         else:
-            min_of_alpha_beta, max_of_alpha_beta, p, p_l_1, p_l_2 = (beta, alpha, s + 1, s + 1, s)
+            min_of_alpha_beta, max_of_alpha_beta, p, _, _ = (beta, alpha, s + 1, s + 1, s)
         abs_alpha_beta = max_of_alpha_beta - min_of_alpha_beta
 
         log_l = self._conditional_log_likelihood(params, x, t_x, T)
@@ -404,3 +404,57 @@ class ParetoNBDFitter(BaseFitter):
         return zeroth_term + exp(
             logsumexp([first_term, second_term, third_term], b=[sign, sign, -sign], axis=0, return_sign=True)[0]
         )
+
+    def _fit(
+        self,
+        minimizing_function_args,
+        iterative_fitting,
+        initial_params,
+        params_size,
+        disp,
+        tol=1e-6,
+        fit_method="Nelder-Mead",
+        maxiter=2000,
+        **kwargs
+    ):
+        """Fit function for fitters."""
+        ll = []
+        sols = []
+
+        if iterative_fitting <= 0:
+            raise ValueError("iterative_fitting parameter should be greater than 0 as of lifetimes v0.2.1")
+
+        if iterative_fitting > 1 and initial_params is not None:
+            raise ValueError(
+                "iterative_fitting and initial_params should not be both set, as no improvement could be made."
+            )
+
+        # set options for minimize, if specified in kwargs will be overwritten
+        minimize_options = {}
+        minimize_options["disp"] = disp
+        minimize_options["maxiter"] = maxiter
+        minimize_options.update(kwargs)
+
+        total_count = 0
+        while total_count < iterative_fitting:
+            current_init_params = (
+                np.random.normal(1.0, scale=0.05, size=params_size) if initial_params is None else initial_params
+            )
+            if minimize_options["disp"]:
+                print("Optimize function with {}".format(fit_method))
+
+            output = minimize(
+                self._negative_log_likelihood,
+                method=fit_method,
+                tol=tol,
+                x0=current_init_params,
+                args=minimizing_function_args,
+                options=minimize_options,
+            )
+            sols.append(output.x)
+            ll.append(output.fun)
+
+            total_count += 1
+        argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
+        minimizing_params = sols[argmin_ll]
+        return minimizing_params, min_ll

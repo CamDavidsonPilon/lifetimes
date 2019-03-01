@@ -4,15 +4,13 @@ from __future__ import division
 from collections import OrderedDict
 
 from autograd import numpy as np
-import pandas as pd
-from autograd.numpy import log, exp, logaddexp, asarray, c_ as vconcat
+from autograd.numpy import exp, asarray, c_ as vconcat
 from pandas import DataFrame
-from autograd.scipy.special import gammaln, betaln, beta as betaf
-from scipy.special import binom
+from autograd.scipy.special import gammaln
 
 
 from . import BaseFitter
-from ..utils import _fit, _check_inputs, _customer_lifetime_value
+from ..utils import _check_inputs, _customer_lifetime_value
 
 
 class GammaGammaFitter(BaseFitter):
@@ -114,12 +112,10 @@ class GammaGammaFitter(BaseFitter):
         self,
         frequency,
         monetary_value,
-        iterative_fitting=4,
         initial_params=None,
         verbose=False,
         tol=1e-4,
         index=None,
-        maxiter=2000,
         q_constraint=False,
         **kwargs
     ):
@@ -160,8 +156,7 @@ class GammaGammaFitter(BaseFitter):
         frequency = np.asarray(frequency).astype(float)
         monetary_value = np.asarray(monetary_value).astype(float)
 
-        log_params, self._negative_log_likelihood_ = _fit(
-            self._negative_log_likelihood,
+        log_params, self._negative_log_likelihood_ = self._fit(
             (frequency, monetary_value, self.penalizer_coef, q_constraint),
             initial_params,
             3,

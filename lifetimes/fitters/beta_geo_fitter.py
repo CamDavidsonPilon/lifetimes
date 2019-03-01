@@ -7,11 +7,10 @@ import autograd.numpy as np
 from autograd.numpy import log, exp
 from pandas import DataFrame
 from autograd.scipy.special import gammaln, beta, gamma
-from autograd.scipy.misc import logsumexp
 from scipy.special import hyp2f1
 
 from . import BaseFitter
-from ..utils import _fit, _scale_time, _check_inputs
+from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
 
@@ -55,17 +54,7 @@ class BetaGeoFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     def fit(
-        self,
-        frequency,
-        recency,
-        T,
-        weights=None,
-        initial_params=None,
-        verbose=False,
-        tol=1e-6,
-        index=None,
-        maxiter=2000,
-        **kwargs
+        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-6, index=None, **kwargs
     ):
         """
         Fit a dataset to the BG/NBD model.
@@ -123,8 +112,7 @@ class BetaGeoFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        log_params, self._negative_log_likelihood_ = _fit(
-            self._negative_log_likelihood,
+        log_params, self._negative_log_likelihood_ = self._fit(
             (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             initial_params,
             4,

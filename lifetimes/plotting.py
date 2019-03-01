@@ -86,7 +86,7 @@ def plot_calibration_purchases_vs_holdout_purchases(
     model: lifetimes model
         A fitted lifetimes model.
     calibration_holdout_matrix: pandas DataFrame
-        Dataframe from calibration_and_holdout_data function.
+        DataFrame from calibration_and_holdout_data function.
     kind: str, optional
         x-axis :"frequency_cal". Purchases in calibration period,
                  "recency_cal". Age of customer at last purchase,
@@ -192,7 +192,7 @@ def plot_frequency_recency_matrix(
     interpolation = kwargs.pop("interpolation", "none")
 
     ax = plt.subplot(111)
-    PCM = ax.imshow(Z, interpolation=interpolation, **kwargs)
+    pcm = ax.imshow(Z, interpolation=interpolation, **kwargs)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     if title is None:
@@ -206,7 +206,7 @@ def plot_frequency_recency_matrix(
     forceAspect(ax)
 
     # plot colorbar beside matrix
-    plt.colorbar(PCM, ax=ax)
+    plt.colorbar(pcm, ax=ax)
 
     return ax
 
@@ -256,7 +256,7 @@ def plot_probability_alive_matrix(
     interpolation = kwargs.pop("interpolation", "none")
 
     ax = plt.subplot(111)
-    PCM = ax.imshow(z, interpolation=interpolation, **kwargs)
+    pcm = ax.imshow(z, interpolation=interpolation, **kwargs)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
@@ -265,7 +265,7 @@ def plot_probability_alive_matrix(
     forceAspect(ax)
 
     # plot colorbar beside matrix
-    plt.colorbar(PCM, ax=ax)
+    plt.colorbar(pcm, ax=ax)
 
     return ax
 
