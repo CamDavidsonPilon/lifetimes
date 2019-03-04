@@ -55,7 +55,7 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     @staticmethod
     def _loglikelihood(params, x, tx, T):
-        """Loglikelihood for optimizer."""
+        """Log likelihood for optimizer."""
         alpha, beta, gamma, delta = params
 
         betaln_ab = betaln(alpha, beta)
@@ -63,11 +63,12 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         A = betaln(alpha + x, beta + T - x) - betaln_ab + betaln(gamma, delta + T) - betaln_gd
 
-        B = 1e-12 * np.ones_like(T)
+        B = 1e-15 * np.ones_like(T)
         recency_T = T - tx - 1
 
         for j in np.arange(recency_T.max() + 1):
-            B = B + (recency_T >= j) * betaf(alpha + x, beta + tx - x + j) * betaf(gamma + 1, delta + tx + j)
+            ix = recency_T >= j
+            B = B + ix * betaf(alpha + x, beta + tx - x + j) * betaf(gamma + 1, delta + tx + j)
 
         B = log(B) - betaln_gd - betaln_ab
         return logaddexp(A, B)
@@ -75,7 +76,6 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     @staticmethod
     def _negative_log_likelihood(log_params, frequency, recency, n_periods, weights, penalizer_coef=0):
         params = exp(log_params)
-        print(weights.sum())
         penalizer_term = penalizer_coef * sum(params ** 2)
         return (
             -(BetaGeoBetaBinomFitter._loglikelihood(params, frequency, recency, n_periods) * weights).sum()

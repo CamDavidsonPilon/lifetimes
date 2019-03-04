@@ -72,7 +72,7 @@ class BaseFitter(object):
         minimize_options["disp"] = disp
         minimize_options.update(kwargs)
 
-        current_init_params = 0.1 * np.ones(params_size) if initial_params is None else initial_params
+        current_init_params = 0.0 * np.ones(params_size) if initial_params is None else initial_params
         output = minimize(
             value_and_grad(self._negative_log_likelihood),
             jac=True,
