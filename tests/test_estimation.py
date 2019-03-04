@@ -60,6 +60,14 @@ class TestBetaGeoBetaBinomFitter:
     def donations(self):
         return load_donations()
 
+    def test_model_has_standard_error_variance_matrix_and_confidence_intervals_(self, donations):
+        donations = donations
+        bbtf = lt.BetaGeoBetaBinomFitter()
+        bbtf.fit(donations["frequency"], donations["recency"], donations["periods"], donations["weights"])
+        assert hasattr(bbtf, "standard_errors_")
+        assert hasattr(bbtf, "variance_matrix_")
+        assert hasattr(bbtf, "confidence_intervals_")
+
     def test_params_out_is_close_to_Hardie_paper(self, donations):
         donations = donations
         bbtf = lt.BetaGeoBetaBinomFitter()
@@ -137,6 +145,7 @@ class TestBetaGeoBetaBinomFitter:
             )
 
         exploded_dataset = exploded_dataset.astype(np.int64)
+        exploded_dataset.to_csv("exploded.csv")
         assert exploded_dataset.shape[0] == donations["weights"].sum()
 
         bbtf_noweights = lt.BetaGeoBetaBinomFitter()
