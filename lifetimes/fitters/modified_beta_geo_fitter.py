@@ -32,6 +32,21 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     .. [6] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model,"
        International Journal of Research in Marketing, 25 (3), 225-226.
 
+    Attributes
+    -----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: Series
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the values given in the call to `fit`
+    variance_matrix_: :obj: DataFrame
+        A DataFrame with the variance matrix of the parameters.
+    confidence_intervals_: :obj: DataFrame
+        A DataFrame 95% confidence intervals of the parameters
+    standard_errors_: :obj: Series
+        A Series with the standard errors of the parameters
+
     """
 
     def __init__(self, penalizer_coef=0.0):

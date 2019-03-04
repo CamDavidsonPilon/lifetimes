@@ -44,6 +44,22 @@ class GammaGammaFitter(BaseFitter):
        "RFM and CLV: Using iso-value curves for customer base analysis",
        Journal of Marketing Research, 42 (November), 415-430.
 
+    Attributes
+    -----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: Series
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the values given in the call to `fit`
+    variance_matrix_: :obj: DataFrame
+        A DataFrame with the variance matrix of the parameters.
+    confidence_intervals_: :obj: DataFrame
+        A DataFrame 95% confidence intervals of the parameters
+    standard_errors_: :obj: Series
+        A Series with the standard errors of the parameters
+
+
     """
 
     def __init__(self, penalizer_coef=0.0):
@@ -51,7 +67,7 @@ class GammaGammaFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(log_params, frequency, avg_monetary_value):
+    def _negative_log_likelihood(log_params, frequency, avg_monetary_value, weights, penalizer_coef):
 
         params = np.exp(log_params)
         p, q, v = params
@@ -67,9 +83,9 @@ class GammaGammaFitter(BaseFitter):
             + (p * x - 1) * np.log(m)
             + (p * x) * np.log(x)
             - (p * x + q) * np.log(x * m + v)
-        )
+        ) * weights
         penalizer_term = penalizer_coef * sum(params ** 2)
-        return -np.mean(negative_log_likelihood_values) + penalizer_term
+        return -negative_log_likelihood_values.sum() / weights.sum() + penalizer_term
 
     def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
         """
@@ -110,6 +126,7 @@ class GammaGammaFitter(BaseFitter):
         self,
         frequency,
         monetary_value,
+        weights=None,
         initial_params=None,
         verbose=False,
         tol=1e-7,
@@ -128,6 +145,16 @@ class GammaGammaFitter(BaseFitter):
         monetary_value: array_like
             the monetary value vector of customer's purchases
             (denoted m in literature).
+        weights: None or array_like
+            Number of customers with given frequency/monetary_value,
+            defaults to 1 if not specified. Fader and
+            Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/monetary_value. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
         initial_params: array_like, optional
             set the initial parameters for the fitter.
         verbose : bool, optional
@@ -154,8 +181,13 @@ class GammaGammaFitter(BaseFitter):
         frequency = np.asarray(frequency).astype(float)
         monetary_value = np.asarray(monetary_value).astype(float)
 
+        if weights is None:
+            weights = np.ones_like(frequency, dtype=int)
+        else:
+            weights = np.asarray(weights)
+
         log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
-            (frequency, monetary_value, self.penalizer_coef),
+            (frequency, monetary_value, weights, self.penalizer_coef),
             initial_params,
             3,
             verbose,
@@ -164,10 +196,15 @@ class GammaGammaFitter(BaseFitter):
             **kwargs
         )
 
-        self.data = DataFrame(vconcat[frequency, monetary_value], columns=["frequency", "monetary_value"])
-        if index is not None:
-            self.data.index = index
+        self.data = DataFrame(
+            {"monetary_value": monetary_value, "frequency": frequency, "weights": weights}, index=index
+        )
+
         self.params_ = pd.Series(np.exp(log_params), index=["p", "q", "v"])
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
 
         return self
 

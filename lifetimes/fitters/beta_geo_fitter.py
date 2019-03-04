@@ -35,10 +35,16 @@ class BetaGeoFitter(BaseFitter):
     ----------
     penalizer_coef: float
         The coefficient applied to an l2 norm on the parameters
-    params_: :obj: OrderedDict
+    params_: :obj: Series
         The fitted parameters of the model
     data: :obj: DataFrame
-        A DataFrame with the columns given in the call to `fit`
+        A DataFrame with the values given in the call to `fit`
+    variance_matrix_: :obj: DataFrame
+        A DataFrame with the variance matrix of the parameters.
+    confidence_intervals_: :obj: DataFrame
+        A DataFrame 95% confidence intervals of the parameters
+    standard_errors_: :obj: Series
+        A Series with the standard errors of the parameters
 
     References
     ----------
