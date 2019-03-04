@@ -30,7 +30,7 @@ class TestBaseFitter:
     def test_repr(self):
         base_fitter = lt.BaseFitter()
         assert repr(base_fitter) == "<lifetimes.BaseFitter>"
-        base_fitter.params_ = dict(x=12.3, y=42)
+        base_fitter.params_ = pd.Series(dict(x=12.3, y=42))
         base_fitter.data = np.array([1, 2, 3])
         assert repr(base_fitter) == "<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.30, y: 42.00>"
         base_fitter.data = None
@@ -40,7 +40,7 @@ class TestBaseFitter:
         base_fitter = lt.BaseFitter()
         with pytest.raises(ValueError):
             base_fitter._unload_params()
-        base_fitter.params_ = dict(x=12.3, y=42)
+        base_fitter.params_ = pd.Series(dict(x=12.3, y=42))
         npt.assert_array_almost_equal([12.3, 42], base_fitter._unload_params("x", "y"))
 
     def test_save_load_model(self):
@@ -172,7 +172,7 @@ class TestGammaGammaFitter:
     def test_conditional_expected_average_profit(self, cdnow_customers_with_monetary_value):
 
         ggf = lt.GammaGammaFitter()
-        ggf.params_ = OrderedDict({"p": 6.25, "q": 3.74, "v": 15.44})
+        ggf.params_ = pd.Series({"p": 6.25, "q": 3.74, "v": 15.44})
 
         summary = cdnow_customers_with_monetary_value.head(10)
         estimates = ggf.conditional_expected_average_profit(summary["frequency"], summary["monetary_value"])
@@ -185,7 +185,7 @@ class TestGammaGammaFitter:
     def test_customer_lifetime_value_with_bgf(self, cdnow_customers_with_monetary_value):
 
         ggf = lt.GammaGammaFitter()
-        ggf.params_ = OrderedDict({"p": 6.25, "q": 3.74, "v": 15.44})
+        ggf.params_ = pd.Series({"p": 6.25, "q": 3.74, "v": 15.44})
 
         bgf = lt.BetaGeoFitter()
         bgf.fit(
@@ -225,7 +225,7 @@ class TestGammaGammaFitter:
             returning_cdnow_customers_with_monetary_value["monetary_value"],
             index=index,
         )
-        assert (ggf.data.index == index).all() == True
+        assert (ggf.data.index == index).all()
 
         ggf = lt.GammaGammaFitter()
         ggf.fit(
@@ -233,7 +233,7 @@ class TestGammaGammaFitter:
             returning_cdnow_customers_with_monetary_value["monetary_value"],
             index=None,
         )
-        assert (ggf.data.index == index).all() == False
+        assert not (ggf.data.index == index).all()
 
     def test_params_out_is_close_to_Hardie_paper_with_q_constraint(self, cdnow_customers_with_monetary_value):
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
@@ -325,7 +325,7 @@ class TestParetoNBDFitter:
         beta = 11.67
         r = 0.55
         s = 0.61
-        ptf.params_ = OrderedDict({"alpha": alpha, "beta": beta, "r": r, "s": s})
+        ptf.params_ = pd.Series({"alpha": alpha, "beta": beta, "r": r, "s": s})
 
         # small change in inputs
         left = ptf.conditional_expected_number_of_purchases_up_to_time(10, 132, 200, 200)  # 6.2060517889632418
@@ -347,13 +347,13 @@ class TestParetoNBDFitter:
         https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf
         """
         ptf = lt.ParetoNBDFitter()
-        ptf.params_ = OrderedDict(zip(["r", "alpha", "s", "beta"], [0.5534, 10.5802, 0.6061, 11.6562]))
+        ptf.params_ = pd.Series(*([0.5534, 10.5802, 0.6061, 11.6562], ["r", "alpha", "s", "beta"]))
         p_alive = ptf.conditional_probability_alive(26.00, 30.86, 31.00)
         assert abs(p_alive - 0.9979) < 0.001
 
     def test_conditional_probability_alive_overflow_error(self):
         ptf = lt.ParetoNBDFitter()
-        ptf.params_ = OrderedDict(zip(["r", "alpha", "s", "beta"], [10.465, 7.98565181e-03, 3.0516, 2.820]))
+        ptf.params_ = pd.Series(*([10.465, 7.98565181e-03, 3.0516, 2.820], ["r", "alpha", "s", "beta"]))
         freq = np.array([40.0, 50.0, 50.0])
         rec = np.array([5.0, 1.0, 4.0])
         age = np.array([6.0, 37.0, 37.0])
@@ -506,16 +506,16 @@ class TestBetaGeoFitter:
     def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         bfg_no_penalizer = lt.BetaGeoFitter()
         bfg_no_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_1 = np.array(list(bfg_no_penalizer.params_.values()))
+        params_1 = bfg_no_penalizer.params_
 
         bfg_with_penalizer = lt.BetaGeoFitter(penalizer_coef=0.1)
         bfg_with_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_2 = np.array(list(bfg_with_penalizer.params_.values()))
+        params_2 = bfg_with_penalizer.params_
         assert np.all(params_2 < params_1)
 
         bfg_with_more_penalizer = lt.BetaGeoFitter(penalizer_coef=10)
         bfg_with_more_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_3 = np.array(list(bfg_with_more_penalizer.params_.values()))
+        params_3 = bfg_with_more_penalizer.params_
         assert np.all(params_3 < params_2)
 
     def test_conditional_probability_alive_matrix(self, cdnow_customers):
@@ -532,7 +532,7 @@ class TestBetaGeoFitter:
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
         """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
         bgf = lt.BetaGeoFitter()
-        bgf.params_ = OrderedDict({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
+        bgf.params_ = pd.Series({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
         # probability that a customer will make 10 repeat transactions in the
         # time interval (0,2]
         expected = 1.07869e-07
@@ -586,7 +586,7 @@ class TestBetaGeoFitter:
             < 10e-5
         )
 
-    def test_save_load_bgnbd(self, cdnow_customers):
+    def test_save_load(self, cdnow_customers):
         """Test saving and loading model for BG/NBD."""
         bgf = lt.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
@@ -596,7 +596,7 @@ class TestBetaGeoFitter:
         bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
         assert bgf_new.__dict__["penalizer_coef"] == bgf.__dict__["penalizer_coef"]
         assert bgf_new.__dict__["_scale"] == bgf.__dict__["_scale"]
-        assert bgf_new.__dict__["params_"] == bgf.__dict__["params_"]
+        assert bgf_new.__dict__["params_"].equals(bgf.__dict__["params_"])
         assert bgf_new.__dict__["_negative_log_likelihood_"] == bgf.__dict__["_negative_log_likelihood_"]
         assert (bgf_new.__dict__["data"] == bgf.__dict__["data"]).all().all()
         assert bgf_new.__dict__["predict"](1, 1, 2, 5) == bgf.__dict__["predict"](1, 1, 2, 5)
@@ -604,7 +604,7 @@ class TestBetaGeoFitter:
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
-    def test_save_load_bgnbd_no_data(self, cdnow_customers):
+    def test_save_load_no_data(self, cdnow_customers):
         """Test saving and loading model for BG/NBD without data."""
         bgf = lt.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
@@ -614,7 +614,7 @@ class TestBetaGeoFitter:
         bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
         assert bgf_new.__dict__["penalizer_coef"] == bgf.__dict__["penalizer_coef"]
         assert bgf_new.__dict__["_scale"] == bgf.__dict__["_scale"]
-        assert bgf_new.__dict__["params_"] == bgf.__dict__["params_"]
+        assert bgf_new.__dict__["params_"].equals(bgf.__dict__["params_"])
         assert bgf_new.__dict__["_negative_log_likelihood_"] == bgf.__dict__["_negative_log_likelihood_"]
         assert bgf_new.__dict__["predict"](1, 1, 2, 5) == bgf.__dict__["predict"](1, 1, 2, 5)
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
@@ -623,7 +623,7 @@ class TestBetaGeoFitter:
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
-    def test_save_load_bgnbd_no_generate_data(self, cdnow_customers):
+    def test_save_load_no_generate_data(self, cdnow_customers):
         """Test saving and loading model for BG/NBD without generate_new_data method."""
         bgf = lt.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
@@ -633,7 +633,7 @@ class TestBetaGeoFitter:
         bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
         assert bgf_new.__dict__["penalizer_coef"] == bgf.__dict__["penalizer_coef"]
         assert bgf_new.__dict__["_scale"] == bgf.__dict__["_scale"]
-        assert bgf_new.__dict__["params_"] == bgf.__dict__["params_"]
+        assert bgf_new.__dict__["params_"].equals(bgf.__dict__["params_"])
         assert bgf_new.__dict__["_negative_log_likelihood_"] == bgf.__dict__["_negative_log_likelihood_"]
         assert bgf_new.__dict__["predict"](1, 1, 2, 5) == bgf.__dict__["predict"](1, 1, 2, 5)
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
@@ -642,7 +642,7 @@ class TestBetaGeoFitter:
         # remove saved model
         os.remove(PATH_SAVE_BGNBD_MODEL)
 
-    def test_save_load_bgnbd_no_data_replace_with_empty_str(self, cdnow_customers):
+    def test_save_load_no_data_replace_with_empty_str(self, cdnow_customers):
         """Test saving and loading model for BG/NBD without data with replaced value empty str."""
         bgf = lt.BetaGeoFitter(penalizer_coef=0.0)
         bgf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
@@ -652,7 +652,7 @@ class TestBetaGeoFitter:
         bgf_new.load_model(PATH_SAVE_BGNBD_MODEL)
         assert bgf_new.__dict__["penalizer_coef"] == bgf.__dict__["penalizer_coef"]
         assert bgf_new.__dict__["_scale"] == bgf.__dict__["_scale"]
-        assert bgf_new.__dict__["params_"] == bgf.__dict__["params_"]
+        assert bgf_new.__dict__["params_"].equals(bgf.__dict__["params_"])
         assert bgf_new.__dict__["_negative_log_likelihood_"] == bgf.__dict__["_negative_log_likelihood_"]
         assert bgf_new.__dict__["predict"](1, 1, 2, 5) == bgf.__dict__["predict"](1, 1, 2, 5)
         assert bgf_new.expected_number_of_purchases_up_to_time(1) == bgf.expected_number_of_purchases_up_to_time(1)
@@ -765,16 +765,16 @@ class TestModifiedBetaGammaFitter:
     def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
         mbfg_no_penalizer = lt.ModifiedBetaGeoFitter()
         mbfg_no_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_1 = np.array(list(mbfg_no_penalizer.params_.values()))
+        params_1 = mbfg_no_penalizer.params_
 
         mbfg_with_penalizer = lt.ModifiedBetaGeoFitter(penalizer_coef=0.1)
         mbfg_with_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_2 = np.array(list(mbfg_with_penalizer.params_.values()))
+        params_2 = mbfg_with_penalizer.params_
         assert params_2.sum() < params_1.sum()
 
         mbfg_with_more_penalizer = lt.ModifiedBetaGeoFitter(penalizer_coef=1.0)
         mbfg_with_more_penalizer.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
-        params_3 = np.array(list(mbfg_with_more_penalizer.params_.values()))
+        params_3 = mbfg_with_more_penalizer.params_
         assert params_3.sum() < params_2.sum()
 
     def test_conditional_probability_alive_matrix(self, cdnow_customers):
@@ -790,7 +790,7 @@ class TestModifiedBetaGammaFitter:
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
         """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
         mbgf = lt.ModifiedBetaGeoFitter()
-        mbgf.params_ = OrderedDict({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
+        mbgf.params_ = pd.Series({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
         # probability that a customer will make 10 repeat transactions in the
         # time interval (0,2]
         expected = 1.07869e-07

@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
+import pandas as pd
 import numpy as np
 from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
 from pandas import DataFrame
@@ -136,13 +137,11 @@ class ParetoNBDFitter(BaseFitter):
             **kwargs
         )
         self._hessian_ = None
-        self.params_ = OrderedDict(zip(["r", "alpha", "s", "beta"], params))
+        self.params_ = pd.Series(*(params, ["r", "alpha", "s", "beta"]))
         self.params_["alpha"] /= self._scale
         self.params_["beta"] /= self._scale
 
-        self.data = DataFrame(vconcat[frequency, recency, T], columns=["frequency", "recency", "T"])
-        if index is not None:
-            self.data.index = index
+        self.data = DataFrame({"frequency": frequency, "recency": recency, "T": T, "weights": weights}, index=index)
         self.generate_new_data = lambda size=1: pareto_nbd_model(T, *params, size=size)
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time

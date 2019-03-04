@@ -2,6 +2,7 @@
 """Base fitter for other classes."""
 import dill
 import numpy as np
+import pandas as pd
 from textwrap import dedent
 from scipy.optimize import minimize
 from autograd import value_and_grad, hessian
@@ -66,13 +67,34 @@ class BaseFitter(object):
         with open(path, "rb") as in_file:
             self.__dict__.update(dill.load(in_file).__dict__)
 
+    def _compute_variance_matrix(self):
+        params_ = self.params_
+        return pd.DataFrame(
+            (params_ ** 2).values * np.linalg.inv(self._hessian_) / self.data["weights"].sum(),
+            columns=params_.index,
+            index=params_.index,
+        )
+
+    def _compute_standard_errors(self):
+        return np.sqrt(pd.Series(np.diag(self.variance_matrix_.values), index=self.params_.index))
+
+    def _compute_confidence_intervals(self):
+        inv_cdf_at_5_confidence = 1.96
+        return pd.DataFrame(
+            {
+                "lower 95% bound": self.params_ - inv_cdf_at_5_confidence * self.standard_errors_,
+                "upper 95% bound": self.params_ + inv_cdf_at_5_confidence * self.standard_errors_,
+            },
+            index=self.params_.index,
+        )
+
     def _fit(self, minimizing_function_args, initial_params, params_size, disp, tol=1e-7, bounds=None, **kwargs):
         # set options for minimize, if specified in kwargs will be overwritten
         minimize_options = {}
         minimize_options["disp"] = disp
         minimize_options.update(kwargs)
 
-        current_init_params = 0.0 * np.ones(params_size) if initial_params is None else initial_params
+        current_init_params = 0.1 * np.ones(params_size) if initial_params is None else initial_params
         output = minimize(
             value_and_grad(self._negative_log_likelihood),
             jac=True,

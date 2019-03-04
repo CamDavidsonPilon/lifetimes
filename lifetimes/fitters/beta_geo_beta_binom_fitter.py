@@ -143,17 +143,14 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
         _check_inputs(frequency, recency, n_periods)
 
-        log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
+        log_params_, self._negative_log_likelihood_, self._hessian_ = self._fit(
             (frequency, recency, n_periods, weights, self.penalizer_coef), initial_params, 4, verbose, tol, **kwargs
         )
+        self.params_ = pd.Series(np.exp(log_params_), index=["alpha", "beta", "gamma", "delta"])
 
-        self.params_ = OrderedDict(zip(["alpha", "beta", "gamma", "delta"], np.exp(log_params)))
         self.data = DataFrame(
-            vconcat[frequency, recency, n_periods, weights],  # TODO
-            columns=["frequency", "recency", "n_periods", "weights"],
+            {"frequency": frequency, "recency": recency, "n_periods": n_periods, "weights": weights}, index=index
         )
-        if index is not None:
-            self.data.index = index
 
         self.generate_new_data = lambda size=1: beta_geometric_beta_binom_model(
             # Making a large array replicating n by n_custs having n.
@@ -161,6 +158,10 @@ class BetaGeoBetaBinomFitter(BaseFitter):
             *self._unload_params("alpha", "beta", "gamma", "delta"),
             size=size
         )
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
         return self
 
     def conditional_expected_number_of_purchases_up_to_time(self, m_periods_in_future, frequency, recency, n_periods):

@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
+import pandas as pd
 import autograd.numpy as np
-from pandas import DataFrame
 from autograd.scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 from scipy.special import expit
@@ -112,7 +112,7 @@ class BetaGeoFitter(BaseFitter):
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        log_params, self._negative_log_likelihood_, self._hessian_ = self._fit(
+        log_params_, self._negative_log_likelihood_, self._hessian_ = self._fit(
             (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             initial_params,
             4,
@@ -121,17 +121,20 @@ class BetaGeoFitter(BaseFitter):
             **kwargs
         )
 
-        self.params_ = OrderedDict(zip(["r", "alpha", "a", "b"], np.exp(log_params)))
+        self.params_ = pd.Series(np.exp(log_params_), index=["r", "alpha", "a", "b"])
         self.params_["alpha"] /= self._scale
 
-        self.data = DataFrame({"frequency": frequency, "recency": recency, "T": T})
-        if index is not None:
-            self.data.index = index
+        self.data = pd.DataFrame({"frequency": frequency, "recency": recency, "T": T, "weights": weights}, index=index)
+
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(
             T, *self._unload_params("r", "alpha", "a", "b"), size=size
         )
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
         return self
 
     @staticmethod

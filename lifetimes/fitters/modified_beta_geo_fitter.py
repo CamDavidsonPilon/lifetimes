@@ -2,6 +2,7 @@
 from __future__ import print_function
 from __future__ import division
 
+import pandas as pd
 import autograd.numpy as np
 from autograd.numpy import log, logaddexp
 from autograd.scipy.special import gammaln, beta, gamma
@@ -89,6 +90,10 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(
             T, *self._unload_params("r", "alpha", "a", "b"), size=size
         )
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
         return self
 
     @staticmethod

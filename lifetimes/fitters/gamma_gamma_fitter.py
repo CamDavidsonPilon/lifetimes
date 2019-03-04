@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from collections import OrderedDict
 
+import pandas as pd
 from autograd import numpy as np
 from autograd.numpy import c_ as vconcat
 from pandas import DataFrame
@@ -160,14 +161,14 @@ class GammaGammaFitter(BaseFitter):
             3,
             verbose,
             tol=tol,
-            bounds=((None, None), (None, None), (None, None)) if q_constraint else None,
+            bounds=((None, None), (0, None), (None, None)) if q_constraint else None,
             **kwargs
         )
 
         self.data = DataFrame(vconcat[frequency, monetary_value], columns=["frequency", "monetary_value"])
         if index is not None:
             self.data.index = index
-        self.params_ = OrderedDict(zip(["p", "q", "v"], np.exp(log_params)))
+        self.params_ = pd.Series(np.exp(log_params), index=["p", "q", "v"])
 
         return self
 
