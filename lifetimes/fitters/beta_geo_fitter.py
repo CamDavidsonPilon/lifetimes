@@ -2,7 +2,6 @@
 """Beta Geo Fitter, also known as BG/NBD model."""
 from __future__ import print_function
 from __future__ import division
-from collections import OrderedDict
 
 import pandas as pd
 import autograd.numpy as np
@@ -147,7 +146,7 @@ class BetaGeoFitter(BaseFitter):
         A_3 = -(r + freq) * np.log(alpha + T)
         A_4 = np.log(a) - np.log(b + np.maximum(freq, 1) - 1) - (r + freq) * np.log(rec + alpha)
 
-        penalizer_term = penalizer_coef * sum(params ** 2)  # TODO: log_params?
+        penalizer_term = penalizer_coef * sum(params ** 2)
         ll = weights * (A_1 + A_2 + np.log(np.exp(A_3) + np.exp(A_4) * (freq > 0)))
         return -ll.sum() / weights.sum() + penalizer_term
 

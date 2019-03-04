@@ -2,11 +2,10 @@
 """Pareto/NBD model."""
 from __future__ import print_function
 from __future__ import division
-from collections import OrderedDict
 
 import pandas as pd
 import numpy as np
-from numpy import log, exp, logaddexp, asarray, any as npany, c_ as vconcat
+from numpy import log, exp, logaddexp, asarray, any as npany
 from pandas import DataFrame
 from scipy.special import gammaln, hyp2f1, betaln
 from scipy.special import logsumexp

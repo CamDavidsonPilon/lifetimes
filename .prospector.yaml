@@ -2,7 +2,7 @@ strictness: medium
 
 pylint:
   options:
-    bad-names: foo,baz,toto,tutu,tata,df
+    bad-names: foo,baz,toto,tutu,tata
     # max-args default = 5
     max-args: 15
     # max-locals default = 15

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import division
-from collections import OrderedDict
 
 import pandas as pd
 from autograd import numpy as np
@@ -52,7 +51,7 @@ class GammaGammaFitter(BaseFitter):
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(log_params, frequency, avg_monetary_value, penalizer_coef=0, q_constraint=False):
+    def _negative_log_likelihood(log_params, frequency, avg_monetary_value):
 
         params = np.exp(log_params)
         p, q, v = params

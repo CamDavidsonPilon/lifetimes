@@ -2,11 +2,10 @@
 """Beta Geo Beta BinomFitter."""
 from __future__ import division
 from __future__ import print_function
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-from autograd.numpy import log, exp, logaddexp, c_ as vconcat
+from autograd.numpy import log, exp, logaddexp
 from pandas import DataFrame
 from autograd.scipy.special import gammaln, betaln, beta as betaf
 from scipy.special import binom

@@ -2,7 +2,6 @@
 from __future__ import print_function
 from __future__ import division
 
-import pandas as pd
 import autograd.numpy as np
 from autograd.numpy import log, logaddexp
 from autograd.scipy.special import gammaln, beta, gamma
