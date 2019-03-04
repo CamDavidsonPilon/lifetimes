@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
@@ -331,7 +332,7 @@ def plot_expected_repeat_purchases(
 
 def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_date=None, ax=None, **kwargs):
     """
-    Draw a graph showing the probablility of being alive for a customer in time.
+    Draw a graph showing the probability of being alive for a customer in time.
 
     Parameters
     ----------
