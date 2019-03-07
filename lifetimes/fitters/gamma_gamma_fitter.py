@@ -210,7 +210,7 @@ class GammaGammaFitter(BaseFitter):
         return self
 
     def customer_lifetime_value(
-        self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01
+        self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01, freq="D"
     ):
         """
         Return customer lifetime value.
@@ -222,7 +222,7 @@ class GammaGammaFitter(BaseFitter):
         ----------
         transaction_prediction_model: model
             the model to predict future transactions, literature uses
-            pareto/ndb but we can also use a different model like bg
+            pareto/ndb models but we can also use a different model like beta-geo models
         frequency: array_like
             the frequency vector of customers' purchases
             (denoted x in literature).
@@ -237,6 +237,8 @@ class GammaGammaFitter(BaseFitter):
             the lifetime expected for the user in months. Default: 12
         discount_rate: float, optional
             the monthly adjusted discount rate. Default: 0.01
+        freq: string, optional
+            {"D", "H", "M", "W"} for day, hour, month, week. This represents what unit of time your T is measure in.
 
         Returns
         -------
@@ -248,5 +250,5 @@ class GammaGammaFitter(BaseFitter):
         # use the Gamma-Gamma estimates for the monetary_values
         adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)
         return _customer_lifetime_value(
-            transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate
+            transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate, freq=freq
         )
