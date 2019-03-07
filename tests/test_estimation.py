@@ -243,6 +243,27 @@ class TestGammaGammaFitter():
         )
         npt.assert_equal(ggf_clv.values, utils_clv.values)
 
+        ggf_clv = ggf.customer_lifetime_value(
+            bgf,
+            cdnow_customers_with_monetary_value["frequency"],
+            cdnow_customers_with_monetary_value["recency"],
+            cdnow_customers_with_monetary_value["T"],
+            cdnow_customers_with_monetary_value["monetary_value"],
+            freq="H",
+        )
+
+        utils_clv = utils._customer_lifetime_value(
+            bgf,
+            cdnow_customers_with_monetary_value["frequency"],
+            cdnow_customers_with_monetary_value["recency"],
+            cdnow_customers_with_monetary_value["T"],
+            ggf.conditional_expected_average_profit(
+                cdnow_customers_with_monetary_value["frequency"], cdnow_customers_with_monetary_value["monetary_value"]
+            ),
+            freq="H",
+        )
+        npt.assert_equal(ggf_clv.values, utils_clv.values)
+
     def test_fit_with_index(self, cdnow_customers_with_monetary_value):
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
             cdnow_customers_with_monetary_value['frequency'] > 0

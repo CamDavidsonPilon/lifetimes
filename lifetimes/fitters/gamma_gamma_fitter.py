@@ -177,7 +177,7 @@ class GammaGammaFitter(BaseFitter):
 
     def customer_lifetime_value(self, transaction_prediction_model, frequency,
                                 recency, T, monetary_value, time=12,
-                                discount_rate=0.01):
+                                discount_rate=0.01, freq="D"):
         """
         Return customer lifetime value.
 
@@ -203,6 +203,8 @@ class GammaGammaFitter(BaseFitter):
             the lifetime expected for the user in months. Default: 12
         discount_rate: float, optional
             the monthly adjusted discount rate. Default: 0.01
+        freq: string, optional
+            {"D", "H", "M", "W"} for day, hour, month, week. This represents what unit of time your T is measure in.
 
         Returns
         -------
@@ -216,4 +218,4 @@ class GammaGammaFitter(BaseFitter):
             frequency, monetary_value)
         return _customer_lifetime_value(transaction_prediction_model, frequency,
                                         recency, T, adjusted_monetary_value,
-                                        time, discount_rate)
+                                        time, discount_rate, freq=freq)
