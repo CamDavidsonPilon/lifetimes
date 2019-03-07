@@ -6,10 +6,10 @@ from .. import utils
 from pkg_resources import resource_filename
 
 __all__ = [
-    'load_cdnow_summary',
-    'load_transaction_data',
-    'load_cdnow_summary_data_with_monetary_value',
-    'load_donations'
+    "load_cdnow_summary",
+    "load_transaction_data",
+    "load_cdnow_summary_data_with_monetary_value",
+    "load_donations",
 ]
 
 
@@ -31,17 +31,17 @@ def load_dataset(filename, **kwargs):
     DataFrame
 
     """
-    return pd.read_csv(resource_filename('lifetimes', 'datasets/' + filename), **kwargs)
+    return pd.read_csv(resource_filename("lifetimes", "datasets/" + filename), **kwargs)
 
 
 def load_donations(**kwargs):
     """Load donations dataset as pandas DataFrame."""
-    return load_dataset('donations.csv', **kwargs)
+    return load_dataset("donations.csv", **kwargs)
 
 
 def load_cdnow_summary(**kwargs):
     """Load cdnow customers summary pandas DataFrame."""
-    return load_dataset('cdnow_customers_summary.csv', **kwargs)
+    return load_dataset("cdnow_customers_summary.csv", **kwargs)
 
 
 def load_transaction_data(**kwargs):
@@ -61,12 +61,12 @@ def load_transaction_data(**kwargs):
     between 2014-01-01 to 2014-12-31.
 
     """
-    return load_dataset('example_transactions.csv', **kwargs)
+    return load_dataset("example_transactions.csv", **kwargs)
 
 
 def load_cdnow_summary_data_with_monetary_value(**kwargs):
     """Load cdnow customers summary with monetary value as pandas DataFrame."""
-    df = load_dataset('cdnow_customers_summary_with_transactions.csv', **kwargs)
-    df.columns = ['customer_id', 'frequency', 'recency', 'T', 'monetary_value']
-    df = df.set_index('customer_id')
+    df = load_dataset("cdnow_customers_summary_with_transactions.csv", **kwargs)
+    df.columns = ["customer_id", "frequency", "recency", "T", "monetary_value"]
+    df = df.set_index("customer_id")
     return df

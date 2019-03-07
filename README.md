@@ -34,8 +34,6 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
     pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
-
 ## Documentation and tutorials
 [Official documentation](http://lifetimes.readthedocs.io/en/latest/)
 

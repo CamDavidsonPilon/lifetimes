@@ -1,13 +1,14 @@
-"""MBG/NBD model."""
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import division
 
-import numpy as np
-from numpy import log, logaddexp, asarray, any as npany
-from scipy.special import gammaln, hyp2f1, beta, gamma
+import autograd.numpy as np
+from autograd.numpy import log, logaddexp
+from autograd.scipy.special import gammaln, beta, gamma
+from scipy.special import hyp2f1
 
-from .beta_geo_fitter import BetaGeoFitter
-from ..generate_data import modified_beta_geometric_nbd_model
+from lifetimes import BetaGeoFitter
+from lifetimes.generate_data import modified_beta_geometric_nbd_model
 
 
 class ModifiedBetaGeoFitter(BetaGeoFitter):
@@ -31,15 +32,31 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
     .. [6] Wagner, U. and Hoppe D. (2008), "Erratum on the MBG/NBD Model,"
        International Journal of Research in Marketing, 25 (3), 225-226.
 
+    Attributes
+    -----------
+    penalizer_coef: float
+        The coefficient applied to an l2 norm on the parameters
+    params_: :obj: Series
+        The fitted parameters of the model
+    data: :obj: DataFrame
+        A DataFrame with the values given in the call to `fit`
+    variance_matrix_: :obj: DataFrame
+        A DataFrame with the variance matrix of the parameters.
+    confidence_intervals_: :obj: DataFrame
+        A DataFrame 95% confidence intervals of the parameters
+    standard_errors_: :obj: Series
+        A Series with the standard errors of the parameters
+    summary: :obj: DataFrame
+        A DataFrame containing information about the fitted parameters
     """
 
     def __init__(self, penalizer_coef=0.0):
         """Initialization, set penalizer_coef."""
-        super(self.__class__, self).__init__(penalizer_coef)
+        super(ModifiedBetaGeoFitter, self).__init__(penalizer_coef)
 
-    def fit(self, frequency, recency, T, weights=None, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+    def fit(
+        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-7, index=None, **kwargs
+    ):
         """
         Fit the data to the MBG/NBD model.
 
@@ -60,24 +77,15 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             observed combinations of frequency/recency/T. This
             parameter represents the count of customers with a given
             purchase pattern. Instead of calculating individual
-            loglikelihood, the loglikelihood is calculated for each
+            log-likelihood, the log-likelihood is calculated for each
             pattern and multiplied by the number of customers with
             that pattern.
-        iterative_fitting: int, optional
-            perform iterative_fitting fits over random/warm-started initial params
-        initial_params: array_like, optional
-            set the initial parameters for the fitter.
         verbose : bool, optional
             set to true to print out convergence diagnostics.
         tol : float, optional
             tolerance for termination of the function minimization process.
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
-        fit_method : string, optional
-            fit_method to passing to scipy.optimize.minimize
-        maxiter : int, optional
-            max iterations for optimizer in scipy.optimize.minimize will be
-            overwritten if setted in kwargs.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
@@ -90,41 +98,31 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         """
         # although the parent method is called, this class's
         # _negative_log_likelihood is referenced
-        super(self.__class__, self).fit(frequency,
-                                        recency,
-                                        T,
-                                        weights,
-                                        iterative_fitting,
-                                        initial_params,
-                                        verbose,
-                                        tol,
-                                        index=index,
-                                        fit_method=fit_method,
-                                        maxiter=maxiter,
-                                        **kwargs)
-        # this needs to be reassigned from the parent method
-        self.generate_new_data = (
-            lambda size=1: modified_beta_geometric_nbd_model(
-                T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+        super(ModifiedBetaGeoFitter, self).fit(
+            frequency, recency, T, weights, initial_params, verbose, tol, index=index, **kwargs
         )
+        # this needs to be reassigned from the parent method
+        self.generate_new_data = lambda size=1: modified_beta_geometric_nbd_model(
+            T, *self._unload_params("r", "alpha", "a", "b"), size=size
+        )
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
-        if npany(asarray(params) <= 0):
-            return np.inf
-
+    def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+        params = np.exp(log_params)
         r, alpha, a, b = params
 
         A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
-        A_2 = (gammaln(a + b) + gammaln(b + freq + 1) - gammaln(b) -
-               gammaln(a + b + freq + 1))
+        A_2 = gammaln(a + b) + gammaln(b + freq + 1) - gammaln(b) - gammaln(a + b + freq + 1)
         A_3 = -(r + freq) * log(alpha + T)
-        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) -
-                                                     log(alpha + rec))
+        A_4 = log(a) - log(b + freq) + (r + freq) * (log(alpha + T) - log(alpha + rec))
 
-        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).mean() + penalizer_term
+        penalizer_term = penalizer_coef * sum(params ** 2)
+        return -(weights * (A_1 + A_2 + A_3 + logaddexp(A_4, 0))).sum() / weights.sum() + penalizer_term
 
     def expected_number_of_purchases_up_to_time(self, t):
         """
@@ -136,21 +134,20 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
         Parameters
         ----------
         t: array_like
-            times to calculate the expection for
+            times to calculate the expectation for
 
         Returns
         -------
         array_like
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         hyp = hyp2f1(r, b + 1, a + b, t / (alpha + t))
         return b / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
+    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
         """
-        Conditinal expected number of repeat purchases up to time t.
+        Conditional expected number of repeat purchases up to time t.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
@@ -174,16 +171,14 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         """
         x = frequency
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         hyp_term = hyp2f1(r + x, b + x + 1, a + b + x, t / (alpha + T + t))
         first_term = (a + b + x) / (a - 1)
-        second_term = (1 - hyp_term *
-                       ((alpha + T) / (alpha + t + T)) ** (r + x))
+        second_term = 1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x)
         numerator = first_term * second_term
 
-        denominator = (1 + (a / (b + x)) *
-                       ((alpha + T) / (alpha + recency)) ** (r + x))
+        denominator = 1 + (a / (b + x)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
@@ -198,46 +193,21 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
         Parameters
         ----------
-        frequency: float
+        frequency: array or float
             historical frequency of customer.
-        recency: float
+        recency: array or float
             historical recency of customer.
-        T: float
+        T: array or float
             age of the customer.
-        ln_exp_max: int
-            to what value clip log_div equation
 
         Returns
         -------
-        float
-            value representing a probability
-
-        """  # noqa
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
-        return 1. / (1 + (a / (b + frequency)) *
-                     ((alpha + T) / (alpha + recency)) ** (r + frequency))
-
-    def conditional_probability_alive_matrix(self, max_frequency=None,
-                                             max_recency=None):
-        """
-        Compute the probability alive matrix.
-
-        Parameters
-        ----------
-        max_frequency: float, optional
-            the maximum frequency to plot. Default is max observed frequency.
-        max_recency: float, optional
-            the maximum recency to plot. This also determines the age of the
-            customer. Default to max observed age.
-
-        Returns
-        -------
-        matrix:
-            A matrix of the form [t_x: historical recency, x: historical frequency]
+        array:
+            value representing probability of being alive
 
         """
-        return super(self.__class__, self) \
-            .conditional_probability_alive_matrix(max_frequency, max_recency)
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
+        return np.atleast_1d(1.0 / (1 + (a / (b + frequency)) * ((alpha + T) / (alpha + recency)) ** (r + frequency)))
 
     def probability_of_n_purchases_up_to_time(self, t, n):
         r"""
@@ -261,15 +231,19 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
             Probability to have n purchases up to t units of time
 
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         _j = np.arange(0, n)
 
-        first_term = (beta(a, b + n + 1) / beta(a, b) * gamma(r + n) /
-                      gamma(r) / gamma(n + 1) *
-                      (alpha / (alpha + t)) ** r * (t / (alpha + t)) ** n)
-        finite_sum = (gamma(r + _j) / gamma(r) / gamma(_j + 1) *
-                      (t / (alpha + t)) ** _j).sum()
-        second_term = (beta(a + 1, b + n) / beta(a, b) *
-                       (1 - (alpha / (alpha + t)) ** r * finite_sum))
+        first_term = (
+            beta(a, b + n + 1)
+            / beta(a, b)
+            * gamma(r + n)
+            / gamma(r)
+            / gamma(n + 1)
+            * (alpha / (alpha + t)) ** r
+            * (t / (alpha + t)) ** n
+        )
+        finite_sum = (gamma(r + _j) / gamma(r) / gamma(_j + 1) * (t / (alpha + t)) ** _j).sum()
+        second_term = beta(a + 1, b + n) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
 
         return first_term + second_term

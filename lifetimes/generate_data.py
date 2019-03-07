@@ -1,4 +1,3 @@
-
 import numpy as np
 from numpy import random
 import pandas as pd
@@ -37,9 +36,9 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         T = np.asarray(T)
 
     probability_of_post_purchase_death = random.beta(a, b, size=size)
-    lambda_ = random.gamma(r, scale=1. / alpha, size=size)
+    lambda_ = random.gamma(r, scale=1.0 / alpha, size=size)
 
-    columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
+    columns = ["frequency", "recency", "T", "lambda", "p", "alive", "customer_id"]
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
@@ -48,21 +47,28 @@ def beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
 
         # hacky until I can find something better
         times = []
-        next_purchase_in = random.exponential(scale=1. / l)
+        next_purchase_in = random.exponential(scale=1.0 / l)
         alive = True
         while (np.sum(times) + next_purchase_in < T[i]) and alive:
             times.append(next_purchase_in)
-            next_purchase_in = random.exponential(scale=1. / l)
+            next_purchase_in = random.exponential(scale=1.0 / l)
             alive = random.random() > p
 
         times = np.array(times).cumsum()
-        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
+        df.iloc[i] = (
+            np.unique(np.array(times).astype(int)).shape[0],
+            np.max(times if times.shape[0] > 0 else 0),
+            T[i],
+            l,
+            p,
+            alive,
+            i,
+        )
 
-    return df.set_index('customer_id')
+    return df.set_index("customer_id")
 
 
-def beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_period_end='2019-1-1',
-                                                freq='D', size=1):
+def beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_period_end="2019-1-1", freq="D", size=1):
     """
     Generate artificial transactional data according to the BG/NBD model.
 
@@ -103,9 +109,9 @@ def beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_p
         T = np.asarray(T)
 
     probability_of_post_purchase_death = random.beta(a, b, size=size)
-    lambda_ = random.gamma(r, scale=1. / alpha, size=size)
+    lambda_ = random.gamma(r, scale=1.0 / alpha, size=size)
 
-    columns = ['customer_id', 'date']
+    columns = ["customer_id", "date"]
     df = pd.DataFrame(columns=columns)
 
     for i in range(size):
@@ -115,12 +121,12 @@ def beta_geometric_nbd_model_transactional_data(T, r, alpha, a, b, observation_p
         age = T[i]
 
         purchases = [[i, s - pd.Timedelta(1, unit=freq)]]
-        next_purchase_in = random.exponential(scale=1. / l)
+        next_purchase_in = random.exponential(scale=1.0 / l)
         alive = True
 
         while next_purchase_in < age and alive:
             purchases.append([i, s + pd.Timedelta(next_purchase_in, unit=freq)])
-            next_purchase_in += random.exponential(scale=1. / l)
+            next_purchase_in += random.exponential(scale=1.0 / l)
             alive = random.random() > p
 
         df = df.append(pd.DataFrame(purchases, columns=columns))
@@ -160,28 +166,36 @@ def pareto_nbd_model(T, r, alpha, s, beta, size=1):
     else:
         T = np.asarray(T)
 
-    lambda_ = random.gamma(r, scale=1. / alpha, size=size)
-    mus = random.gamma(s, scale=1. / beta, size=size)
+    lambda_ = random.gamma(r, scale=1.0 / alpha, size=size)
+    mus = random.gamma(s, scale=1.0 / beta, size=size)
 
-    columns = ['frequency', 'recency', 'T', 'lambda', 'mu', 'alive', 'customer_id']
+    columns = ["frequency", "recency", "T", "lambda", "mu", "alive", "customer_id"]
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
         l = lambda_[i]
         mu = mus[i]
-        time_of_death = random.exponential(scale=1. / mu)
+        time_of_death = random.exponential(scale=1.0 / mu)
 
         # hacky until I can find something better
         times = []
-        next_purchase_in = random.exponential(scale=1. / l)
+        next_purchase_in = random.exponential(scale=1.0 / l)
         while np.sum(times) + next_purchase_in < min(time_of_death, T[i]):
             times.append(next_purchase_in)
-            next_purchase_in = random.exponential(scale=1. / l)
+            next_purchase_in = random.exponential(scale=1.0 / l)
 
         times = np.array(times).cumsum()
-        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, mu, time_of_death > T[i], i
+        df.iloc[i] = (
+            np.unique(np.array(times).astype(int)).shape[0],
+            np.max(times if times.shape[0] > 0 else 0),
+            T[i],
+            l,
+            mu,
+            time_of_death > T[i],
+            i,
+        )
 
-    return df.set_index('customer_id')
+    return df.set_index("customer_id")
 
 
 def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
@@ -220,9 +234,9 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
         T = np.asarray(T)
 
     probability_of_post_purchase_death = random.beta(a, b, size=size)
-    lambda_ = random.gamma(r, scale=1. / alpha, size=size)
+    lambda_ = random.gamma(r, scale=1.0 / alpha, size=size)
 
-    columns = ['frequency', 'recency', 'T', 'lambda', 'p', 'alive', 'customer_id']
+    columns = ["frequency", "recency", "T", "lambda", "p", "alive", "customer_id"]
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
 
     for i in range(size):
@@ -231,17 +245,25 @@ def modified_beta_geometric_nbd_model(T, r, alpha, a, b, size=1):
 
         # hacky until I can find something better
         times = []
-        next_purchase_in = random.exponential(scale=1. / l)
+        next_purchase_in = random.exponential(scale=1.0 / l)
         alive = random.random() > p  # essentially the difference between this model and BG/NBD
         while (np.sum(times) + next_purchase_in < T[i]) and alive:
             times.append(next_purchase_in)
-            next_purchase_in = random.exponential(scale=1. / l)
+            next_purchase_in = random.exponential(scale=1.0 / l)
             alive = random.random() > p
 
         times = np.array(times).cumsum()
-        df.iloc[i] = np.unique(np.array(times).astype(int)).shape[0], np.max(times if times.shape[0] > 0 else 0), T[i], l, p, alive, i
+        df.iloc[i] = (
+            np.unique(np.array(times).astype(int)).shape[0],
+            np.max(times if times.shape[0] > 0 else 0),
+            T[i],
+            l,
+            p,
+            alive,
+            i,
+        )
 
-    return df.set_index('customer_id')
+    return df.set_index("customer_id")
 
 
 def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
@@ -285,7 +307,7 @@ def beta_geometric_beta_binom_model(N, alpha, beta, gamma, delta, size=1):
     probability_of_post_purchase_death = random.beta(a=alpha, b=beta, size=size)
     thetas = random.beta(a=gamma, b=delta, size=size)
 
-    columns = ['frequency', 'recency', 'n_periods', 'p', 'theta', 'alive', 'customer_id']
+    columns = ["frequency", "recency", "n_periods", "p", "theta", "alive", "customer_id"]
     df = pd.DataFrame(np.zeros((size, len(columns))), columns=columns)
     for i in range(size):
         p = probability_of_post_purchase_death[i]

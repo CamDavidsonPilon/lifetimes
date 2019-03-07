@@ -21,7 +21,7 @@ ID
 #### The shape of your data
 For all models, the following nomenclature is used:
 
-- `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases. This is actually slightly wrong. It's the count of time periods the customer had a purchase in. So if using days as units, then it's the count of days the customer had a purchase on.   
+- `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases. This is actually slightly wrong. It's the count of time periods the customer had a purchase in. So if using days as units, then it's the count of days the customer had a purchase on.
 - `T` represents the age of the customer in whatever time units chosen (weekly, in the above dataset). This is equal to the duration between a customer's first purchase and the end of the period under study.
 - `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
 
@@ -43,7 +43,7 @@ print(bgf)
 """
 ```
 
-After fitting, we have lots of nice methods and properties attached to the fitter object.
+After fitting, we have lots of nice methods and properties attached to the fitter object, like ``param_`` and ``summary``.
 
 For small samples sizes, the parameters can get implausibly large, so by adding an l2 penalty the likelihood, we can control how large these parameters can be. This is implemented as setting as positive `penalizer_coef` in the initialization of the model. In typical applications, penalizers on the order of 0.001 to 0.1 are effective.
 
@@ -153,7 +153,7 @@ from lifetimes.utils import calibration_and_holdout_data
 
 summary_cal_holdout = calibration_and_holdout_data(transaction_data, 'id', 'date',
                                         calibration_period_end='2014-09-01',
-                                        observation_period_end='2014-12-31' )   
+                                        observation_period_end='2014-12-31' )
 print(summary_cal_holdout.head())
 """
     frequency_cal  recency_cal  T_cal  frequency_holdout  duration_holdout

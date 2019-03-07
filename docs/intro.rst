@@ -51,10 +51,6 @@ Installation
 
    pip install lifetimes
 
-Requirements are only Numpy, Scipy, Pandas,
-`Dill <https://github.com/uqfoundation/dill>`__ (and
-optionally-but-seriously matplotlib).
-
 Documentation and tutorials
 ---------------------------
 
