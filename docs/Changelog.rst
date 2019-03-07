@@ -17,6 +17,8 @@ Changelog
 -  ``GammaGammaFitter`` can accept a ``weights`` argument now.
 -  ``customer_lifelime_value`` in ``GammaGamma`` now accepts a frequency
    argument.
+-  fixed a bug that was causing ``ParetoNBDFitter`` to generate data
+   incorrectly.
 
 .. _section-1:
 

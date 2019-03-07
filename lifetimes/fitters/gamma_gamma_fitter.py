@@ -4,7 +4,6 @@ from __future__ import division
 
 import pandas as pd
 from autograd import numpy as np
-from autograd.numpy import c_ as vconcat
 from pandas import DataFrame
 from autograd.scipy.special import gammaln
 
