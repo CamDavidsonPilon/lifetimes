@@ -12,6 +12,7 @@
    Quickstart
    Saving and loading model
    More examples and recipes
+   Changelog
 
 
 Indices and tables

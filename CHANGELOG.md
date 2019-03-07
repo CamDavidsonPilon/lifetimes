@@ -5,6 +5,7 @@
  - `GammaGammaFitter`, `BetaGeoFitter`, `ModifiedBetaGeoFitter` and `BetaGeoBetaBinomFitter` have three new attributes: `confidence_interval_`, `variance_matrix_` and `standard_errors_`
  - `params_` on fitted models is not longer an OrderedDict, but a Pandas Series
  - `GammaGammaFitter` can accept a `weights` argument now.
+ - `customer_lifelime_value` in `GammaGamma` now accepts a frequency argument.
 
 ### 0.10.1
  - performance improvements to `generate_data.py` for large datasets #195
