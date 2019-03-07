@@ -116,3 +116,24 @@ class BaseFitter(object):
             """
             )
         )
+
+    @property
+    def summary(self):
+        """
+        Summary statistics describing the fit.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            Contains columns coef, se(coef), lower, upper
+
+        See Also
+        --------
+        ``print_summary``
+        """
+        df = pd.DataFrame(index=self.params_.index)
+        df["coef"] = self.params_
+        df["se(coef)"] = self.standard_errors_
+        df["lower 95% bound"] = self.confidence_intervals_["lower 95% bound"]
+        df["upper 95% bound"] = self.confidence_intervals_["upper 95% bound"]
+        return df

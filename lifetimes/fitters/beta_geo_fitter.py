@@ -45,6 +45,8 @@ class BetaGeoFitter(BaseFitter):
         A DataFrame 95% confidence intervals of the parameters
     standard_errors_: :obj: Series
         A Series with the standard errors of the parameters
+    summary: :obj: DataFrame
+        A DataFrame containing information about the fitted parameters
 
     References
     ----------

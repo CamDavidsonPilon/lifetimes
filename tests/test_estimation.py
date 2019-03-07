@@ -245,6 +245,7 @@ class TestGammaGammaFitter:
         assert not (ggf.data.index == index).all()
 
     def test_params_out_is_close_to_Hardie_paper_with_q_constraint(self, cdnow_customers_with_monetary_value):
+
         returning_cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
             cdnow_customers_with_monetary_value["frequency"] > 0
         ]
@@ -256,6 +257,34 @@ class TestGammaGammaFitter:
         )
         expected = np.array([6.25, 3.74, 15.44])
         npt.assert_array_almost_equal(expected, np.array(ggf._unload_params("p", "q", "v")), decimal=2)
+
+    def test_using_weights_col_gives_correct_results(self, cdnow_customers_with_monetary_value):
+        cdnow_customers_with_monetary_value = cdnow_customers_with_monetary_value[
+            cdnow_customers_with_monetary_value["frequency"] > 0
+        ]
+        cdnow_customers_weights = cdnow_customers_with_monetary_value.copy()
+        cdnow_customers_weights["weights"] = 1.0
+        cdnow_customers_weights = cdnow_customers_weights.groupby(["frequency", "monetary_value"])["weights"].sum()
+        cdnow_customers_weights = cdnow_customers_weights.reset_index()
+        assert (cdnow_customers_weights["weights"] > 1).any()
+
+        gg_weights = lt.GammaGammaFitter(penalizer_coef=0.0)
+        gg_weights.fit(
+            cdnow_customers_weights["frequency"],
+            cdnow_customers_weights["monetary_value"],
+            weights=cdnow_customers_weights["weights"],
+        )
+
+        gg_no_weights = lt.GammaGammaFitter(penalizer_coef=0.0)
+        gg_no_weights.fit(
+            cdnow_customers_with_monetary_value["frequency"], cdnow_customers_with_monetary_value["monetary_value"]
+        )
+
+        npt.assert_almost_equal(
+            np.array(gg_no_weights._unload_params("p", "q", "v")),
+            np.array(gg_weights._unload_params("p", "q", "v")),
+            decimal=3,
+        )
 
 
 class TestParetoNBDFitter:
