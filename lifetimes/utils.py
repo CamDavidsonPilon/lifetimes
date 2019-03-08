@@ -123,7 +123,10 @@ def calibration_and_holdout_data(
     combined_data = calibration_summary_data.join(holdout_summary_data, how="left")
     combined_data.fillna(0, inplace=True)
 
-    delta_time = (to_period(observation_period_end) - to_period(calibration_period_end)).n
+    try:
+        delta_time = (to_period(observation_period_end) - to_period(calibration_period_end)).n
+    except AttributeError:
+        delta_time = to_period(observation_period_end) - to_period(calibration_period_end)
     combined_data["duration_holdout"] = delta_time
 
     return combined_data
@@ -512,7 +515,10 @@ def expected_cumulative_transactions(
     first_trans_size = first_transactions.groupby(datetime_col).size()
     for i, period in enumerate(date_periods):
         if i % freq_multiplier == 0 and i > 0:
-            times = np.array([d.n for d in period - first_trans_size.index])
+            try:
+                times = np.array([d.n for d in period - first_trans_size.index])
+            except AttributeError:
+                times = period - first_trans_size.index
             times = times[times > 0].astype(float) / freq_multiplier
             expected_trans_agg = model.expected_number_of_purchases_up_to_time(times)
 
