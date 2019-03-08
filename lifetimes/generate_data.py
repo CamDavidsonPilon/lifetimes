@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 import numpy as np
 from numpy import random
 import pandas as pd

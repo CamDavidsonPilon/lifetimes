@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """Base fitter for other classes."""
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 import dill
 import numpy as np
 import pandas as pd

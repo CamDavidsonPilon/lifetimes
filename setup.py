@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 from setuptools import setup
 
@@ -32,7 +33,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Topic :: Scientific/Engineering",
     ],
-    install_requires=["numpy>=1.10.0", "scipy>=1.0.0", "pandas>=0.21.1", "autograd>=1.2.0", "dill>=0.2.6"],
+    install_requires=["numpy>=1.10.0", "scipy>=1.0.0", "pandas>=0.24.0", "autograd>=1.2.0", "dill>=0.2.6"],
     package_data={
         "lifetimes": ["datasets/*", "../README.md", "../README.txt", "../LICENSE", "../MANIFEST.in", "fitters/*"]
     },

@@ -1,5 +1,5 @@
 numpy>1.10.0
 scipy>=1.0.0
-pandas>=0.21.1
+pandas>=0.24.0
 dill>=0.2.6
 autograd>=1.2.0
