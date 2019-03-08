@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.11.1
+~~~~~~
+
+-  bump the Pandas requirements to >= 0.24.0. This should have been done
+   in 0.11.0
+-  suppress some warnings from autograd.
+
+.. _section-1:
+
 0.11.0
 ~~~~~~
 
@@ -20,7 +29,7 @@ Changelog
 -  fixed a bug that was causing ``ParetoNBDFitter`` to generate data
    incorrectly.
 
-.. _section-1:
+.. _section-2:
 
 0.10.1
 ~~~~~~
@@ -38,7 +47,7 @@ Changelog
 -  Stop support of scipy < 1.0.
 -  Stop support of < Python 3.5.
 
-.. _section-2:
+.. _section-3:
 
 0.10.0
 ~~~~~~
@@ -57,7 +66,7 @@ Changelog
    used to reduce the size of the data (collapsing subjects with the
    same recency, frequency, T).
 
-.. _section-3:
+.. _section-4:
 
 0.9.1
 ~~~~~
@@ -74,7 +83,7 @@ Changelog
    difference in values compared to ``summary_from_transaction_data``.
    @DaniGate
 
-.. _section-4:
+.. _section-5:
 
 0.9.0
 ~~~~~
@@ -86,7 +95,7 @@ Changelog
 -  Fixed a bug in ``expected_cumulative_transactions`` and
    ``plot_cumulative_transactions``
 
-.. _section-5:
+.. _section-6:
 
 0.8.1
 ~~~~~

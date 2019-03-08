@@ -2,6 +2,9 @@
 """Beta Geo Beta BinomFitter."""
 from __future__ import division
 from __future__ import print_function
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import numpy as np
 import pandas as pd
@@ -62,6 +65,8 @@ class BetaGeoBetaBinomFitter(BaseFitter):
 
     @staticmethod
     def _loglikelihood(params, x, tx, T):
+        warnings.simplefilter(action="ignore", category=FutureWarning)
+
         """Log likelihood for optimizer."""
         alpha, beta, gamma, delta = params
 

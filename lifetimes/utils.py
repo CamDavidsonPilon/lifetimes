@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Lifetimes utils and helpers."""
 from __future__ import division
-
 import numpy as np
 import pandas as pd
 import dill
@@ -11,7 +10,6 @@ pd.options.mode.chained_assignment = None
 __all__ = [
     "calibration_and_holdout_data",
     "summary_data_from_transaction_data",
-    "_find_first_transactions",
     "calculate_alive_path",
     "expected_cumulative_transactions",
 ]

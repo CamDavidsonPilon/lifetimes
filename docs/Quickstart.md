@@ -41,6 +41,15 @@ print(bgf)
 """
 <lifetimes.BetaGeoFitter: fitted with 2357 subjects, a: 0.79, alpha: 4.41, b: 2.43, r: 0.24>
 """
+
+bgf.summary
+"""
+           coef  se(coef)  lower 95% bound  upper 95% bound
+r      0.242593  0.012557         0.217981         0.267205
+alpha  4.413532  0.378221         3.672218         5.154846
+a      0.792886  0.185719         0.428877         1.156895
+b      2.425752  0.705345         1.043276         3.808229
+"""
 ```
 
 After fitting, we have lots of nice methods and properties attached to the fitter object, like ``param_`` and ``summary``.

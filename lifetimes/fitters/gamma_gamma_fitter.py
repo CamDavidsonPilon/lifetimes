@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import division
+import warnings
 
 import pandas as pd
 from autograd import numpy as np
@@ -68,6 +69,7 @@ class GammaGammaFitter(BaseFitter):
 
     @staticmethod
     def _negative_log_likelihood(log_params, frequency, avg_monetary_value, weights, penalizer_coef):
+        warnings.simplefilter(action="ignore", category=FutureWarning)
 
         params = np.exp(log_params)
         p, q, v = params

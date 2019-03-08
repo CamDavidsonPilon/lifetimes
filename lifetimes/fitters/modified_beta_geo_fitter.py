@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import division
+import warnings
 
 import autograd.numpy as np
 from autograd.numpy import log, logaddexp
@@ -113,6 +114,8 @@ class ModifiedBetaGeoFitter(BetaGeoFitter):
 
     @staticmethod
     def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+        warnings.simplefilter(action="ignore", category=FutureWarning)
+
         params = np.exp(log_params)
         r, alpha, a, b = params
 

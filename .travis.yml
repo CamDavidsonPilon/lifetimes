@@ -6,9 +6,6 @@ python:
    - "3.5"
    - "3.6"
 env:
-- export PANDAS_VERSION=0.21.1
-- export PANDAS_VERSION=0.22.0
-- export PANDAS_VERSION=0.23.4
 - export PANDAS_VERSION=0.24.1
 # Enable newer 3.7 without globally enabling sudo and dist: xenial for other build jobs
 matrix:
@@ -17,14 +14,11 @@ matrix:
     dist: xenial
     sudo: true
     env: export PANDAS_VERSION=0.24.1
-  - python: 3.7
-    dist: xenial
-    sudo: true
-    env: export PANDAS_VERSION=0.23.4
 before_install:
   - ls
 install:
   - "pip install -r dev_requirements.txt"
+  - "pip install pandas==$PANDAS_VERSION"
 # command to run tests
 script:
   - py.test --cov lifetimes

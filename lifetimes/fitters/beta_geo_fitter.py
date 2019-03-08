@@ -2,6 +2,7 @@
 """Beta Geo Fitter, also known as BG/NBD model."""
 from __future__ import print_function
 from __future__ import division
+import warnings
 
 import pandas as pd
 import autograd.numpy as np
@@ -146,6 +147,8 @@ class BetaGeoFitter(BaseFitter):
 
     @staticmethod
     def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+        warnings.simplefilter(action="ignore", category=FutureWarning)
+
         params = np.exp(log_params)
         r, alpha, a, b = params
 
