@@ -25,6 +25,7 @@ before_install:
   - ls
 install:
   - "pip install -r dev_requirements.txt"
+  - "pip install pandas==$PANDAS_VERSION"
 # command to run tests
 script:
   - py.test --cov lifetimes
