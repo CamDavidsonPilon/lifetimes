@@ -111,12 +111,8 @@ def plot_calibration_purchases_vs_holdout_purchases(
     summary = calibration_holdout_matrix.copy()
     duration_holdout = summary.iloc[0]["duration_holdout"]
 
-    summary["model_predictions"] = summary.apply(
-        lambda r: model.conditional_expected_number_of_purchases_up_to_time(
-            duration_holdout, r["frequency_cal"], r["recency_cal"], r["T_cal"]
-        ),
-        axis=1,
-    )
+    summary["model_predictions"] = model.conditional_expected_number_of_purchases_up_to_time(
+            duration_holdout, summary["frequency_cal"], summary["recency_cal"], summary["T_cal"])
 
     if kind == "time_since_last_purchase":
         summary["time_since_last_purchase"] = summary["T_cal"] - summary["recency_cal"]
