@@ -44,7 +44,7 @@ class BaseFitter(object):
         ----------
         path: str
             Path where to save model.
-        save_date: bool, optional
+        save_data: bool, optional
             Whether to save data from fitter.data to pickle object
         save_generate_data_method: bool, optional
             Whether to save generate_new_data method (if it exists) from
