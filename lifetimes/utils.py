@@ -99,10 +99,16 @@ def calibration_and_holdout_data(
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     observation_period_end = pd.to_datetime(observation_period_end, format=datetime_format)
     calibration_period_end = pd.to_datetime(calibration_period_end, format=datetime_format)
-
+    
+    calibration_transactions = transactions.loc[transactions[datetime_col] <= calibration_period_end].copy()
+    if calibration_transactions.empty:
+        raise ValueError(
+            "There is no data available. Check the `calibration_period_end` and confirm that values in `transactions` occur prior to those dates."
+        )
+        
     # create calibration dataset
     calibration_summary_data = summary_data_from_transaction_data(
-        transactions,
+        calibration_transactions,
         customer_id_col,
         datetime_col,
         datetime_format=datetime_format,
@@ -134,10 +140,7 @@ def calibration_and_holdout_data(
     combined_data = calibration_summary_data.join(holdout_summary_data, how="left")
     #combined_data = combined_data.reindex(transactions[customer_id_col].unique())
     combined_data.fillna(0, inplace=True)
-
-    delta_time = (observation_period_end - calibration_period_end) / np.timedelta64(1, freq) / freq_multiplier
-    combined_data["duration_holdout"] = delta_time
-
+    
     return combined_data
 
 def _find_first_transactions(
@@ -195,7 +198,14 @@ def _find_first_transactions(
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
-    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
+    transactions[datetime_col] = (
+        pd.Index(
+        pd.to_datetime(transactions[datetime_col], format=datetime_format))
+                                  .to_period(freq)
+                                  .to_timestamp()
+    )
+    transactions = transactions.loc[(transactions[datetime_col] <= observation_period_end)]
+    
     period_groupby = transactions.groupby([customer_id_col, pd.Grouper(freq=freq, key=datetime_col)])
     
     if monetary_value_col:
@@ -203,8 +213,6 @@ def _find_first_transactions(
     else:
         period_transactions = period_groupby.agg(lambda r: 1).reset_index()
         
-    period_transactions = period_transactions.loc[(period_transactions[datetime_col] <= observation_period_end)]
-    
     # initialize a new column where we will indicate which are the first transactions
     period_transactions["first"] = False
     # find all of the initial transactions and store as an index
@@ -213,7 +221,7 @@ def _find_first_transactions(
     period_transactions.loc[first_transactions, "first"] = True
     select_columns.append("first")
     # reset datetime_col to period
-    #period_transactions[datetime_col] = pd.Index(period_transactions[datetime_col]).to_period(freq).to_timestamp()
+    period_transactions[datetime_col] = pd.Index(period_transactions[datetime_col]).to_period(freq)
 
     return period_transactions[select_columns]
 
@@ -294,27 +302,21 @@ def summary_data_from_transaction_data(
             .to_period(freq)
             .to_timestamp()
         )
-
+        
     transactions = transactions.copy()
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
         
-    # label all of the repeated transactions.  Purposely set freq to 'D' to allow for `count_intra_period_monetary`
+    # label all of the repeated transactions.  
     repeated_transactions = _find_first_transactions(
         transactions, customer_id_col, datetime_col, monetary_value_col, datetime_format, observation_period_end, freq
-    )
-        
+    )    
+    repeated_transactions[datetime_col] = pd.Index(repeated_transactions[datetime_col]).to_timestamp()
+    
     # count all orders by customer.
     customers = (
         repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col]
         .agg(["min", "max", "count"])
     )
-    
-    fill_value = customers['min'].min()
-    
-    #customers = customers.reindex(transactions[customer_id_col].unique())
-    customers['min'].fillna(fill_value, inplace=True)
-    customers['max'].fillna(fill_value, inplace=True)
-    customers['count'].fillna(0, inplace=True)
     
     #Count all intra-period transactions as individual events
     if count_intra_period_transaction:
@@ -335,11 +337,13 @@ def summary_data_from_transaction_data(
         customers["T"] = (observation_period_end - customers["min"]) / np.timedelta64(1, freq) / freq_multiplier
         
         #If discrete recency
-        if discrete_recency_T:
-            customers["recency"] = customers["recency"].round(0)
-            customers["T"]  = customers["T"].round(0)
+        #if discrete_recency_T:
+        #    customers["recency"] = customers["recency"].round(0)
+        #    customers["T"]  = customers["T"].round(0)
         
         summary_columns = ["frequency", "recency", "T"]
+        
+        
     #Discrete time calculations
     else:
         customers["recency"] = np.round((customers["max"] - customers["min"].min()) / np.timedelta64(1, freq) / freq_multiplier, 0)
@@ -371,8 +375,6 @@ def summary_data_from_transaction_data(
             )
                 
         summary_columns.append("monetary_value")
-        
-    customers.fillna(0, inplace=True)
 
     return customers[summary_columns].astype(float)
 
@@ -575,11 +577,13 @@ def expected_cumulative_transactions(
             freq=freq,
         )
 
+    repeated_and_first_transactions[datetime_col] = pd.Index(repeated_and_first_transactions[datetime_col]).to_timestamp()
+    
     repeated_transactions = repeated_and_first_transactions.loc[~repeated_and_first_transactions['first']]
     first_transactions = repeated_and_first_transactions.loc[repeated_and_first_transactions['first']]
     
     #Get dates at proper periodicity
-    date_periods = pd.date_range(start_date, periods=(t * freq_multiplier) + 1, freq=freq)
+    date_periods = pd.date_range(start_date, periods=t + 1, freq=freq)
     
     #Properly index transactions
     pred_cum_transactions = []
@@ -602,17 +606,18 @@ def expected_cumulative_transactions(
     act_tracking_transactions = act_trans.resample(freq).sum().reindex(date_periods, fill_value=0)
 
     act_cum_transactions = []
-    for j in range(1, (t * freq_multiplier) + 1, freq_multiplier):
-        sum_trans = sum(act_tracking_transactions.iloc[: j])
-        act_cum_transactions.append(sum_trans)
-
+    for i, period in enumerate(date_periods):
+        if i % freq_multiplier == 0 and i > 0:
+            sum_trans = act_tracking_transactions.loc[act_tracking_transactions.index < period].sum()
+            act_cum_transactions.append(sum_trans)
+        
     if set_index_date:
-        index = date_periods[freq_multiplier - 1 : -1 : freq_multiplier]
+        index = pd.PeriodIndex(date_periods[freq_multiplier - 1 : -1 : freq_multiplier])
     else:
-        index = range(0, t)
+        index = range(0, t // freq_multiplier)
 
     df_cum_transactions = pd.DataFrame(
-        {"actual": act_cum_transactions, "predicted": pred_cum_transactions}, index=index
+        {"actual": act_cum_transactions, "predicted": pred_cum_transactions} , index=index
     )
 
     return df_cum_transactions
@@ -656,7 +661,7 @@ def holdout_data(
     customer_id_col,
     datetime_col,
     calibration_period_end,
-    observation_period_end=None,
+    observation_period_end,
     freq="D",
     datetime_format=None,
     monetary_value_col=None,
@@ -707,7 +712,6 @@ def holdout_data(
     transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     
     select_columns = [customer_id_col, datetime_col]
-    
     if monetary_value_col:
         select_columns.append(monetary_value_col)
     
@@ -751,6 +755,17 @@ def holdout_data(
     holdout_summary_data.fillna(0, inplace=True)
 
     #Duration
+    observation_period_end = (
+            pd.to_datetime(observation_period_end, format=datetime_format)
+            .to_period(freq)
+            .to_timestamp()
+        )
+    calibration_period_end = (
+            pd.to_datetime(calibration_period_end, format=datetime_format)
+            .to_period(freq)
+            .to_timestamp()
+        )
+    
     delta_time = (observation_period_end - calibration_period_end) / np.timedelta64(1, freq) / freq_multiplier
     holdout_summary_data["duration_holdout"] = delta_time
     
