@@ -101,7 +101,6 @@ def calibration_and_holdout_data(
     calibration_period_end = pd.to_datetime(calibration_period_end, format=datetime_format)
 
     # create calibration dataset
-    #calibration_transactions = transactions.loc[transactions[datetime_col] <= calibration_period_end]
     calibration_summary_data = summary_data_from_transaction_data(
         transactions,
         customer_id_col,
@@ -196,6 +195,7 @@ def _find_first_transactions(
 
     # make sure the date column uses datetime objects, and use Pandas' DateTimeIndex.to_period()
     # to convert the column to a PeriodIndex which is useful for time-wise grouping and truncating
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     period_groupby = transactions.groupby([customer_id_col, pd.Grouper(freq=freq, key=datetime_col)])
     
     if monetary_value_col:
@@ -296,6 +296,7 @@ def summary_data_from_transaction_data(
         )
 
     transactions = transactions.copy()
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
         
     # label all of the repeated transactions.  Purposely set freq to 'D' to allow for `count_intra_period_monetary`
     repeated_transactions = _find_first_transactions(
@@ -702,6 +703,8 @@ def holdout_data(
         monetary_value_holdout.
 
     """
+    
+    transactions[datetime_col] = pd.to_datetime(transactions[datetime_col], format=datetime_format)
     
     select_columns = [customer_id_col, datetime_col]
     
