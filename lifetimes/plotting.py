@@ -375,6 +375,8 @@ def plot_history_alive(
     freq="D", 
     start_date=None, 
     ax=None, 
+    ylabel="P_alive",
+    title="History of P_alive",
     **kwargs
 ):
     """
@@ -401,6 +403,10 @@ def plot_history_alive(
         Using user axes
     kwargs
         Passed into the matplotlib.pyplot.plot command.
+    ylabel: str, optional
+        Figure ylabel
+    title: str, optional
+        Figure title
 
     Returns
     -------
@@ -436,8 +442,8 @@ def plot_history_alive(
     plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlim(start_date, path_dates[-1])
     plt.legend(loc=3)
-    plt.ylabel("P_alive")
-    plt.title("History of P_alive")
+    plt.ylabel(ylabel)
+    plt.title(title)
 
     return ax
 
