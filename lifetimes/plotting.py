@@ -639,6 +639,7 @@ def plot_transaction_rate_heterogeneity(
     suptitle="Heterogeneity in Transaction Rate",
     xlabel="Transaction Rate",
     ylabel="Density",
+    title_list=["mean", "var"],
     suptitle_fontsize=14,
     **kwargs
 ):
@@ -657,6 +658,8 @@ def plot_transaction_rate_heterogeneity(
         Figure xlabel
     ylabel: str, optional
         Figure ylabel
+    title_list: list, optional
+        Figure title terms
     kwargs
         Passed into the matplotlib.pyplot.plot command.
 
@@ -678,7 +681,7 @@ def plot_transaction_rate_heterogeneity(
     fig, ax = plt.subplots(1)
     fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title("mean: {:.3f}, var: {:.3f}".format(rate_mean, rate_var))
+    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], rate_mean, title_list[1], rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
@@ -693,6 +696,7 @@ def plot_dropout_rate_heterogeneity(
     suptitle="Heterogeneity in Dropout Probability",
     xlabel="Dropout Probability p",
     ylabel="Density",
+    title_list=["mean", "var"],
     suptitle_fontsize=14,
     **kwargs
 ):
@@ -713,6 +717,8 @@ def plot_dropout_rate_heterogeneity(
         Figure xlabel
     ylabel: str, optional
         Figure ylabel
+    title_list: list, optional
+        Figure title terms
     kwargs
         Passed into the matplotlib.pyplot.plot command.
 
@@ -734,7 +740,7 @@ def plot_dropout_rate_heterogeneity(
     fig, ax = plt.subplots(1)
     fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title("mean: {:.3f}, var: {:.3f}".format(beta_mean, beta_var))
+    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], rate_mean, title_list[1], rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
