@@ -676,7 +676,7 @@ def plot_transaction_rate_heterogeneity(
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.suptitle("Heterogeneity in Transaction Rate", fontsize=suptitle_fontsize, fontweight="bold")
+    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
     ax.set_title("mean: {:.3f}, var: {:.3f}".format(rate_mean, rate_var))
     ax.set_xlabel(xlabel)
