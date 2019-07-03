@@ -90,7 +90,10 @@ def plot_calibration_purchases_vs_holdout_purchases(
     calibration_holdout_matrix, 
     kind="frequency_cal", 
     n=7,
-    
+    title="Actual Purchases in Holdout Period vs Predicted Purchases",
+    xlabel=None,
+    ylabel="Average of Purchases in Holdout Period",
+    labels=None,
     **kwargs
 ):
     """
@@ -114,6 +117,14 @@ def plot_calibration_purchases_vs_holdout_purchases(
                  "time_since_last_purchase". Time since user made last purchase
     n: int, optional
         Number of ticks on the x axis
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    labels: list, optional
+        list of legend labels
 
     Returns
     -------
@@ -145,10 +156,11 @@ def plot_calibration_purchases_vs_holdout_purchases(
     else:
         ax = summary.groupby(kind)[["frequency_holdout", "model_predictions"]].mean().iloc[:n].plot(**kwargs)
 
-    plt.title("Actual Purchases in Holdout Period vs Predicted Purchases")
-    plt.xlabel(x_labels[kind])
-    plt.ylabel("Average of Purchases in Holdout Period")
-    plt.legend()
+    plt.xlabel(x_labels[kind] if xlabel == None else xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    plt.legend() if labels == None else plt.legend(labels)
 
     return ax
 
