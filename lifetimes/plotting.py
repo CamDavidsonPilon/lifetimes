@@ -740,7 +740,7 @@ def plot_dropout_rate_heterogeneity(
     fig, ax = plt.subplots(1)
     fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], rate_mean, title_list[1], rate_var))
+    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], beta_mean, title_list[1], beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
