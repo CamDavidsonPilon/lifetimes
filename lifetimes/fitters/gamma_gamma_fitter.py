@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Gamma-Gamma Model."""
+
 from __future__ import print_function
 from __future__ import division
 import warnings
@@ -60,15 +62,37 @@ class GammaGammaFitter(BaseFitter):
         A Series with the standard errors of the parameters
     summary: :obj: DataFrame
         A DataFrame containing information about the fitted parameters
-
     """
 
-    def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
+    def __init__(
+        self, 
+        penalizer_coef=0.0
+    ):
+        """
+        Initialization, set penalizer_coef.
+        """
+
         self.penalizer_coef = penalizer_coef
 
     @staticmethod
-    def _negative_log_likelihood(log_params, frequency, avg_monetary_value, weights, penalizer_coef):
+    def _negative_log_likelihood(
+        log_params, 
+        frequency, 
+        avg_monetary_value, 
+        weights, 
+        penalizer_coef
+    ):
+        """
+        Computes the Negative Log-Likelihood for the Gamma-Gamma Model as in:
+        http://www.brucehardie.com/notes/025/
+
+        This also applies a penalizer to the log-likelihood.
+
+        Equivalent to equation (1a).
+
+        Hardie's implementation of this method can be seen on page 8.
+        """
+
         warnings.simplefilter(action="ignore", category=FutureWarning)
 
         params = np.exp(log_params)
@@ -87,14 +111,22 @@ class GammaGammaFitter(BaseFitter):
             - (p * x + q) * np.log(x * m + v)
         ) * weights
         penalizer_term = penalizer_coef * sum(params ** 2)
+
         return -negative_log_likelihood_values.sum() / weights.sum() + penalizer_term
 
-    def conditional_expected_average_profit(self, frequency=None, monetary_value=None):
+    def conditional_expected_average_profit(
+        self, 
+        frequency=None, 
+        monetary_value=None
+    ):
         """
         Conditional expectation of the average profit.
 
         This method computes the conditional expectation of the average profit
         per transaction for a group of one or more customers.
+
+        Equation (5) from:
+        http://www.brucehardie.com/notes/025/
 
         Parameters
         ----------
@@ -110,8 +142,8 @@ class GammaGammaFitter(BaseFitter):
         -------
         array_like:
             The conditional expectation of the average profit per transaction
-
         """
+
         if monetary_value is None:
             monetary_value = self.data["monetary_value"]
         if frequency is None:
@@ -122,6 +154,7 @@ class GammaGammaFitter(BaseFitter):
         # monetary value and the population mean.
         individual_weight = p * frequency / (p * frequency + q - 1)
         population_mean = v * p / (q - 1)
+
         return (1 - individual_weight) * population_mean + individual_weight * monetary_value
 
     def fit(
@@ -176,8 +209,8 @@ class GammaGammaFitter(BaseFitter):
         -------
         GammaGammaFitter
             fitted and with parameters estimated
-
         """
+
         _check_inputs(frequency, monetary_value=monetary_value)
 
         frequency = np.asarray(frequency).astype(float)
@@ -211,7 +244,15 @@ class GammaGammaFitter(BaseFitter):
         return self
 
     def customer_lifetime_value(
-        self, transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01, freq="D"
+        self, 
+        transaction_prediction_model, 
+        frequency, 
+        recency, 
+        T, 
+        monetary_value, 
+        time=12, 
+        discount_rate=0.01, 
+        freq="D"
     ):
         """
         Return customer lifetime value.
@@ -246,10 +287,11 @@ class GammaGammaFitter(BaseFitter):
         Series:
             Series object with customer ids as index and the estimated customer
             lifetime values as values
-
         """
+
         # use the Gamma-Gamma estimates for the monetary_values
         adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)
+
         return _customer_lifetime_value(
             transaction_prediction_model, frequency, recency, T, adjusted_monetary_value, time, discount_rate, freq=freq
         )
