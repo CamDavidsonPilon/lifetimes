@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Beta Geo Fitter, also known as BG/NBD model."""
+
 from __future__ import print_function
 from __future__ import division
 import warnings
@@ -54,15 +55,29 @@ class BetaGeoFitter(BaseFitter):
     .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
        "Counting Your Customers the Easy Way: An Alternative to the
        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
-
     """
 
-    def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
+    def __init__(
+        self, 
+        penalizer_coef=0.0
+    ):
+        """
+        Initialization, set penalizer_coef.
+        """
+
         self.penalizer_coef = penalizer_coef
 
     def fit(
-        self, frequency, recency, T, weights=None, initial_params=None, verbose=False, tol=1e-7, index=None, **kwargs
+        self, 
+        frequency, 
+        recency, 
+        T, 
+        weights=None, 
+        initial_params=None, 
+        verbose=False, 
+        tol=1e-7, 
+        index=None, 
+        **kwargs
     ):
         """
         Fit a dataset to the BG/NBD model.
@@ -99,13 +114,12 @@ class BetaGeoFitter(BaseFitter):
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
 
-
         Returns
         -------
         BetaGeoFitter
             with additional properties like ``params_`` and methods like ``predict``
-
         """
+
         frequency = np.asarray(frequency).astype(int)
         recency = np.asarray(recency)
         T = np.asarray(T)
@@ -143,10 +157,30 @@ class BetaGeoFitter(BaseFitter):
         self.variance_matrix_ = self._compute_variance_matrix()
         self.standard_errors_ = self._compute_standard_errors()
         self.confidence_intervals_ = self._compute_confidence_intervals()
+
         return self
 
     @staticmethod
-    def _negative_log_likelihood(log_params, freq, rec, T, weights, penalizer_coef):
+    def _negative_log_likelihood(
+        log_params, 
+        freq, 
+        rec, 
+        T, 
+        weights, 
+        penalizer_coef
+    ):
+        """
+        The following method for calculatating the *log-likelihood* uses the method
+        specified in section 7 of [2]_. More information can also be found in [3]_.
+
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
+        .. [3] http://brucehardie.com/notes/004/
+        """
+
         warnings.simplefilter(action="ignore", category=FutureWarning)
 
         params = np.exp(log_params)
@@ -159,15 +193,24 @@ class BetaGeoFitter(BaseFitter):
 
         penalizer_term = penalizer_coef * sum(params ** 2)
         ll = weights * (A_1 + A_2 + np.log(np.exp(A_3) + np.exp(A_4) * (freq > 0)))
+
         return -ll.sum() / weights.sum() + penalizer_term
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
+    def conditional_expected_number_of_purchases_up_to_time(
+        self, 
+        t, 
+        frequency, 
+        recency, 
+        T
+    ):
         """
         Conditional expected number of purchases up to time.
 
         Calculate the expected number of repeat purchases up to time t for a
-        randomly choose individual from the population, given they have
-        purchase history (frequency, recency, T)
+        randomly chosen individual from the population, given they have
+        purchase history (frequency, recency, T).
+
+        This function uses equation (10) from [2]_.
 
         Parameters
         ----------
@@ -184,7 +227,13 @@ class BetaGeoFitter(BaseFitter):
         -------
         array_like
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
+
         x = frequency
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
@@ -206,7 +255,12 @@ class BetaGeoFitter(BaseFitter):
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, frequency, recency, T):
+    def conditional_probability_alive(
+        self, 
+        frequency, 
+        recency, 
+        T
+    ):
         """
         Compute conditional probability alive.
 
@@ -228,18 +282,25 @@ class BetaGeoFitter(BaseFitter):
         -------
         array
             value representing a probability
-
         """
+
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
             a / (b + np.maximum(frequency, 1) - 1)
         )
+
         return np.atleast_1d(np.where(frequency == 0, 1.0, expit(-log_div)))
 
-    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
+    def conditional_probability_alive_matrix(
+        self, 
+        max_frequency=None, 
+        max_recency=None
+    ):
         """
         Compute the probability alive matrix.
+
+        Uses the ``conditional_probability_alive()`` method to get calculate the matrix.
 
         Parameters
         ----------
@@ -253,8 +314,8 @@ class BetaGeoFitter(BaseFitter):
         -------
         matrix:
             A matrix of the form [t_x: historical recency, x: historical frequency]
-
         """
+
         max_frequency = max_frequency or int(self.data["frequency"].max())
         max_recency = max_recency or int(self.data["T"].max())
 
@@ -262,12 +323,17 @@ class BetaGeoFitter(BaseFitter):
             self.conditional_probability_alive, (max_frequency + 1, max_recency + 1), T=max_recency
         ).T
 
-    def expected_number_of_purchases_up_to_time(self, t):
+    def expected_number_of_purchases_up_to_time(
+        self, 
+        t
+    ):
         """
         Calculate the expected number of repeat purchases up to time t.
 
-        Calculate repeat purchases for a randomly choose individual from the
+        Calculate repeat purchases for a randomly chosen individual from the
         population.
+
+        Equivalent to equation (9) of [2]_.
 
         Parameters
         ----------
@@ -278,12 +344,23 @@ class BetaGeoFitter(BaseFitter):
         -------
         array_like
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
+
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
+
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def probability_of_n_purchases_up_to_time(self, t, n):
+    def probability_of_n_purchases_up_to_time(
+        self, 
+        t, 
+        n
+    ):
         r"""
         Compute the probability of n purchases.
 
@@ -291,6 +368,8 @@ class BetaGeoFitter(BaseFitter):
 
         where N(t) is the number of repeat purchases a customer makes in t
         units of time.
+
+        Comes from equation (8) of [2]_.
 
         Parameters
         ----------
@@ -304,7 +383,13 @@ class BetaGeoFitter(BaseFitter):
         float:
             Probability to have n purchases up to t units of time
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
+
         r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         first_term = (
@@ -323,4 +408,5 @@ class BetaGeoFitter(BaseFitter):
             second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
+
         return first_term + second_term

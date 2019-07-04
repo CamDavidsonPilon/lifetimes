@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Pareto/NBD model."""
+
 from __future__ import print_function
 from __future__ import division
 
@@ -39,11 +40,16 @@ class ParetoNBDFitter(BaseFitter):
     .. [7] David C. Schmittlein, Donald G. Morrison and Richard Colombo
        Management Science,Vol. 33, No. 1 (Jan., 1987), pp. 1-24
       "Counting Your Customers: Who Are They and What Will They Do Next,"
-
     """
 
-    def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
+    def __init__(
+        self, 
+        penalizer_coef=0.0
+    ):
+        """
+        Initialization, set penalizer_coef.
+        """
+
         self.penalizer_coef = penalizer_coef
 
     def fit(
@@ -107,8 +113,8 @@ class ParetoNBDFitter(BaseFitter):
         -------
         ParetoNBDFitter
             with additional properties like ``params_`` and methods like ``predict``
-
         """
+
         frequency = asarray(frequency).astype(int)
         recency = asarray(recency)
         T = asarray(T)
@@ -146,11 +152,23 @@ class ParetoNBDFitter(BaseFitter):
         )
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
+
         return self
 
     @staticmethod
-    def _log_A_0(params, freq, recency, age):
-        """log_A_0."""
+    def _log_A_0(
+        params, 
+        freq, 
+        recency, 
+        age
+    ):
+        """
+        log_A_0.
+        
+        Equation (19) and (20) from paper:
+        http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
+        """
+
         r, alpha, s, beta = params
 
         if alpha < beta:
@@ -176,7 +194,16 @@ class ParetoNBDFitter(BaseFitter):
         )
 
     @staticmethod
-    def _conditional_log_likelihood(params, freq, rec, T):
+    def _conditional_log_likelihood(
+        params, 
+        freq, 
+        rec, 
+        T
+    ):
+        """
+        Implements equation (18) from:
+        http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
+        """
 
         r, alpha, s, beta = params
         x = freq
@@ -191,7 +218,18 @@ class ParetoNBDFitter(BaseFitter):
         return A_1 + A_2
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, weights, penalizer_coef):
+    def _negative_log_likelihood(
+        params, 
+        freq, 
+        rec, 
+        T, 
+        weights, 
+        penalizer_coef
+    ):
+        """
+        Sums the conditional log-likelihood from the ``_conditional_log_likelihood`` function
+        and applies a ``penalizer_coef``.
+        """
 
         if npany(asarray(params) <= 0.0):
             return np.inf
@@ -201,13 +239,22 @@ class ParetoNBDFitter(BaseFitter):
 
         return -(weights * conditional_log_likelihood).sum() / weights.mean() + penalizer_term
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency, recency, T):
+    def conditional_expected_number_of_purchases_up_to_time(
+        self, 
+        t, 
+        frequency, 
+        recency, 
+        T
+    ):
         """
         Conditional expected number of purchases up to time.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population, given they have
-        purchase history (frequency, recency, T)
+        purchase history (frequency, recency, T).
+
+        This is equation (41) from:
+        http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
         Parameters
         ----------
@@ -223,8 +270,8 @@ class ParetoNBDFitter(BaseFitter):
         Returns
         -------
         array_like
-
         """
+
         x, t_x = frequency, recency
         params = self._unload_params("r", "alpha", "s", "beta")
         r, alpha, s, beta = params
@@ -235,15 +282,22 @@ class ParetoNBDFitter(BaseFitter):
         )
         second_term = log(r + x) + log(beta + T) - log(alpha + T)
         third_term = log((1 - ((beta + T) / (beta + T + t)) ** (s - 1)) / (s - 1))
+
         return exp(first_term + second_term + third_term - likelihood)
 
-    def conditional_probability_alive(self, frequency, recency, T):
+    def conditional_probability_alive(
+        self, 
+        frequency, 
+        recency, 
+        T
+    ):
         """
         Conditional probability alive.
 
         Compute the probability that a customer with history
         (frequency, recency, T) is currently alive.
-        From paper:
+
+        Section 5.1 from (equations (36) and (37)):
         http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
         Parameters
@@ -261,14 +315,22 @@ class ParetoNBDFitter(BaseFitter):
             value representing a probability
 
         """
+
         x, t_x = frequency, recency
         r, alpha, s, beta = self._unload_params("r", "alpha", "s", "beta")
         A_0 = self._log_A_0([r, alpha, s, beta], x, t_x, T)
+
         return 1.0 / (1.0 + exp(log(s) - log(r + s + x) + (r + x) * log(alpha + T) + s * log(beta + T) + A_0))
 
-    def conditional_probability_alive_matrix(self, max_frequency=None, max_recency=None):
+    def conditional_probability_alive_matrix(
+        self, 
+        max_frequency=None, 
+        max_recency=None
+    ):
         """
-        Compute the probability alive matrix.
+        Compute the probability alive matrix. 
+        
+        Builds on the ``conditional_probability_alive()`` method.
 
         Parameters
         ----------
@@ -282,8 +344,8 @@ class ParetoNBDFitter(BaseFitter):
         -------
         matrix:
             A matrix of the form [t_x: historical recency, x: historical frequency]
-
         """
+
         max_frequency = max_frequency or int(self.data["frequency"].max())
         max_recency = max_recency or int(self.data["T"].max())
 
@@ -294,12 +356,18 @@ class ParetoNBDFitter(BaseFitter):
 
         return Z
 
-    def expected_number_of_purchases_up_to_time(self, t):
+    def expected_number_of_purchases_up_to_time(
+        self, 
+        t
+    ):
         """
         Return expected number of repeat purchases up to time t.
 
         Calculate the expected number of repeat purchases up to time t for a
         randomly choose individual from the population.
+
+        Equation (27) from:
+        http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf
 
         Parameters
         ----------
@@ -309,21 +377,29 @@ class ParetoNBDFitter(BaseFitter):
         Returns
         -------
         array_like
-
         """
+
         r, alpha, s, beta = self._unload_params("r", "alpha", "s", "beta")
         first_term = r * beta / alpha / (s - 1)
         second_term = 1 - (beta / (beta + t)) ** (s - 1)
+
         return first_term * second_term
 
-    def conditional_probability_of_n_purchases_up_to_time(self, n, t, frequency, recency, T):
+    def conditional_probability_of_n_purchases_up_to_time(
+        self, 
+        n, 
+        t, 
+        frequency, 
+        recency, 
+        T
+    ):
         """
         Return conditional probability of n purchases up to time t.
 
         Calculate the probability of n purchases up to time t for an individual
         with history frequency, recency and T (age).
 
-        From paper:
+        The main equation being implemented is (16) from:
         http://www.brucehardie.com/notes/028/pareto_nbd_conditional_pmf.pdf
 
         Parameters
@@ -342,8 +418,8 @@ class ParetoNBDFitter(BaseFitter):
         Returns
         -------
         array_like
-
         """
+
         if t <= 0:
             return 0
 
@@ -418,7 +494,12 @@ class ParetoNBDFitter(BaseFitter):
         maxiter=2000,
         **kwargs
     ):
-        """Fit function for fitters."""
+        """
+        Fit function for fitters.
+        
+        Minimizer Callback for this fitters class.
+        """
+
         ll = []
         sols = []
 
@@ -458,4 +539,5 @@ class ParetoNBDFitter(BaseFitter):
             total_count += 1
         argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])
         minimizing_params = sols[argmin_ll]
+
         return minimizing_params, min_ll
