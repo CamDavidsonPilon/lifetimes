@@ -66,6 +66,7 @@ class BetaGeoFitter(BaseFitter):
         """
 
         self.penalizer_coef = penalizer_coef
+        self.params_names = ["r", "alpha", "a", "b"]
 
     def fit(
         self, 

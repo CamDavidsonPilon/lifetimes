@@ -51,6 +51,7 @@ class ParetoNBDFitter(BaseFitter):
         """
 
         self.penalizer_coef = penalizer_coef
+        self.params_names = ["r", "alpha", "s", "beta"]
 
     def fit(
         self,
