@@ -95,7 +95,8 @@ else:
         returning_customers_summary['monetary_value']
     )
 
-print(model.summary, '\n') # not applicable for the Pareto/NBD fitter
+if fitter_type != 'ParetoNBDFitter':
+    print(model.summary, '\n') # not applicable for the Pareto/NBD fitter
 
 print(model._negative_log_likelihood_, '\n')
 
@@ -118,13 +119,55 @@ img_type = '.svg'
 # log_params
 ####################################################################
 
-plt.plot(model.solution_iter)
+def plot_fitter_log_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Parameters Convergence before Any Transformations",
+    ax=None,
+    **kwargs
+):
+    """
+    Plots the fitter's approximated log of the parameters convergence.
 
-plt.xlabel('iteration')
-plt.ylabel('value of the parameter')
-plt.title('Parameters Convergence before Any Backwards Transformations')
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
 
-plt.legend(model.params_names)
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
+    from matplotlib import pyplot as plt
+
+    if ax is None:
+        ax = plt.subplot(111)
+
+    plt.tight_layout()
+
+    plt.plot(model.solution_iter)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    plt.legend(model.params_names)
+
+    return ax
+
+ax = plot_fitter_log_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter' + img_type)
 
@@ -134,21 +177,64 @@ print('log_params graph done', '\n')
 # Transformed Parameters
 ####################################################################
 
-fig = plt.figure(figsize = (15, 15))
+def plot_fitter_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Iterative Convergence of the Fitter's Parameters",
+    figsize=(15, 15),
+    ax=None,
+    **kwargs
+):
+    """
+    Plots the fitter's approximated parameters convergence.
 
-nrows, ncols = 2, 2
-subplot_counter = 1
-for param in model.solution_iter_summary.columns:
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
 
-    plt.subplot(nrows, ncols, subplot_counter)
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
 
-    plt.plot(model.solution_iter_summary[param])
+    nrows, ncols = 2, 2
+    fig, axes = plt.subplots(nrows, ncols, figsize = figsize)
 
-    plt.xlabel('iteration')
-    plt.ylabel('value of the parameter')
-    plt.title('Iterative Convergence of Parameter {}'.format(param))
+    subplot_counter = 0
+    params = model.solution_iter_summary.columns
+    for i in range(nrows):
+        for j in range(ncols):
 
-    subplot_counter += 1
+            if subplot_counter < len(params):
+                ax = axes[i, j]
+                param = params[subplot_counter]
+
+                ax.plot(
+                    model.solution_iter_summary[param],
+                    label = param,
+                )
+
+                ax.set_xlabel('iteration')
+                ax.set_ylabel('value of the parameter')
+                ax.set_title('Iterative Convergence of Parameter {}'.format(param))
+
+                subplot_counter += 1
+
+    return axes
+
+axes = plot_fitter_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter_summary' + img_type)
 
