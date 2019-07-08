@@ -1,0 +1,28 @@
+version: "3.7"
+
+services:
+
+  lifetimes:
+
+    # In order to run the lifetimes Dockerfile (service) separately: sudo docker-compose lifetimes
+
+    # The configurations below are basically the same as:
+    # sudo docker run -v /home/${USER}/lifetimes/:/usr/share/local_lifetimes -p 80:80 -it lifetimes
+
+    build: 
+      context: .
+      dockerfile: Dockerfile
+#     command: > # can override the Dockerfile commands here
+    ports:
+      - target: 5000
+        published: 5000
+    networks:
+      - lifetimes-net
+    volumes:
+      - /home/philippe/Desktop/lifetimes:/usr/share/local_lifetimes
+
+networks:
+  lifetimes-net:
+
+volumes: # Estes volumes são criados e não conectados a volumes externos ao docker-compose (?)
+  lifetimes-vol:
