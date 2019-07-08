@@ -46,7 +46,7 @@ print('')
 # Fitting the Model
 ####################################################################
 
-bgf = lifetimes.BetaGeoBetaBinomFitter(
+bgf = lifetimes.ParetoNBDFitter(
     penalizer_coef = 0.2
 )
 
@@ -56,7 +56,7 @@ bgf.fit(
     summary_cal_holdout['T_cal']
 )
 
-print(bgf.summary)
+# print(bgf.summary) # not applicable for the Pareto/NBD fitter
 
 print(bgf._negative_log_likelihood_)
 
