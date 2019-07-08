@@ -671,6 +671,116 @@ def plot_dropout_rate_heterogeneity(
     return ax
 
 
+def plot_fitter_log_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Parameters Convergence before Any Transformations",
+    ax=None,
+    figsize=(8, 6),
+    **kwargs
+):
+    """
+    Plots the fitter's approximated log of the parameters convergence.
+
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    figsize: tuple
+        size of the image
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
+
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
+    from matplotlib import pyplot as plt
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = figsize)
+
+    plt.plot(model.solution_iter)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    plt.legend(model.params_names)
+
+    return ax
+
+
+def plot_fitter_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Iterative Convergence of the Fitter's Parameters",
+    figsize=(15, 15),
+    ax=None,
+    **kwargs
+):
+    """
+    Plots the fitter's approximated parameters convergence.
+
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
+
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
+    from matplotlib import pyplot as plt
+
+    nrows, ncols = 2, 2
+    fig, axes = plt.subplots(nrows, ncols, figsize = figsize)
+
+    subplot_counter = 0
+    params = model.solution_iter_summary.columns
+    for i in range(nrows):
+        for j in range(ncols):
+
+            if subplot_counter < len(params):
+                ax = axes[i, j]
+                param = params[subplot_counter]
+
+                ax.plot(
+                    model.solution_iter_summary[param],
+                    label = param,
+                )
+
+                ax.set_xlabel('iteration')
+                ax.set_ylabel('value of the parameter')
+                ax.set_title('Iterative Convergence of Parameter {}'.format(param))
+
+                subplot_counter += 1
+
+    return axes
+
+
 def forceAspect(ax, aspect=1):
     im = ax.get_images()
     extent = im[0].get_extent()

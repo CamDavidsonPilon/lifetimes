@@ -125,6 +125,7 @@ def plot_fitter_log_params(
     ylabel="value of the parameter",
     title="Parameters Convergence before Any Transformations",
     ax=None,
+    figsize=(8, 6),
     **kwargs
 ):
     """
@@ -142,6 +143,8 @@ def plot_fitter_log_params(
         Figure ylabel
     ax: matplotlib.AxesSubplot, optional
         Using user axes
+    figsize: tuple
+        size of the image
     kwargs
         Passed into the pandas.DataFrame.plot command.
 
@@ -153,9 +156,7 @@ def plot_fitter_log_params(
     from matplotlib import pyplot as plt
 
     if ax is None:
-        ax = plt.subplot(111)
-
-    plt.tight_layout()
+        fig, ax = plt.subplots(1, 1, figsize = figsize)
 
     plt.plot(model.solution_iter)
 
@@ -201,6 +202,8 @@ def plot_fitter_params(
         Figure ylabel
     ax: matplotlib.AxesSubplot, optional
         Using user axes
+    figsize: tuple
+        size of the image
     kwargs
         Passed into the pandas.DataFrame.plot command.
 
@@ -208,6 +211,8 @@ def plot_fitter_params(
     -------
     axes: matplotlib.AxesSubplot
     """
+
+    from matplotlib import pyplot as plt
 
     nrows, ncols = 2, 2
     fig, axes = plt.subplots(nrows, ncols, figsize = figsize)
@@ -237,5 +242,28 @@ def plot_fitter_params(
 axes = plot_fitter_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter_summary' + img_type)
+
+print('transformed params graph done', '\n')
+
+####################################################################
+# Graphs with the plotting.py file
+####################################################################
+
+# Simply copying the above plotting functions into plotting.py
+
+from lifetimes.plotting import (
+    plot_fitter_log_params,
+    plot_fitter_params
+)
+
+ax = plot_fitter_log_params(model = model)
+
+plt.savefig(plot_path + 'solution_iter_lifetimes' + img_type)
+
+print('log_params graph done', '\n')
+
+axes = plot_fitter_params(model = model)
+
+plt.savefig(plot_path + 'solution_iter_summary_lifetimes' + img_type)
 
 print('transformed params graph done', '\n')
