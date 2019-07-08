@@ -22,6 +22,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
+print('')
+
+####################################################################
+# Terminal Variables
+####################################################################
+
+# Alias Terminal Options for Testing:
+dict_fitters = {
+    'beta_geo'       : 'BetaGeoFitter',
+    'pareto'         : 'ParetoNBDFitter',
+    'modified_beta'  : 'ModifiedBetaGeoFitter',
+    'beta_geo_binom' : 'BetaGeoBetaBinomFitter',
+    'gamma'          : 'GammaGammaFitter'
+}
+
+fitter_type = dict_fitters[sys.argv[1]]
+
 ####################################################################
 # Loading the Data
 ####################################################################
@@ -50,38 +67,43 @@ summary_with_money_value.head()
 returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency'] > 0]
 
 print('Correlation:', returning_customers_summary[['monetary_value', 'frequency']].corr())
+print('')
 
 ####################################################################
 # Fitting the Model
 ####################################################################
 
-# bgf = lifetimes.BetaGeoFitter(
-#     penalizer_coef = 0.2
-# )
-
-# bgf.fit(
-#     summary_cal_holdout['frequency_cal'], 
-#     summary_cal_holdout['recency_cal'], 
-#     summary_cal_holdout['T_cal']
-# )
-
-bgf = lifetimes.GammaGammaFitter(
-    penalizer_coef = 0
-)
-bgf.fit(
-    returning_customers_summary['frequency'],
-    returning_customers_summary['monetary_value']
+exec(
+    '''model = lifetimes.{}(
+        penalizer_coef = 0
+    )
+    '''.format(fitter_type)
 )
 
-print(bgf.summary) # not applicable for the Pareto/NBD fitter
+if fitter_type != 'GammaGammaFitter':
 
-print(bgf._negative_log_likelihood_)
+    model.fit(
+        summary_cal_holdout['frequency_cal'], 
+        summary_cal_holdout['recency_cal'], 
+        summary_cal_holdout['T_cal']
+    )
 
-print(bgf.ll_summary)
+else:
 
-print(bgf.solution_iter)
+    model.fit(
+        returning_customers_summary['frequency'],
+        returning_customers_summary['monetary_value']
+    )
 
-print(bgf.solution_iter_summary)
+print(model.summary, '\n') # not applicable for the Pareto/NBD fitter
+
+print(model._negative_log_likelihood_, '\n')
+
+print(model.ll_summary, '\n')
+
+print(model.solution_iter, '\n')
+
+print(model.solution_iter_summary, '\n')
 
 ####################################################################
 # Plots
@@ -96,29 +118,31 @@ img_type = '.svg'
 # log_params
 ####################################################################
 
-plt.plot(bgf.solution_iter)
+plt.plot(model.solution_iter)
 
 plt.xlabel('iteration')
 plt.ylabel('value of the parameter')
 plt.title('Parameters Convergence before Any Backwards Transformations')
 
-plt.legend(bgf.params_names)
+plt.legend(model.params_names)
 
 plt.savefig(plot_path + 'solution_iter' + img_type)
 
+print('log_params graph done', '\n')
+
 ####################################################################
-# r, alpha, a, b
+# Transformed Parameters
 ####################################################################
 
 fig = plt.figure(figsize = (15, 15))
 
 nrows, ncols = 2, 2
 subplot_counter = 1
-for param in bgf.solution_iter_summary.columns:
+for param in model.solution_iter_summary.columns:
 
     plt.subplot(nrows, ncols, subplot_counter)
 
-    plt.plot(bgf.solution_iter_summary[param])
+    plt.plot(model.solution_iter_summary[param])
 
     plt.xlabel('iteration')
     plt.ylabel('value of the parameter')
@@ -127,3 +151,5 @@ for param in bgf.solution_iter_summary.columns:
     subplot_counter += 1
 
 plt.savefig(plot_path + 'solution_iter_summary' + img_type)
+
+print('transformed params graph done', '\n')
