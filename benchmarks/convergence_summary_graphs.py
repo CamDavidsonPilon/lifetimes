@@ -58,15 +58,15 @@ summary_cal_holdout = lifetimes.utils.calibration_and_holdout_data(
     observation_period_end = observation_period_end
 )
 
-print('Transaction Data Shape:', transaction_data.shape)
-print('Cal-Holdout Shape:', '\t', summary_cal_holdout.shape)
+print('Transaction Data Shape: {}'.format(transaction_data.shape))
+print('Cal-Holdout Shape: \t {}'.format(summary_cal_holdout.shape))
 print('')
 
 summary_with_money_value = load_cdnow_summary_data_with_monetary_value()
 summary_with_money_value.head()
 returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency'] > 0]
 
-print('Correlation:', returning_customers_summary[['monetary_value', 'frequency']].corr())
+print('Correlation: {}'.format(returning_customers_summary[['monetary_value', 'frequency']].corr()))
 print('')
 
 ####################################################################
@@ -99,13 +99,13 @@ else:
 if fitter_type != 'ParetoNBDFitter':
     print(model.summary, '\n') # not applicable for the Pareto/NBD fitter
 
-print(model._negative_log_likelihood_, '\n')
+print('{}\n'.format(model._negative_log_likelihood_))
 
-print(model.ll_summary, '\n')
+print('{}\n'.format(model.ll_summary))
 
-print(model.solution_iter, '\n')
+print('{}\n'.format(model.solution_iter))
 
-print(model.solution_iter_summary, '\n')
+print('{}\n'.format(model.solution_iter_summary))
 
 ####################################################################
 # Plots
@@ -173,7 +173,7 @@ ax = plot_fitter_log_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter' + img_type)
 
-print('log_params graph done', '\n')
+print('log_params graph done\n')
 
 ####################################################################
 # Transformed Parameters
@@ -244,7 +244,7 @@ axes = plot_fitter_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter_summary' + img_type)
 
-print('transformed params graph done', '\n')
+print('transformed params graph done\n')
 
 ####################################################################
 # Graphs with the plotting.py file
@@ -261,10 +261,10 @@ ax = plot_fitter_log_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter_lifetimes' + img_type)
 
-print('log_params graph done', '\n')
+print('log_params graph done\n')
 
 axes = plot_fitter_params(model = model)
 
 plt.savefig(plot_path + 'solution_iter_summary_lifetimes' + img_type)
 
-print('transformed params graph done', '\n')
+print('transformed params graph done\n')
