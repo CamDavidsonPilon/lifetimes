@@ -89,7 +89,6 @@ if fitter_type != 'GammaGammaFitter':
         summary_cal_holdout['recency_cal'], 
         summary_cal_holdout['T_cal']
     )
-
 else:
 
     model.fit(
