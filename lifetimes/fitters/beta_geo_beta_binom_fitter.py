@@ -60,8 +60,12 @@ class BetaGeoBetaBinomFitter(BaseFitter):
     """
 
     def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
+        """
+        Initialization, set penalizer_coef.
+        """
+
         self.penalizer_coef = penalizer_coef
+        self.params_names = ["alpha", "beta", "gamma", "delta"]
 
     @staticmethod
     def _loglikelihood(params, x, tx, T):

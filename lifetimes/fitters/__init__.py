@@ -258,6 +258,9 @@ class BaseFitter(object):
         df = pd.DataFrame(self.solution_iter, columns = self.params_names)
 
         df = np.exp(df)
-        df["alpha"] /= self._scale
+
+        BetaGeoBinom = "<class 'lifetimes.fitters.beta_geo_beta_binom_fitter.BetaGeoBetaBinomFitter'>"
+        if "alpha" in df.columns and str(type(self)) != BetaGeoBinom:
+            df["alpha"] /= self._scale
 
         return df

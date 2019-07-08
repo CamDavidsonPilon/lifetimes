@@ -46,8 +46,8 @@ print('')
 # Fitting the Model
 ####################################################################
 
-bgf = lifetimes.BetaGeoFitter(
-    penalizer_coef = 0.0
+bgf = lifetimes.BetaGeoBetaBinomFitter(
+    penalizer_coef = 0.2
 )
 
 bgf.fit(
@@ -110,5 +110,3 @@ for param in bgf.solution_iter_summary.columns:
     subplot_counter += 1
 
 plt.savefig(plot_path + 'solution_iter_summary' + img_type)
-
-
