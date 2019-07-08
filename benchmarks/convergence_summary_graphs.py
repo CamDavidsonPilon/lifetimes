@@ -73,11 +73,13 @@ print('')
 # Fitting the Model
 ####################################################################
 
+# The beta_geo_binom needs a bit of a penalty to converge.
+penalizer_coef = 0 if fitter_type != 'BetaGeoBetaBinomFitter' else 0.2
 exec(
     '''model = lifetimes.{}(
-        penalizer_coef = 0
+        penalizer_coef = {}
     )
-    '''.format(fitter_type)
+    '''.format(fitter_type, penalizer_coef)
 )
 
 if fitter_type != 'GammaGammaFitter':
