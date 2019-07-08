@@ -5,7 +5,10 @@
 import sys
 
 import lifetimes
-from lifetimes.datasets import load_transaction_data
+from lifetimes.datasets import (
+    load_transaction_data,
+    load_cdnow_summary_data_with_monetary_value
+)
 from lifetimes.plotting import (
     plot_cumulative_transactions,
     plot_incremental_transactions,
@@ -42,21 +45,35 @@ print('Transaction Data Shape:', transaction_data.shape)
 print('Cal-Holdout Shape:', '\t', summary_cal_holdout.shape)
 print('')
 
+summary_with_money_value = load_cdnow_summary_data_with_monetary_value()
+summary_with_money_value.head()
+returning_customers_summary = summary_with_money_value[summary_with_money_value['frequency'] > 0]
+
+print('Correlation:', returning_customers_summary[['monetary_value', 'frequency']].corr())
+
 ####################################################################
 # Fitting the Model
 ####################################################################
 
-bgf = lifetimes.ParetoNBDFitter(
-    penalizer_coef = 0.2
-)
+# bgf = lifetimes.BetaGeoFitter(
+#     penalizer_coef = 0.2
+# )
 
+# bgf.fit(
+#     summary_cal_holdout['frequency_cal'], 
+#     summary_cal_holdout['recency_cal'], 
+#     summary_cal_holdout['T_cal']
+# )
+
+bgf = lifetimes.GammaGammaFitter(
+    penalizer_coef = 0
+)
 bgf.fit(
-    summary_cal_holdout['frequency_cal'], 
-    summary_cal_holdout['recency_cal'], 
-    summary_cal_holdout['T_cal']
+    returning_customers_summary['frequency'],
+    returning_customers_summary['monetary_value']
 )
 
-# print(bgf.summary) # not applicable for the Pareto/NBD fitter
+print(bgf.summary) # not applicable for the Pareto/NBD fitter
 
 print(bgf._negative_log_likelihood_)
 

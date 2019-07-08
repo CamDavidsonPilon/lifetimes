@@ -73,6 +73,7 @@ class GammaGammaFitter(BaseFitter):
         """
 
         self.penalizer_coef = penalizer_coef
+        self.params_names = ["p", "q", "v"]
 
     @staticmethod
     def _negative_log_likelihood(
