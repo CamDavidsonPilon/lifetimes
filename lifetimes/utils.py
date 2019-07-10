@@ -703,7 +703,7 @@ def _save_obj_without_attr(
         dill.dump(obj, out_file)
 
     for attr, item in saved_attr_dict.items():
-      setattr(obj, attr, item)
+        setattr(obj, attr, item)
                                                    
 def holdout_data(
     transactions,
@@ -854,7 +854,7 @@ def expected_cumulative_clv(transaction_prediction_model,
     customer_id_col: string
         the column in transactions that denotes the customer_id
     frequency: array_like
-        the frequency vector of customers' purchases
+        the frequency vector of customers' purchases 
         (denoted x in literature).
     recency: array_like
         the recency vector of customers' purchases
@@ -881,7 +881,6 @@ def expected_cumulative_clv(transaction_prediction_model,
         the time we should start counting CLV
     cal_clv: arrray_like, optional,
         starting clv for customers
-
     Returns
     -------
     :obj: DataFrame
