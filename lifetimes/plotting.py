@@ -17,8 +17,8 @@ __all__ = [
     "plot_dropout_rate_heterogeneity",
     "plot_calibration_purchases_vs_holdout_spend",
     "plot_cumulative_clv", 
-    "plot_cumulative_clv_standalone", 
-    "plot_incremental_clv"
+    "plot_incremental_clv",
+    "plot_cumulative_clv_from_t_cal"
 ]
 
 
@@ -993,7 +993,7 @@ def plot_incremental_clv(transaction_prediction_model,
     if set_index_date:
         x_vline = df_cum_clv.index[int(t_cal)]
     else:
-        x_vline = t_cal
+        x_vline = t_cal 
     ax.axvline(x=x_vline, color="r", linestyle="--")
     
     ax.set_xlabel(xlabel)
