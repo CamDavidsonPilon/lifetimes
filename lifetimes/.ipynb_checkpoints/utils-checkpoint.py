@@ -774,16 +774,21 @@ def holdout_data(
     return holdout_summary_data
 
 def expected_cumulative_clv(transaction_prediction_model, 
-                            spend_prediction_model, 
                             transactions, 
-                            calibration_holdout_matrix, 
                             datetime_col, 
                             customer_id_col, 
-                            monetary_value_col, 
+                            monetary_value_col,
+                            frequency,
+                            recency,
+                            T,
+                            monetary_value,
                             freq,
                             model_freq,
                             datetime_format=None,
-                            set_index_date=True):
+                            set_index_date=True,
+                            discount_rate=0,
+                            t_start=0,
+                            cal_clv=0):
     """
     Get expected and actual repeated cumulative clv.
 
@@ -795,14 +800,23 @@ def expected_cumulative_clv(transaction_prediction_model,
         A fitted lifetimes model for predicting spend
     transactions: :obj: DataFrame
         a Pandas DataFrame containing the transactions history of the customer_id
-    calibration_holdout_matrix: pandas DataFrame
-        DataFrame containing the calibration and holdout data for customers
     datetime_col: string
         the column in transactions that denotes the datetime the purchase was made.
-    customer_id_col: string
-        the column in transactions that denotes the customer_id
     monetary_value_col: str
         The column in transactions that denotes the monetary_value
+    customer_id_col: string
+        the column in transactions that denotes the customer_id
+    frequency: array_like
+        the frequency vector of customers' purchases
+        (denoted x in literature).
+    recency: array_like
+        the recency vector of customers' purchases
+        (denoted t_x in literature).
+    T: array_like
+        customers' age (time units since first purchase)
+    monetary_value: array_like
+        the monetary value vector of customer's purchases
+        (denoted m in literature).
     freq: str
         Frequency of cumulative clv
     model_freq: str
@@ -816,6 +830,10 @@ def expected_cumulative_clv(transaction_prediction_model,
         Default 1, could be use to get exact cumulative transactions predicted
         by model, i.e. model trained with freq='W', passed freq to
         expected_cumulative_transactions is freq='D', and freq_multiplier=7.
+    t_start: int, optional
+        the time we should start counting CLV
+    cal_clv: arrray_like, optional,
+        starting clv for customers
 
     Returns
     -------
@@ -833,21 +851,23 @@ def expected_cumulative_clv(transaction_prediction_model,
 
     historic_clv = transactions.groupby(datetime_col)[monetary_value_col].sum().cumsum()
 
-    calibration_holdout_matrix_spend = calibration_holdout_matrix.loc[calibration_holdout_matrix['frequency_cal']>0.0]
-    
-    frequency, recency, T = calibration_holdout_matrix_spend['frequency_cal'], calibration_holdout_matrix_spend['recency_cal'], calibration_holdout_matrix_spend['T_cal']
-    monetary_value = spend_prediction_model.conditional_expected_average_profit(frequency, calibration_holdout_matrix_spend['monetary_value_cal'])
-
     expected_clv = customer_lifetime_value(transaction_prediction_model, 
                                             frequency, 
                                             recency, 
                                             T, 
-                                            monetary_value, 
+                                            monetary_value,
                                             time=historic_clv.shape[0],
                                             freq=freq,
                                             model_freq=model_freq,
-                                            discount_rate=0).sum(axis=0)
-    expected_clv.index = historic_clv.index
+                                            discount_rate=discount_rate,
+                                            t_start=t_start,
+                                            cal_clv=cal_clv).sum(axis=0)
+    
+    if t_start > 0:
+        expected_clv = pd.Series(np.append(historic_clv.loc[historic_clv.index <= historic_clv.index[int(t_start)]], expected_clv), index=historic_clv.index)
+    else:
+        expected_clv.index = historic_clv.index
+    
 
         
     if set_index_date:
@@ -856,7 +876,7 @@ def expected_cumulative_clv(transaction_prediction_model,
         index = range(0, historic_clv.shape[0])
 
     df_cum_clv = pd.DataFrame({"Holdout":historic_clv,
-                  "Predicted":expected_clv},
+                               "Predicted":expected_clv},
                  index=index)
     
     return df_cum_clv
@@ -869,7 +889,9 @@ def customer_lifetime_value(transaction_prediction_model,
                             time,
                             freq, 
                             model_freq, 
-                            discount_rate=0):
+                            discount_rate=0,
+                            t_start=0,
+                            cal_clv=0):
     """
     Compute the average lifetime value across time for a group of one or more customers for any freq.
 
@@ -893,6 +915,10 @@ def customer_lifetime_value(transaction_prediction_model,
         Frequency of T for the transaction_prediction_model
     discount_rate: float, optional
         the monthly adjusted discount rate. Default: 0
+    t_start: int, optional
+        the time we should start counting CLV
+    cal_clv: arrray_like, optional,
+        starting clv for customers
 
     Returns
     -------
@@ -907,8 +933,12 @@ def customer_lifetime_value(transaction_prediction_model,
               "D":{"W": 1/7, "M": 1/30, "D": 1, "H": 1 * 24},
               "D":{"W": 1/(7 * 24), "M": 1/(30 * 24), "D": 24, "H": 1}}[freq][model_freq]
 
-    steps = np.arange(1, time + 1) * factor
-    df[0] = 0  
+    if t_start > 0:
+        steps = np.arange(t_start + 1, time) * factor
+    else:
+        steps = np.arange(t_start + 1, time + 1) * factor
+    
+    df[0] = cal_clv 
 
     for e, i in enumerate(steps):
         expected_number_of_transactions = (

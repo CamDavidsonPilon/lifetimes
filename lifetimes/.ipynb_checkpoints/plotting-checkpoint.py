@@ -783,15 +783,18 @@ def plot_calibration_purchases_vs_holdout_spend(
     return ax
 
 def plot_cumulative_clv(transaction_prediction_model, 
-                        spend_prediction_model, 
                         transactions, 
-                        calibration_holdout_matrix, 
                         datetime_col, 
                         customer_id_col, 
                         monetary_value_col, 
+                        frequency,
+                        recency,
+                        T,
+                        monetary_value,
                         freq,
                         model_freq,
                         t_cal,
+                        discount_rate=0,
                         datetime_format=None,
                         set_index_date=True,
                         title="Tracking Cumulative CLV",
@@ -806,18 +809,25 @@ def plot_cumulative_clv(transaction_prediction_model,
     ----------
     transaction_prediction_model: lifetimes model
         A fitted lifetimes model for predicting transactions
-    spend_prediction_model: lifetimes model
-        A fitted lifetimes model for predicting spend
     transactions: pandas DataFrame
         DataFrame containing the transactions history of the customer_id
-    calibration_holdout_matrix: pandas DataFrame
-        DataFrame containing the calibration and holdout data for customers
     datetime_col: str
         The column in transactions that denotes the datetime the purchase was made.
     customer_id_col: str
         The column in transactions that denotes the customer_id
     monetary_value_col: str
         The column in transactions that denotes the monetary_value
+    frequency: array_like
+        the frequency vector of customers' purchases
+        (denoted x in literature).
+    recency: array_like
+        the recency vector of customers' purchases
+        (denoted t_x in literature).
+    T: array_like
+        customers' age (time units since first purchase)
+    monetary_value: array_like
+        the monetary value vector of customer's purchases
+        (denoted m in literature).
     freq: str
         Frequency of cumulative clv
     model_freq: str
@@ -851,17 +861,20 @@ def plot_cumulative_clv(transaction_prediction_model,
     if ax is None:
         ax = plt.subplot(111)
         
-    df_cum_clv = expected_cumulative_clv(transactions, 
-                                        calibration_holdout_matrix, 
-                                        transaction_prediction_model, 
-                                        spend_prediction_model, 
+    df_cum_clv = expected_cumulative_clv(transaction_prediction_model, 
+                                        transactions, 
                                         datetime_col, 
                                         customer_id_col, 
-                                        monetary_value_col, 
+                                        monetary_value_col,
+                                        frequency,
+                                        recency,
+                                        T,
+                                        monetary_value,
                                         freq=freq,
                                         model_freq=model_freq,
                                         datetime_format=datetime_format,
-                                        set_index_date=set_index_date)  
+                                        set_index_date=set_index_date,
+                                        discount_rate=discount_rate)  
         
     ax = df_cum_clv.plot(ax=ax, title=title, **kwargs)
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
@@ -879,16 +892,19 @@ def plot_cumulative_clv(transaction_prediction_model,
     
     return ax
 
-def plot_incremental_clv(transactions, 
-                        calibration_holdout_matrix, 
-                        transaction_prediction_model, 
-                        spend_prediction_model, 
+def plot_incremental_clv(transaction_prediction_model, 
+                        transactions, 
                         datetime_col, 
                         customer_id_col, 
                         monetary_value_col, 
+                        frequency,
+                        recency,
+                        T,
+                        monetary_value,
                         freq,
                         model_freq,
                         t_cal,
+                        discount_rate=0,
                         datetime_format=None,
                         set_index_date=True,
                         title="Tracking Monthly CLV",
@@ -903,18 +919,25 @@ def plot_incremental_clv(transactions,
     ----------
     transaction_prediction_model: lifetimes model
         A fitted lifetimes model for predicting transactions
-    spend_prediction_model: lifetimes model
-        A fitted lifetimes model for predicting spend
     transactions: pandas DataFrame
         DataFrame containing the transactions history of the customer_id
-    calibration_holdout_matrix: pandas DataFrame
-        DataFrame containing the calibration and holdout data for customers
     datetime_col: str
         The column in transactions that denotes the datetime the purchase was made.
     customer_id_col: str
         The column in transactions that denotes the customer_id
     monetary_value_col: str
         The column in transactions that denotes the monetary_value
+    frequency: array_like
+        the frequency vector of customers' purchases
+        (denoted x in literature).
+    recency: array_like
+        the recency vector of customers' purchases
+        (denoted t_x in literature).
+    T: array_like
+        customers' age (time units since first purchase)
+    monetary_value: array_like
+        the monetary value vector of customer's purchases
+        (denoted m in literature).
     freq: str
         Frequency of cumulative clv
     model_freq: str
@@ -948,17 +971,20 @@ def plot_incremental_clv(transactions,
     if ax is None:
         ax = plt.subplot(111)
         
-    df_cum_clv = expected_cumulative_clv(transactions, 
-                                        calibration_holdout_matrix, 
-                                        transaction_prediction_model, 
-                                        spend_prediction_model, 
+    df_cum_clv = expected_cumulative_clv(transaction_prediction_model, 
+                                        transactions, 
                                         datetime_col, 
                                         customer_id_col, 
-                                        monetary_value_col, 
+                                        monetary_value_col,
+                                        frequency,
+                                        recency,
+                                        T,
+                                        monetary_value,
                                         freq=freq,
                                         model_freq=model_freq,
                                         datetime_format=datetime_format,
-                                        set_index_date=set_index_date)
+                                        set_index_date=set_index_date,
+                                        discount_rate=discount_rate)
     
     df_cum_clv = df_cum_clv.apply(lambda x: x - x.shift(1))
     ax = df_cum_clv.plot(ax=ax, title=title, **kwargs)
@@ -977,24 +1003,34 @@ def plot_incremental_clv(transactions,
     
     return ax
 
-def plot_cumulative_clv_standalone(holdout_transactions, 
+def plot_cumulative_clv_from_t_cal(transaction_prediction_model, 
+                                    transactions, 
                                     datetime_col, 
                                     customer_id_col, 
                                     monetary_value_col, 
+                                    frequency,
+                                    recency,
+                                    T,
+                                    monetary_value,
                                     freq,
+                                    model_freq,
                                     t_cal,
+                                    cal_clv=0,
+                                    discount_rate=0,
                                     datetime_format=None,
                                     set_index_date=True,
-                                    title="Tracking Cumulative CLV",
+                                    title="Tracking Cumulative CLV From Calibration Period End",
                                     xlabel="Month",
                                     ylabel="Cumulative CLV",
                                     ax=None,
                                     **kwargs):
     """
-    Plot a figure of the actual cumulative clv of users.
+    Plot a figure of the predicted and actual cumulative clv of users starting from calibration period end.
 
     Parameters
     ----------
+    transaction_prediction_model: lifetimes model
+        A fitted lifetimes model for predicting transactions
     transactions: pandas DataFrame
         DataFrame containing the transactions history of the customer_id
     datetime_col: str
@@ -1003,10 +1039,25 @@ def plot_cumulative_clv_standalone(holdout_transactions,
         The column in transactions that denotes the customer_id
     monetary_value_col: str
         The column in transactions that denotes the monetary_value
+    frequency: array_like
+        the frequency vector of customers' purchases
+        (denoted x in literature).
+    recency: array_like
+        the recency vector of customers' purchases
+        (denoted t_x in literature).
+    T: array_like
+        customers' age (time units since first purchase)
+    monetary_value: array_like
+        the monetary value vector of customer's purchases
+        (denoted m in literature).
     freq: str
         Frequency of cumulative clv
+    model_freq: str
+        Frequency of T for the transaction_prediction_model
     t_cal: float
         A marker used to indicate where the vertical line for plotting should be.
+    cal_clv: arrray_like, optional,
+        starting clv for customers
     datetime_format: str, optional
         A string that represents the timestamp format. Useful if Pandas
         can't understand the provided format.
@@ -1027,35 +1078,42 @@ def plot_cumulative_clv_standalone(holdout_transactions,
     -------
     axes: matplotlib.AxesSubplot
 
-    """ 
-    
+    """    
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     
-    holdout_transactions[datetime_col] = (
-            pd.Index(
-            pd.to_datetime(holdout_transactions[datetime_col], format=datetime_format))
-                                      .to_period(freq)
-                                      .to_timestamp()
-        )
-
-    historic_clv = holdout_transactions.groupby(datetime_col)[monetary_value_col].sum().cumsum()
-    
     if ax is None:
         ax = plt.subplot(111)
-             
-    ax = historic_clv.plot(ax=ax, title=title, **kwargs)
+        
+    df_cum_clv = expected_cumulative_clv(transaction_prediction_model, 
+                                        transactions, 
+                                        datetime_col, 
+                                        customer_id_col, 
+                                        monetary_value_col,
+                                        frequency,
+                                        recency,
+                                        T,
+                                        monetary_value,
+                                        freq=freq,
+                                        model_freq=model_freq,
+                                        t_start=t_cal,
+                                        cal_clv=cal_clv,
+                                        discount_rate=discount_rate,
+                                        datetime_format=datetime_format,
+                                        set_index_date=set_index_date)  
+        
+    ax = df_cum_clv.plot(ax=ax, title=title, **kwargs)
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     
     if set_index_date:
-        x_vline = historic_clv.index[int(t_cal)]
+        x_vline = df_cum_clv.index[int(t_cal)]
     else:
         x_vline = t_cal
     ax.axvline(x=x_vline, color="r", linestyle="--")
-
+    
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     
     plt.tight_layout()
-
+    
     return ax
