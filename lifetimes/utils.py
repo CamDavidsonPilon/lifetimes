@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Lifetimes utils and helpers."""
+
 from __future__ import division
 import numpy as np
 import pandas as pd
@@ -19,6 +20,10 @@ __all__ = [
 
 
 class ConvergenceError(ValueError):
+    """
+    Convergence Error Class.
+    """
+
     pass
 
 
@@ -86,7 +91,6 @@ def calibration_and_holdout_data(
         A dataframe with columns frequency_cal, recency_cal, T_cal, frequency_holdout, duration_holdout
         If monetary_value_col isn't None, the dataframe will also have the columns monetary_value_cal and
         monetary_value_holdout.
-
     """
 
     if observation_period_end is None:
@@ -182,7 +186,6 @@ def _find_first_transactions(
     freq: string, optional
         Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
         http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
-
     """
 
     if observation_period_end is None:
@@ -290,8 +293,8 @@ def summary_data_from_transaction_data(
     -------
     :obj: DataFrame:
         customer_id, frequency, recency, T [, monetary_value]
-
     """
+
     if observation_period_end is None:
         observation_period_end = (
             pd.to_datetime(transactions[datetime_col].max(), format=datetime_format)
@@ -381,9 +384,17 @@ def summary_data_from_transaction_data(
     return customers[summary_columns].astype(float)
 
 
-def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
+def calculate_alive_path(
+    model, 
+    transactions, 
+    datetime_col, 
+    t, 
+    freq="D"
+):
     """
     Calculate alive path for plotting alive history of user.
+
+    Uses the ``conditional_probability_alive()`` method of the model to achieve the path.
 
     Parameters
     ----------
@@ -402,8 +413,8 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
     -------
     :obj: Series
         A pandas Series containing the p_alive as a function of T (age of the customer)
-
     """
+
     customer_history = transactions[[datetime_col]].copy()
     customer_history[datetime_col] = pd.to_datetime(customer_history[datetime_col])
     customer_history = customer_history.set_index(datetime_col)
@@ -432,16 +443,35 @@ def calculate_alive_path(model, transactions, datetime_col, t, freq="D"):
     )
 
 
-def _scale_time(age):
-    """Create a scalar such that the maximum age is 1."""
+def _scale_time(
+    age
+):
+    """
+    Create a scalar such that the maximum age is 1.
+    """
+
     return 1.0 / age.max()
 
 
-def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
+def _check_inputs(
+    frequency, 
+    recency=None, 
+    T=None, 
+    monetary_value=None
+):
     """
     Check validity of inputs.
 
     Raises ValueError when checks failed.
+
+    The checks go sequentially from recency, to frequency and monetary value:
+
+    - recency > T.
+    - recency[frequency == 0] != 0)
+    - recency < 0
+    - zero length vector in frequency, recency or T
+    - non-integer values in the frequency vector.
+    - non-positive (<= 0) values in the monetary_value vector
 
     Parameters
     ----------
@@ -453,8 +483,8 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
         the vector of customers' age (time since first purchase)
     monetary_value: array_like, optional
         the monetary value vector of customer's purchases (denoted m in literature).
-
     """
+
     if recency is not None:
         if T is not None and np.any(recency > T):
             raise ValueError("Some values in recency vector are larger than T vector.")
@@ -467,18 +497,27 @@ def _check_inputs(frequency, recency=None, T=None, monetary_value=None):
     if np.sum((frequency - frequency.astype(int)) ** 2) != 0:
         raise ValueError("There exist non-integer values in the frequency vector.")
     if monetary_value is not None and np.any(monetary_value <= 0):
-        raise ValueError("There exist non-positive values in the monetary_value vector.")
+        raise ValueError("There exist non-positive (<= 0) values in the monetary_value vector.")
     # TODO: raise warning if np.any(freqency > T) as this means that there are
     # more order-periods than periods.
 
 
 def _customer_lifetime_value(
-    transaction_prediction_model, frequency, recency, T, monetary_value, time=12, discount_rate=0.01, freq="D"
+    transaction_prediction_model, 
+    frequency, 
+    recency, 
+    T, 
+    monetary_value, 
+    time=12, 
+    discount_rate=0.01, 
+    freq="D"
 ):
     """
     Compute the average lifetime value for a group of one or more customers.
 
     This method computes the average lifetime value for a group of one or more customers.
+
+    It also applies Discounted Cash Flow.
 
     Parameters
     ----------
@@ -501,8 +540,8 @@ def _customer_lifetime_value(
     -------
     :obj: Series
         series with customer ids as index and the estimated customer lifetime values as values
-
     """
+
     df = pd.DataFrame(index=frequency.index)
     df["clv"] = 0  # initialize the clv column to zeros
 
@@ -514,10 +553,10 @@ def _customer_lifetime_value(
         expected_number_of_transactions = transaction_prediction_model.predict(
             i, frequency, recency, T
         ) - transaction_prediction_model.predict(i - factor, frequency, recency, T)
-        # sum up the CLV estimates of all of the periods
+        # sum up the CLV estimates of all of the periods and apply discounted cash flow
         df["clv"] += (monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / factor)
 
-    return df["clv"]  # return as a series
+    return df["clv"] # return as a series
 
 
 def expected_cumulative_transactions(
@@ -533,6 +572,9 @@ def expected_cumulative_transactions(
 ):
     """
     Get expected and actual repeated cumulative transactions.
+
+    Uses the ``expected_number_of_purchases_up_to_time()`` method from the fitted model
+    to predict the number of purchases.
 
     Parameters
     ----------
@@ -564,8 +606,8 @@ def expected_cumulative_transactions(
     -------
     :obj: DataFrame
         A dataframe with columns actual, predicted
-
     """
+    
     start_date = pd.to_datetime(transactions[datetime_col], format=datetime_format).min()
     start_period = start_date.to_period(freq)
     observation_period_end = start_period + (t * freq_multiplier)
@@ -624,7 +666,12 @@ def expected_cumulative_transactions(
 
     return df_cum_transactions
 
-def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
+def _save_obj_without_attr(
+    obj, 
+    attr_list, 
+    path, 
+    values_to_save=None
+):
     """
     Save object with attributes from attr_list.
 
@@ -640,8 +687,8 @@ def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
     values_to_save: list, optional
         Placeholders for original attributes for saving object. If None will be
         extended to attr_list length like [None] * len(attr_list)
-
     """
+
     if values_to_save is None:
         values_to_save = [None] * len(attr_list)
 
@@ -656,8 +703,8 @@ def _save_obj_without_attr(obj, attr_list, path, values_to_save=None):
         dill.dump(obj, out_file)
 
     for attr, item in saved_attr_dict.items():
-        setattr(obj, attr, item)
-                                             
+      setattr(obj, attr, item)
+                                                   
 def holdout_data(
     transactions,
     customer_id_col,
@@ -948,3 +995,4 @@ def customer_lifetime_value(transaction_prediction_model,
         df[e+1] = ((monetary_value * expected_number_of_transactions) / (1 + discount_rate) ** (i / factor)) + df.iloc[:,e]
 
     return df.iloc[:,1:]
+
