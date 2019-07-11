@@ -896,7 +896,7 @@ def expected_cumulative_clv(transaction_prediction_model,
         )
 
     historic_clv = transactions.groupby(datetime_col)[monetary_value_col].sum().cumsum()
-
+    
     expected_clv = customer_lifetime_value(transaction_prediction_model, 
                                             frequency, 
                                             recency, 
@@ -910,7 +910,7 @@ def expected_cumulative_clv(transaction_prediction_model,
                                             cal_clv=cal_clv).sum(axis=0)
     
     if t_start > 0:
-        expected_clv = pd.Series(np.append(historic_clv.loc[historic_clv.index <= historic_clv.index[int(t_start)]], expected_clv), index=historic_clv.index)
+        expected_clv = pd.Series(np.append(historic_clv.loc[historic_clv.index < historic_clv.index[int(t_start)]], expected_clv), index=historic_clv.index)
     else:
         expected_clv.index = historic_clv.index
     
@@ -979,10 +979,7 @@ def customer_lifetime_value(transaction_prediction_model,
               "D":{"W": 1/7, "M": 1/30, "D": 1, "H": 1 * 24},
               "D":{"W": 1/(7 * 24), "M": 1/(30 * 24), "D": 24, "H": 1}}[freq][model_freq]
 
-    if t_start > 0:
-        steps = np.arange(t_start + 1, time) * factor
-    else:
-        steps = np.arange(t_start + 1, time + 1) * factor
+    steps = np.arange(t_start + 1, time + 1) * factor
     
     df[0] = cal_clv 
 

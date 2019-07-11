@@ -1017,6 +1017,7 @@ def plot_cumulative_clv_from_t_cal(transaction_prediction_model,
                                     t_cal,
                                     cal_clv=0,
                                     discount_rate=0,
+                                    not_discrete=True, 
                                     datetime_format=None,
                                     set_index_date=True,
                                     title="Tracking Cumulative CLV From Calibration Period End",
@@ -1096,13 +1097,14 @@ def plot_cumulative_clv_from_t_cal(transaction_prediction_model,
                                         monetary_value,
                                         freq=freq,
                                         model_freq=model_freq,
-                                        t_start=t_cal,
+                                        t_start=t_cal + not_discrete,
                                         cal_clv=cal_clv,
                                         discount_rate=discount_rate,
                                         datetime_format=datetime_format,
                                         set_index_date=set_index_date)  
         
-    ax = df_cum_clv.plot(ax=ax, title=title, **kwargs)
+    ax = df_cum_clv['Holdout'].plot(ax=ax, title=title, zorder=1, **kwargs)
+    ax = df_cum_clv['Predicted'].plot(ax=ax, title=title, zorder=0, **kwargs)
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     
     if set_index_date:
@@ -1114,6 +1116,7 @@ def plot_cumulative_clv_from_t_cal(transaction_prediction_model,
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     
+    plt.legend()
     plt.tight_layout()
     
     return ax
