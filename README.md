@@ -52,5 +52,5 @@ An Alternative to the Pareto/NBD Model*](http://brucehardie.com/papers/018/fader
 
 1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
 1. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
-1. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy 'Til You Die*).
+1. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (*Buy 'Til You Die*).
 1. [Bruce Hardie's Website](http://brucehardie.com/), especially his notes, is full of useful and essential explanations, many of which are featured in this library.
