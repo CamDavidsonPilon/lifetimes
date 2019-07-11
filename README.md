@@ -45,8 +45,8 @@ Please create an issue in the [lifetimes repository](https://github.com/CamDavid
 ## Main Articles
 
 1. Probably, the seminal article of Non-Contractual CLV is [*Counting Your Customers: Who Are They and What Will They Do Next?*](https://www.jstor.org/stable/2631608?seq=1#page_scan_tab_contents), by David C. Schmittlein, Donald G. Morrison and Richard Colombo. Despite it being paid, it is worth the read. The relevant information will eventually end up in this library's documentation though.
-1. The other (more recent) paper is [“Counting Your Customers” the Easy Way:
-An Alternative to the Pareto/NBD Model](http://brucehardie.com/papers/018/fader_et_al_mksc_05.pdf), by Peter Fader, Bruce Hardie and Ka Lok Lee.
+1. The other (more recent) paper is [*“Counting Your Customers” the Easy Way:
+An Alternative to the Pareto/NBD Model*](http://brucehardie.com/papers/018/fader_et_al_mksc_05.pdf), by Peter Fader, Bruce Hardie and Ka Lok Lee.
 
 ## More Information
 
