@@ -495,7 +495,15 @@ def expected_cumulative_transactions(
     Get expected and actual repeated cumulative transactions.
 
     Uses the ``expected_number_of_purchases_up_to_time()`` method from the fitted model
-    to predict the number of purchases.
+    to predict the cumulative number of purchases.
+
+    This function follows the formulation on page 8 of [1]_.
+
+    In more detail, we take only the customers who have made their first
+    transaction before the specific date and then multiply them by the distribution of the 
+    ``expected_number_of_purchases_up_to_time()`` for their whole future. Doing that for
+    all dates and then summing the distributions will give us the *complete cumulative
+    purchases*.
 
     Parameters
     ----------
@@ -527,12 +535,19 @@ def expected_cumulative_transactions(
     -------
     :obj: DataFrame
         A dataframe with columns actual, predicted
+
+    References
+    ----------
+    .. [1] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005),
+    A Note on Implementing the Pareto/NBD Model in MATLAB.
     """
     
     start_date = pd.to_datetime(transactions[datetime_col], format=datetime_format).min()
     start_period = start_date.to_period(freq)
     observation_period_end = start_period + t
 
+    # Has an extra column (besides the id and the date)
+    # with a boolean for when it is a first transaction
     repeated_and_first_transactions = _find_first_transactions(
         transactions,
         customer_id_col,
@@ -542,6 +557,7 @@ def expected_cumulative_transactions(
         freq=freq,
     )
 
+    # Mask, first transactions and repeated transactions
     first_trans_mask = repeated_and_first_transactions["first"]
     repeated_transactions = repeated_and_first_transactions[~first_trans_mask]
     first_transactions = repeated_and_first_transactions[first_trans_mask]
@@ -550,15 +566,31 @@ def expected_cumulative_transactions(
     date_periods = date_range.to_period(freq)
 
     pred_cum_transactions = []
+
+    # First Transactions on Each Day/Freq
     first_trans_size = first_transactions.groupby(datetime_col).size()
-    for i, period in enumerate(date_periods):
+
+    # In the loop below, we calculate the expected number of purchases for the
+    # customers who have made their first purchases on a date before the one being
+    # evaluated.
+    # Then we sum them to get the cumulative sum up to the specific period.
+    for i, period in enumerate(date_periods): # index of period and its date
+
         if i % freq_multiplier == 0 and i > 0:
+
+            # Periods before the one being evaluated
             times = np.array([d.n for d in period - first_trans_size.index])
             times = times[times > 0].astype(float) / freq_multiplier
+
+            # Array of different expected number of purchases for different times
             expected_trans_agg = model.expected_number_of_purchases_up_to_time(times)
 
+            # Mask for the number of customers with 1st transactions up to the period
             mask = first_trans_size.index < period
+
+            # ``expected_trans`` is a float with the cumulative sum of expected transactions
             expected_trans = sum(expected_trans_agg * first_trans_size[mask])
+
             pred_cum_transactions.append(expected_trans)
 
     act_trans = repeated_transactions.groupby(datetime_col).size()
