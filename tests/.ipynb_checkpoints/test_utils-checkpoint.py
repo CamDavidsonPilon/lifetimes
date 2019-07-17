@@ -712,8 +712,8 @@ def test_expected_cumulative_clv_dedups_inside_a_time_period(large_transaction_l
         monetary_value_col="monetary_value", 
         observation_period_end=max(large_transaction_level_data_with_monetary_value.date))
     
-    bg = BetaGeoFitter()
-    bg.fit(
+    pnbd = ParetoNBDFitter(10.0)
+    pnbd.fit(
         example_summary_data["frequency"],
         example_summary_data["recency"],
         example_summary_data["T"],
@@ -721,26 +721,26 @@ def test_expected_cumulative_clv_dedups_inside_a_time_period(large_transaction_l
         tol=1e-6,
     )
 
-    by_week = utils.expected_cumulative_clv(bg, 
-                              example_transaction_data, 
-                              "date", 
-                              "id", 
-                              "monetary_value", 
-                              example_summary_data['frequency'],
-                              example_summary_data['recency'],
-                              example_summary_data['T'],
-                              example_summary_data['monetary_value'],
+    by_week = utils.expected_cumulative_clv(transaction_prediction_model=pnbd, 
+                              transactions=large_transaction_level_data_with_monetary_value, 
+                              datetime_col="date", 
+                              customer_id_col="id", 
+                              monetary_value_col="monetary_value", 
+                              frequency=example_summary_data['frequency'],
+                              recency=example_summary_data['recency'],
+                              T=example_summary_data['T'],
+                              monetary_value=example_summary_data['monetary_value'],
                               freq="W",
                               model_freq='D')
-    by_day = utils.expected_cumulative_clv(bg, 
-                              example_transaction_data, 
-                              "date", 
-                              "id", 
-                              "monetary_value", 
-                              example_summary_data['frequency'],
-                              example_summary_data['recency'],
-                              example_summary_data['T'],
-                              example_summary_data['monetary_value'],
+    by_day = utils.expected_cumulative_clv(transaction_prediction_model=pnbd, 
+                              transactions=large_transaction_level_data_with_monetary_value, 
+                              datetime_col="date", 
+                              customer_id_col="id", 
+                              monetary_value_col="monetary_value", 
+                              frequency=example_summary_data['frequency'],
+                              recency=example_summary_data['recency'],
+                              T=example_summary_data['T'],
+                              monetary_value=example_summary_data['monetary_value'],
                               freq="D",
                               model_freq='D')
     assert (by_week["Verbatim"] >= by_day["Verbatim"]).all()
