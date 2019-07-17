@@ -712,9 +712,16 @@ def test_expected_cumulative_clv_dedups_inside_a_time_period(large_transaction_l
         monetary_value_col="monetary_value", 
         observation_period_end=max(large_transaction_level_data_with_monetary_value.date))
     
-    fitted_bg = fitted_bg(example_summary_data)
+    bg = BetaGeoFitter()
+    bg.fit(
+        example_summary_data["frequency"],
+        example_summary_data["recency"],
+        example_summary_data["T"],
+        iterative_fitting=2,
+        tol=1e-6,
+    )
 
-    by_week = utils.expected_cumulative_clv(fitted_bg, 
+    by_week = utils.expected_cumulative_clv(bg, 
                               example_transaction_data, 
                               "date", 
                               "id", 
@@ -725,7 +732,7 @@ def test_expected_cumulative_clv_dedups_inside_a_time_period(large_transaction_l
                               example_summary_data['monetary_value'],
                               freq="W",
                               model_freq='D')
-    by_day = utils.expected_cumulative_clv(fitted_bg, 
+    by_day = utils.expected_cumulative_clv(bg, 
                               example_transaction_data, 
                               "date", 
                               "id", 
@@ -737,7 +744,6 @@ def test_expected_cumulative_clv_dedups_inside_a_time_period(large_transaction_l
                               freq="D",
                               model_freq='D')
     assert (by_week["Verbatim"] >= by_day["Verbatim"]).all()
-
 
 
 
