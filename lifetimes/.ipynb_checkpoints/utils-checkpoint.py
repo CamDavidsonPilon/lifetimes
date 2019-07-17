@@ -921,7 +921,7 @@ def expected_cumulative_clv(transaction_prediction_model,
     else:
         index = range(0, historic_clv.shape[0])
 
-    df_cum_clv = pd.DataFrame({"Holdout":historic_clv,
+    df_cum_clv = pd.DataFrame({"Verbatim":historic_clv,
                                "Predicted":expected_clv},
                  index=index)
     
@@ -977,7 +977,7 @@ def customer_lifetime_value(transaction_prediction_model,
     factor = {"M":{"W": 4.345, "M": 1.0, "D": 30, "H": 30 * 24},
               "W":{"W": 1.0, "M": 1/4.345, "D": 7, "H": 7 * 24},
               "D":{"W": 1/7, "M": 1/30, "D": 1, "H": 1 * 24},
-              "D":{"W": 1/(7 * 24), "M": 1/(30 * 24), "D": 24, "H": 1}}[freq][model_freq]
+              "H":{"W": 1/(7 * 24), "M": 1/(30 * 24), "D": 24, "H": 1}}[freq][model_freq]
 
     steps = np.arange(t_start + 1, time + 1) * factor
     

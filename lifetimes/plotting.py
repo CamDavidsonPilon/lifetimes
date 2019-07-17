@@ -1102,7 +1102,7 @@ def plot_cumulative_clv_from_t_cal(transaction_prediction_model,
                                         datetime_format=datetime_format,
                                         set_index_date=set_index_date)  
         
-    ax = df_cum_clv['Holdout'].plot(ax=ax, title=title, zorder=1, **kwargs)
+    ax = df_cum_clv['Verbatim'].plot(ax=ax, title=title, zorder=1, **kwargs)
     ax = df_cum_clv['Predicted'].plot(ax=ax, title=title, zorder=0, **kwargs)
     ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:,.0f}'))
     
