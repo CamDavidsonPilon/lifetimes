@@ -21,6 +21,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -56,3 +57,12 @@ target/
 # OS generated files
 .DS_Store
 .DS_Store?
+
+# Pyenv
+.python-version
+
+# PyCharm
+.idea/*
+
+# VS Code
+.vscode/
