@@ -1,19 +1,17 @@
+# -*- coding: utf-8 -*-
 """Beta Geo Fitter, also known as BG/NBD model."""
+
 from __future__ import print_function
 from __future__ import division
-from collections import OrderedDict
+import warnings
 
-import numpy as np
-from numpy import log, asarray, any as npany, c_ as vconcat, isinf, isnan, \
-    where, exp
-from numpy import ones_like
-from pandas import DataFrame
-from scipy.special import gammaln, hyp2f1, beta, gamma
-from scipy import misc
-import mpmath as mpm
-
+import pandas as pd
+import autograd.numpy as np
+from autograd.scipy.special import gammaln, beta, gamma
+from scipy.special import hyp2f1
+from scipy.special import expit
 from . import BaseFitter
-from ..utils import _fit, _scale_time, _check_inputs
+from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
 
@@ -39,26 +37,48 @@ class BetaGeoFitter(BaseFitter):
     ----------
     penalizer_coef: float
         The coefficient applied to an l2 norm on the parameters
-    params_: :obj: OrderedDict
+    params_: :obj: Series
         The fitted parameters of the model
     data: :obj: DataFrame
-        A DataFrame with the columns given in the call to `fit`
+        A DataFrame with the values given in the call to `fit`
+    variance_matrix_: :obj: DataFrame
+        A DataFrame with the variance matrix of the parameters.
+    confidence_intervals_: :obj: DataFrame
+        A DataFrame 95% confidence intervals of the parameters
+    standard_errors_: :obj: Series
+        A Series with the standard errors of the parameters
+    summary: :obj: DataFrame
+        A DataFrame containing information about the fitted parameters
 
     References
     ----------
     .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
        "Counting Your Customers the Easy Way: An Alternative to the
        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
-
     """
 
-    def __init__(self, penalizer_coef=0.0):
-        """Initialization, set penalizer_coef."""
+    def __init__(
+        self,
+        penalizer_coef=0.0
+    ):
+        """
+        Initialization, set penalizer_coef.
+        """
+
         self.penalizer_coef = penalizer_coef
 
-    def fit(self, frequency, recency, T, iterative_fitting=1,
-            initial_params=None, verbose=False, tol=1e-4, index=None,
-            fit_method='Nelder-Mead', maxiter=2000, **kwargs):
+    def fit(
+        self,
+        frequency,
+        recency,
+        T,
+        weights=None,
+        initial_params=None,
+        verbose=False,
+        tol=1e-7,
+        index=None,
+        **kwargs
+    ):
         """
         Fit a dataset to the BG/NBD model.
 
@@ -72,8 +92,16 @@ class BetaGeoFitter(BaseFitter):
             (denoted t_x in literature).
         T: array_like
             customers' age (time units since first purchase)
-        iterative_fitting: int, optional
-            perform iterative_fitting fits over random/warm-started initial params
+        weights: None or array_like
+            Number of customers with given frequency/recency/T,
+            defaults to 1 if not specified. Fader and
+            Hardie condense the individual RFM matrix into all
+            observed combinations of frequency/recency/T. This
+            parameter represents the count of customers with a given
+            purchase pattern. Instead of calculating individual
+            loglikelihood, the loglikelihood is calculated for each
+            pattern and multiplied by the number of customers with
+            that pattern.
         initial_params: array_like, optional
             set the initial parameters for the fitter.
         verbose : bool, optional
@@ -82,84 +110,107 @@ class BetaGeoFitter(BaseFitter):
             tolerance for termination of the function minimization process.
         index: array_like, optional
             index for resulted DataFrame which is accessible via self.data
-        fit_method : string, optional
-            fit_method to passing to scipy.optimize.minimize
-        maxiter : int, optional
-            max iterations for optimizer in scipy.optimize.minimize will be
-            overwritten if setted in kwargs.
         kwargs:
             key word arguments to pass to the scipy.optimize.minimize
             function as options dict
 
-
         Returns
         -------
         BetaGeoFitter
-            with additional properties like params_ and methods like predict
-
+            with additional properties like ``params_`` and methods like ``predict``
         """
-        frequency = asarray(frequency)
-        recency = asarray(recency)
-        T = asarray(T)
+
+        frequency = np.asarray(frequency).astype(int)
+        recency = np.asarray(recency)
+        T = np.asarray(T)
         _check_inputs(frequency, recency, T)
+
+        if weights is None:
+            weights = np.ones_like(recency, dtype=int)
+        else:
+            weights = np.asarray(weights)
 
         self._scale = _scale_time(T)
         scaled_recency = recency * self._scale
         scaled_T = T * self._scale
 
-        params, self._negative_log_likelihood_ = _fit(
-            self._negative_log_likelihood,
-            [frequency, scaled_recency, scaled_T, self.penalizer_coef],
-            iterative_fitting,
+        log_params_, self._negative_log_likelihood_, self._hessian_ = self._fit(
+            (frequency, scaled_recency, scaled_T, weights, self.penalizer_coef),
             initial_params,
             4,
             verbose,
             tol,
-            fit_method,
-            maxiter,
-            **kwargs)
+            **kwargs
+        )
 
-        self.params_ = OrderedDict(zip(['r', 'alpha', 'a', 'b'], params))
-        self.params_['alpha'] /= self._scale
+        self.params_ = pd.Series(np.exp(log_params_), index=["r", "alpha", "a", "b"])
+        self.params_["alpha"] /= self._scale
 
-        self.data = DataFrame(vconcat[frequency, recency, T],
-                              columns=['frequency', 'recency', 'T'])
-        if index is not None:
-            self.data.index = index
+        self.data = pd.DataFrame({"frequency": frequency, "recency": recency, "T": T, "weights": weights}, index=index)
+
         self.generate_new_data = lambda size=1: beta_geometric_nbd_model(
-            T, *self._unload_params('r', 'alpha', 'a', 'b'), size=size)
+            T, *self._unload_params("r", "alpha", "a", "b"), size=size
+        )
 
         self.predict = self.conditional_expected_number_of_purchases_up_to_time
+
+        self.variance_matrix_ = self._compute_variance_matrix()
+        self.standard_errors_ = self._compute_standard_errors()
+        self.confidence_intervals_ = self._compute_confidence_intervals()
+
         return self
 
     @staticmethod
-    def _negative_log_likelihood(params, freq, rec, T, penalizer_coef):
-        if npany(asarray(params) <= 0):
-            return np.inf
+    def _negative_log_likelihood(
+        log_params,
+        freq,
+        rec,
+        T,
+        weights,
+        penalizer_coef
+    ):
+        """
+        The following method for calculatating the *log-likelihood* uses the method
+        specified in section 7 of [2]_. More information can also be found in [3]_.
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
+        .. [3] http://brucehardie.com/notes/004/
+        """
+
+        warnings.simplefilter(action="ignore", category=FutureWarning)
+
+        params = np.exp(log_params)
         r, alpha, a, b = params
 
-        A_1 = gammaln(r + freq) - gammaln(r) + r * log(alpha)
-        A_2 = (gammaln(a + b) + gammaln(b + freq) - gammaln(b) -
-               gammaln(a + b + freq))
-        A_3 = -(r + freq) * log(alpha + T)
+        A_1 = gammaln(r + freq) - gammaln(r) + r * np.log(alpha)
+        A_2 = gammaln(a + b) + gammaln(b + freq) - gammaln(b) - gammaln(a + b + freq)
+        A_3 = -(r + freq) * np.log(alpha + T)
+        A_4 = np.log(a) - np.log(b + np.maximum(freq, 1) - 1) - (r + freq) * np.log(rec + alpha)
 
-        d = vconcat[ones_like(freq), (freq > 0)]
-        A_4 = log(a) - log(b + where(freq == 0, 1, freq) - 1) - \
-            (r + freq) * log(rec + alpha)
-        A_4[isnan(A_4) | isinf(A_4)] = 0
-        penalizer_term = penalizer_coef * sum(np.asarray(params) ** 2)
-        return -(A_1 + A_2 + misc.logsumexp(
-            vconcat[A_3, A_4], axis=1, b=d)).mean() + penalizer_term
+        penalizer_term = penalizer_coef * sum(params ** 2)
+        ll = weights * (A_1 + A_2 + np.log(np.exp(A_3) + np.exp(A_4) * (freq > 0)))
 
-    def conditional_expected_number_of_purchases_up_to_time(self, t, frequency,
-                                                            recency, T):
+        return -ll.sum() / weights.sum() + penalizer_term
+
+    def conditional_expected_number_of_purchases_up_to_time(
+        self,
+        t,
+        frequency,
+        recency,
+        T
+    ):
         """
         Conditional expected number of purchases up to time.
 
         Calculate the expected number of repeat purchases up to time t for a
-        randomly choose individual from the population, given they have
-        purchase history (frequency, recency, T)
+        randomly chosen individual from the population, given they have
+        purchase history (frequency, recency, T).
+
+        This function uses equation (10) from [2]_.
 
         Parameters
         ----------
@@ -176,29 +227,40 @@ class BetaGeoFitter(BaseFitter):
         -------
         array_like
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
+
         x = frequency
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
         _a = r + x
         _b = b + x
         _c = a + b + x - 1
         _z = t / (alpha + T + t)
+        ln_hyp_term = np.log(hyp2f1(_a, _b, _c, _z))
 
-        hyp_term_array = np.frompyfunc(mpm.hyp2f1, 4, 1)
-        hyp_term = hyp_term_array(_a, _b, _c, _z)
-
+        # if the value is inf, we are using a different but equivalent
+        # formula to compute the function evaluation.
+        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
+        ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
+        second_term = 1 - np.exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
 
         numerator = first_term * second_term
-        denominator = 1 + (x > 0) * (a / (b + x - 1)) * \
-            ((alpha + T) / (alpha + recency)) ** (r + x)
+        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
         return numerator / denominator
 
-    def conditional_probability_alive(self, frequency, recency, T,
-                                      ln_exp_max=300):
+    def conditional_probability_alive(
+        self,
+        frequency,
+        recency,
+        T
+    ):
         """
         Compute conditional probability alive.
 
@@ -209,35 +271,36 @@ class BetaGeoFitter(BaseFitter):
 
         Parameters
         ----------
-        frequency: float
+        frequency: array or scalar
             historical frequency of customer.
-        recency: float
+        recency: array or scalar
             historical recency of customer.
-        T: float
+        T: array or scalar
             age of the customer.
-        ln_exp_max: int
-            to what value clip log_div equation
 
         Returns
         -------
-        float
+        array
             value representing a probability
-
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        log_div = (r + frequency) * log(
-            (alpha + T) / (alpha + recency)) + log(
-            a / (b + where(frequency == 0, 1, frequency) - 1))
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
 
-        return where(frequency == 0, 1.,
-                     where(log_div > ln_exp_max, 0.,
-                           1. / (1 + exp(np.clip(log_div, None, ln_exp_max)))))
+        log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
+            a / (b + np.maximum(frequency, 1) - 1)
+        )
 
-    def conditional_probability_alive_matrix(self, max_frequency=None,
-                                             max_recency=None):
+        return np.atleast_1d(np.where(frequency == 0, 1.0, expit(-log_div)))
+
+    def conditional_probability_alive_matrix(
+        self,
+        max_frequency=None,
+        max_recency=None
+    ):
         """
         Compute the probability alive matrix.
+
+        Uses the ``conditional_probability_alive()`` method to get calculate the matrix.
 
         Parameters
         ----------
@@ -251,21 +314,26 @@ class BetaGeoFitter(BaseFitter):
         -------
         matrix:
             A matrix of the form [t_x: historical recency, x: historical frequency]
-
         """
-        max_frequency = max_frequency or int(self.data['frequency'].max())
-        max_recency = max_recency or int(self.data['T'].max())
 
-        return np.fromfunction(self.conditional_probability_alive,
-                               (max_frequency + 1, max_recency + 1),
-                               T=max_recency).T
+        max_frequency = max_frequency or int(self.data["frequency"].max())
+        max_recency = max_recency or int(self.data["T"].max())
 
-    def expected_number_of_purchases_up_to_time(self, t):
+        return np.fromfunction(
+            self.conditional_probability_alive, (max_frequency + 1, max_recency + 1), T=max_recency
+        ).T
+
+    def expected_number_of_purchases_up_to_time(
+        self,
+        t
+    ):
         """
         Calculate the expected number of repeat purchases up to time t.
 
-        Calculate repeat purchases for a randomly choose individual from the
+        Calculate repeat purchases for a randomly chosen individual from the
         population.
+
+        Equivalent to equation (9) of [2]_.
 
         Parameters
         ----------
@@ -276,12 +344,23 @@ class BetaGeoFitter(BaseFitter):
         -------
         array_like
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
+
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
+
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def probability_of_n_purchases_up_to_time(self, t, n):
+    def probability_of_n_purchases_up_to_time(
+        self,
+        t,
+        n
+    ):
         r"""
         Compute the probability of n purchases.
 
@@ -289,6 +368,8 @@ class BetaGeoFitter(BaseFitter):
 
         where N(t) is the number of repeat purchases a customer makes in t
         units of time.
+
+        Comes from equation (8) of [2]_.
 
         Parameters
         ----------
@@ -302,21 +383,30 @@ class BetaGeoFitter(BaseFitter):
         float:
             Probability to have n purchases up to t units of time
 
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
-        r, alpha, a, b = self._unload_params('r', 'alpha', 'a', 'b')
 
-        first_term = (beta(a, b + n) / beta(a, b) *
-                      gamma(r + n) / gamma(r) /
-                      gamma(n + 1) * (alpha / (alpha + t)) ** r *
-                      (t / (alpha + t)) ** n)
+        r, alpha, a, b = self._unload_params("r", "alpha", "a", "b")
+
+        first_term = (
+            beta(a, b + n)
+            / beta(a, b)
+            * gamma(r + n)
+            / gamma(r)
+            / gamma(n + 1)
+            * (alpha / (alpha + t)) ** r
+            * (t / (alpha + t)) ** n
+        )
 
         if n > 0:
             j = np.arange(0, n)
-            finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) *
-                          (t / (alpha + t)) ** j).sum()
-            second_term = (beta(a + 1, b + n - 1) /
-                           beta(a, b) * (1 - (alpha / (alpha + t)) ** r *
-                           finite_sum))
+            finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j).sum()
+            second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
         else:
             second_term = 0
+
         return first_term + second_term

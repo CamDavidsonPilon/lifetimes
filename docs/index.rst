@@ -12,6 +12,9 @@
    Quickstart
    Saving and loading model
    More examples and recipes
+   lifetimes
+   Changelog
+   High Level Overview
 
 
 Indices and tables

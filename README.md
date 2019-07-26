@@ -24,17 +24,15 @@ If this is too abstract, consider these applications:
  - Understanding how frequently a patient may return to a hospital. (Alive = visiting. Die = maybe the patient moved to a new city, or became deceased.)
  - Predicting individuals who have churned from an app using only their usage history. (Alive = logins. Die = removed the app)
  - Predicting repeat purchases from a customer. (Alive = actively purchasing. Die = became disinterested with your product)
- - Predicting the lifetime values of your customers
+ - Predicting the lifetime value of your customers
 
 ### Specific Application: Customer Lifetime Value
-As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
 
+As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong (Prof. Fader's Video Lecture)](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
 
 ## Installation
 
     pip install lifetimes
-
-Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundation/dill) (and optionally-but-seriously matplotlib).
 
 ## Documentation and tutorials
 [Official documentation](http://lifetimes.readthedocs.io/en/latest/)
@@ -44,9 +42,15 @@ Requirements are only Numpy, Scipy, Pandas, [Dill](https://github.com/uqfoundati
 
 Please create an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes). 
 
+## Main Articles
+
+1. Probably, the seminal article of Non-Contractual CLV is [*Counting Your Customers: Who Are They and What Will They Do Next?*](https://www.jstor.org/stable/2631608?seq=1#page_scan_tab_contents), by David C. Schmittlein, Donald G. Morrison and Richard Colombo. Despite it being paid, it is worth the read. The relevant information will eventually end up in this library's documentation though.
+1. The other (more recent) paper is [*“Counting Your Customers” the Easy Way:
+An Alternative to the Pareto/NBD Model*](http://brucehardie.com/papers/018/fader_et_al_mksc_05.pdf), by Peter Fader, Bruce Hardie and Ka Lok Lee.
 
 ## More Information
 
 1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
-2. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
-3. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (for, *Buy 'Til You Die*).
+1. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
+1. R implementation is called [BTYD](http://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf) (*Buy 'Til You Die*).
+1. [Bruce Hardie's Website](http://brucehardie.com/), especially his notes, is full of useful and essential explanations, many of which are featured in this library.

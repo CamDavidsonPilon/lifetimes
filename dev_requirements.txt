@@ -3,7 +3,7 @@ flake8
 autopep8
 pytest
 matplotlib
-pytest-cov
+pytest-cov==2.5.1
 pytest-mpl
 coveralls
 pydocstyle
