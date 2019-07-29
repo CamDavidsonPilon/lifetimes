@@ -7,6 +7,7 @@ import warnings
 
 import pandas as pd
 import autograd.numpy as np
+import mpmath as mpm
 from autograd.scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 from scipy.special import expit
@@ -241,18 +242,17 @@ class BetaGeoFitter(BaseFitter):
         _b = b + x
         _c = a + b + x - 1
         _z = t / (alpha + T + t)
-        ln_hyp_term = np.log(hyp2f1(_a, _b, _c, _z))
 
-        # if the value is inf, we are using a different but equivalent
-        # formula to compute the function evaluation.
-        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
-        ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
+        hyp_term_array = np.frompyfunc(mpm.hyp2f1, 4, 1)
+        hyp_term = hyp_term_array(_a, _b, _c, _z)
+
         first_term = (a + b + x - 1) / (a - 1)
-        second_term = 1 - np.exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
+        second_term = (1 - hyp_term * ((alpha + T) / (alpha + t + T)) ** (r + x))
 
         numerator = first_term * second_term
         denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
-
+        print(numerator)
+        print(denominator)
         return numerator / denominator
 
     def conditional_probability_alive(
