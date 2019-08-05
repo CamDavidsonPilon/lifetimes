@@ -251,9 +251,8 @@ class BetaGeoFitter(BaseFitter):
 
         numerator = first_term * second_term
         denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
-        print(numerator)
-        print(denominator)
-        return numerator / denominator
+
+        return (np.array(numerator / denominator)).astype(np.float32)
 
     def conditional_probability_alive(
         self,
