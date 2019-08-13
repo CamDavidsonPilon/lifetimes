@@ -109,7 +109,8 @@ def calibration_and_holdout_data(
             "There is no data available. Check the `observation_period_end` and  `calibration_period_end` and confirm that values in `transactions` occur prior to those dates."
         )
 
-    holdout_transactions[datetime_col] = holdout_transactions[datetime_col].map(to_period)
+    holdout_transactions[datetime_col] = holdout_transactions[datetime_col].dt.to_period(freq)
+    holdout_transactions[datetime_col] = holdout_transactions[datetime_col].astype(str)
     holdout_summary_data = (
         holdout_transactions.groupby([customer_id_col, datetime_col], sort=False)
         .agg(lambda r: 1)
