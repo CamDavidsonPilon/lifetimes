@@ -6,7 +6,7 @@ It is paramount you prove that what you have is better than what the library loo
 
 ### But how exactly do you do that?
 
-My suggestion is for you to create a script where you compare the existing approach to what you've come up with. This script will go into a `benchmarks` folder on the top level of the library. The `benchmarks folder might not be merged into the `master` branch, however, it might play an important role in the `dev` branch.
+My suggestion is for you to create a script where you compare the existing approach to what you've come up with. This script will go into a `benchmarks` folder on the top level of the library. The `benchmarks` folder might not be merged into the `master` branch, however, it might play an important role in the `dev` branch.
 
 ## Version Control
 
