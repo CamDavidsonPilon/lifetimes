@@ -32,7 +32,13 @@ As emphasized by P. Fader and B. Hardie, understanding and acting on customer li
 
 ## Installation
 
-    pip install lifetimes
+```bash
+pip install lifetimes
+```
+
+## Contributing
+
+Please refer to the [Contributing Guide](https://github.com/CamDavidsonPilon/lifetimes/blob/master/CONTRIBUTING.md) before creating any *Pull Requests*. It will make life easier for everyone.
 
 ## Documentation and tutorials
 [Official documentation](http://lifetimes.readthedocs.io/en/latest/)
