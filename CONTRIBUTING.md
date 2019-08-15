@@ -1,5 +1,11 @@
 # Contributing
 
+## First Things First: Create an Issue
+
+Most topics on this library are far from trivial, newcomers might misunderstand some concepts and, thus, if they blindly try to create *Pull Request*, their efforts might be for naught.
+
+Therefore, post your question on the [Issues Section](https://github.com/CamDavidsonPilon/lifetimes/issues) of the library first. It will be quickly (hopefully) labeled and other people's collaboration will provide enough feedback for you to know what to do next.
+
 ## Prove that What You've Created is Better than What Already Exists (or not)
 
 It is paramount you prove that what you have is better than what the library looks like right now. This will not only have the functionality of being a source of *metadocumentation* but also a huge help for the eventual *reviewer(s)* of your *Pull Request*.
