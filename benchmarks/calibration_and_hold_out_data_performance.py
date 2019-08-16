@@ -1,5 +1,6 @@
 """
 Script demonstrating performance speed up on calibration_and_hold_out_data()
+Speed up is as compared with code in commit:  e9b3475ec81c3a036fd8087f50b65db70a651e75
 """
 import timeit
 from lifetimes.utils import calibration_and_holdout_data
