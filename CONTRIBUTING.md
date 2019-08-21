@@ -1,5 +1,13 @@
 # Contributing
 
+## The General Flow of a Contribution
+
+A "good" contribution would follow this flow:
+
+1. (Sometimes Optional) Create an Issue.
+1. Prove that what you've created is better than what already exists.
+1. Create/modify an automated test to guarantee that what you did is not going to break some other thing inside the library.
+
 ## First Things First: Create an Issue
 
 Most topics on this library are far from trivial, newcomers might misunderstand some concepts and, thus, if they blindly try to create *Pull Request*, their efforts might be for naught.
@@ -13,6 +21,20 @@ It is paramount you prove that what you have is better than what the library loo
 ### But how exactly do you do that?
 
 My suggestion is for you to create a script where you compare the existing approach to what you've come up with. This script will go into a `benchmarks` folder on the top level of the library. The `benchmarks` folder might not be merged into the `master` branch, however, it might play an important role in the `dev` branch.
+
+This is very similar to what (Data) Scientists do when they create `Jupyter Notebooks`. In those, they expose their reasoning towards a solution, which is not intended for production, only to explain their thoughts.
+
+## Tests
+
+There are already quite a lot of tests in this library. However, nothing guarantees that what you're creating won't break an existing feature. It is recommended that you thus:
+
+1. Go through all the existing tests.
+    - Travis CI will do that automatically.
+1. Examine the existing tests to see if they already guarantee that what you're doing is enough.
+    - This can be difficult because you will probably not know all of the tests. Nevertheless, using `Ctrl + F` is always your friend. Anyway, try your best.
+1. Write new tests *if* necessary.
+
+Additionally, if it were me, even if there already exists a test covering my code, I might end up writing a custom one &mdash; or mentioning the name of the existing one &mdash; in my `benchmarks` file anyway, just for the sake of documentation.
 
 ## Version Control
 
