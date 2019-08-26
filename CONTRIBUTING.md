@@ -7,6 +7,8 @@ A "good" contribution would follow this flow:
 1. (Sometimes Optional) Create an Issue.
 1. Prove that what you've created is better than what already exists.
 1. Create/modify an automated test to guarantee that what you did is not going to break some other thing inside the library.
+1. Make sure your code follows this libraries editing conventions.
+1. Create a *Pull Request* to an appropriate branch.
 
 ## First Things First: Create an Issue
 
@@ -35,6 +37,12 @@ There are already quite a lot of tests in this library. However, nothing guarant
 1. Write new tests *if* necessary.
 
 Additionally, if it were me, even if there already exists a test covering my code, I might end up writing a custom one &mdash; or mentioning the name of the existing one &mdash; in my `benchmarks` file anyway, just for the sake of documentation.
+
+## Editing Conventions
+
+For the most part, this library follows [`PEP 8`](https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds) conventions. Try to follow them when contributing. If you find code inside this library that does not respect those conventionse, please do create an issue and we will try to fix it. It's usually straight forward to fix it and it avoids a lot of pain in the long-term.
+
+It is also crucial that you follow [`Numpy's Docstrings`](https://docs.scipy.org/doc/numpy/docs/howto_document.html) conventions when creating or editing `docstrings`. They are a subset of [`PEP 257`](https://www.python.org/dev/peps/pep-0257/#multi-line-docstrings).
 
 ## Version Control
 
