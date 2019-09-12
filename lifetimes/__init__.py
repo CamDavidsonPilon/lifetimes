@@ -7,6 +7,7 @@ from .fitters.beta_geo_beta_binom_fitter import BetaGeoBetaBinomFitter
 from .fitters.modified_beta_geo_fitter import ModifiedBetaGeoFitter
 from .fitters.pareto_nbd_fitter import ParetoNBDFitter
 from .fitters.gamma_gamma_fitter import GammaGammaFitter
+from .fitters.modified_beta_geo_erlang_fitter import ModifiedBetaGeoErlangFitter
 
 __all__ = (
     "__version__",
@@ -15,4 +16,5 @@ __all__ = (
     "GammaGammaFitter",
     "ModifiedBetaGeoFitter",
     "BetaGeoBetaBinomFitter",
+    "ModifiedBetaGeoErlangFitter",
 )
