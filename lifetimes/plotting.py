@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""plots, many, many plots."""
+
 import numpy as np
 import pandas as pd
 from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
@@ -18,7 +20,13 @@ __all__ = [
 ]
 
 
-def coalesce(*args):
+def coalesce(
+    *args
+):
+    """
+    Generator for the arguments, if they are not ``None``.    
+    """
+
     return next(s for s in args if s is not None)
 
 
@@ -32,6 +40,8 @@ def plot_period_transactions(
 ):
     """
     Plot a figure with period actual and predicted transactions.
+
+    This is achieved by simply aggregating customers on the frequency column.
 
     Parameters
     ----------
@@ -51,8 +61,8 @@ def plot_period_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+    
     from matplotlib import pyplot as plt
 
     labels = kwargs.pop("label", ["Actual", "Model"])
@@ -71,16 +81,28 @@ def plot_period_transactions(
     plt.title(title)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
+
     return ax
 
 
 def plot_calibration_purchases_vs_holdout_purchases(
-    model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs
+    model, 
+    calibration_holdout_matrix, 
+    kind="frequency_cal", 
+    n=7,
+    title="Actual Purchases in Holdout Period vs Predicted Purchases",
+    xlabel=None,
+    ylabel="Average of Purchases in Holdout Period",
+    labels=None,
+    **kwargs
 ):
     """
     Plot calibration purchases vs holdout.
 
-    This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
+    This currently relies too much on the ``lifetimes.util`` 's ``calibration_and_holdout_data()`` function.
+
+    The main operation here is an *aggregation mean* 
+    over the fitted model's ``conditional_expected_number_of_purchases_up_to_time()`` method.
 
     Parameters
     ----------
@@ -95,11 +117,20 @@ def plot_calibration_purchases_vs_holdout_purchases(
                  "time_since_last_purchase". Time since user made last purchase
     n: int, optional
         Number of ticks on the x axis
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    labels: list, optional
+        list of legend labels
+
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     x_labels = {
@@ -125,10 +156,11 @@ def plot_calibration_purchases_vs_holdout_purchases(
     else:
         ax = summary.groupby(kind)[["frequency_holdout", "model_predictions"]].mean().iloc[:n].plot(**kwargs)
 
-    plt.title("Actual Purchases in Holdout Period vs Predicted Purchases")
-    plt.xlabel(x_labels[kind])
-    plt.ylabel("Average of Purchases in Holdout Period")
-    plt.legend()
+    plt.xlabel(x_labels[kind] if xlabel == None else xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    plt.legend() if labels == None else plt.legend(labels)
 
     return ax
 
@@ -147,6 +179,9 @@ def plot_frequency_recency_matrix(
     Plot recency frequecy matrix as heatmap.
 
     Plot a figure of expected transactions in T next units of time by a customer's frequency and recency.
+
+    Uses the model's ``conditional_expected_number_of_purchases_up_to_time()`` method to create
+    the Frequency x Recency Matrix.
 
     Parameters
     ----------
@@ -171,8 +206,8 @@ def plot_frequency_recency_matrix(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if max_frequency is None:
@@ -223,6 +258,9 @@ def plot_probability_alive_matrix(
     Plot a figure of the probability a customer is alive based on their
     frequency and recency.
 
+    Uses the fitted model's ``conditional_probability_alive_matrix()`` method, which in turn
+    uses the ``conditional_probability_alive()`` method.
+
     Parameters
     ----------
     model: lifetimes model
@@ -244,8 +282,8 @@ def plot_probability_alive_matrix(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     z = model.conditional_probability_alive_matrix(max_frequency, max_recency)
@@ -276,7 +314,9 @@ def plot_expected_repeat_purchases(
     **kwargs
 ):
     """
-    Plot expected repeat purchases on calibration period .
+    Plot expected repeat purchases on calibration period.
+
+    Uses the fitted model's ``expected_number_of_purchases_up_to_time()`` method.
 
     Parameters
     ----------
@@ -298,8 +338,8 @@ def plot_expected_repeat_purchases(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -323,12 +363,27 @@ def plot_expected_repeat_purchases(
     plt.title(title)
     plt.xlabel(xlabel)
     plt.legend(loc="lower right")
+
     return ax
 
 
-def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_date=None, ax=None, **kwargs):
+def plot_history_alive(
+    model, 
+    t, 
+    transactions, 
+    datetime_col, 
+    freq="D", 
+    start_date=None, 
+    ax=None, 
+    ylabel="P_alive",
+    title="History of P_alive",
+    **kwargs
+):
     """
     Draw a graph showing the probability of being alive for a customer in time.
+
+    Uses the model and the ``utils.py`` ``calculate_alive_path()`` function 
+    to calculate the history of the specific customer.
 
     Parameters
     ----------
@@ -348,12 +403,16 @@ def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_dat
         Using user axes
     kwargs
         Passed into the matplotlib.pyplot.plot command.
+    ylabel: str, optional
+        Figure ylabel
+    title: str, optional
+        Figure title
 
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if start_date is None:
@@ -383,8 +442,8 @@ def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_dat
     plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlim(start_date, path_dates[-1])
     plt.legend(loc=3)
-    plt.ylabel("P_alive")
-    plt.title("History of P_alive")
+    plt.ylabel(ylabel)
+    plt.title(title)
 
     return ax
 
@@ -407,6 +466,8 @@ def plot_cumulative_transactions(
 ):
     """
     Plot a figure of the predicted and actual cumulative transactions of users.
+
+    Uses the the model and the ``utils.py`` ``expected_cumulative_transactions()`` function.
 
     Parameters
     ----------
@@ -446,8 +507,8 @@ def plot_cumulative_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -474,6 +535,7 @@ def plot_cumulative_transactions(
     ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+
     return ax
 
 
@@ -495,6 +557,10 @@ def plot_incremental_transactions(
 ):
     """
     Plot a figure of the predicted and actual cumulative transactions of users.
+
+    Uses the same heuristics as the ``plot_cumulative_transactions()`` function
+    (via ``expected_cumulative_transactions()``),
+    but decumulates the sum before plotting.
 
     Parameters
     ----------
@@ -534,8 +600,8 @@ def plot_incremental_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -564,6 +630,7 @@ def plot_incremental_transactions(
     ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+
     return ax
 
 
@@ -572,11 +639,14 @@ def plot_transaction_rate_heterogeneity(
     suptitle="Heterogeneity in Transaction Rate",
     xlabel="Transaction Rate",
     ylabel="Density",
+    title_list=["mean", "var"],
     suptitle_fontsize=14,
     **kwargs
 ):
     """
-    Plot the estimated gamma distribution of lambda (customers' propensities to purchase).
+    Plot the estimated *gamma* distribution of lambda (customers' propensities to purchase).
+
+    Basically draws a histogram using ``scipy`` ``stats.gamma``.
 
     Parameters
     ----------
@@ -588,14 +658,16 @@ def plot_transaction_rate_heterogeneity(
         Figure xlabel
     ylabel: str, optional
         Figure ylabel
+    title_list: list, optional
+        Figure title terms
     kwargs
         Passed into the matplotlib.pyplot.plot command.
 
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     r, alpha = model._unload_params("r", "alpha")
@@ -607,14 +679,15 @@ def plot_transaction_rate_heterogeneity(
     x = np.linspace(0, lim, 100)
 
     fig, ax = plt.subplots(1)
-    fig.suptitle("Heterogeneity in Transaction Rate", fontsize=suptitle_fontsize, fontweight="bold")
+    fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title("mean: {:.3f}, var: {:.3f}".format(rate_mean, rate_var))
+    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], rate_mean, title_list[1], rate_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
+
     return ax
 
 
@@ -623,13 +696,16 @@ def plot_dropout_rate_heterogeneity(
     suptitle="Heterogeneity in Dropout Probability",
     xlabel="Dropout Probability p",
     ylabel="Density",
+    title_list=["mean", "var"],
     suptitle_fontsize=14,
     **kwargs
 ):
     """
-    Plot the estimated gamma distribution of p.
+    Plot the estimated *beta* distribution of p.
 
     p - (customers' probability of dropping out immediately after a transaction).
+
+    Basically draws a histogram using ``scipy`` ``stats.beta``.
 
     Parameters
     ----------
@@ -641,14 +717,16 @@ def plot_dropout_rate_heterogeneity(
         Figure xlabel
     ylabel: str, optional
         Figure ylabel
+    title_list: list, optional
+        Figure title terms
     kwargs
         Passed into the matplotlib.pyplot.plot command.
 
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     a, b = model._unload_params("a", "b")
@@ -662,16 +740,35 @@ def plot_dropout_rate_heterogeneity(
     fig, ax = plt.subplots(1)
     fig.suptitle(suptitle, fontsize=suptitle_fontsize, fontweight="bold")
 
-    ax.set_title("mean: {:.3f}, var: {:.3f}".format(beta_mean, beta_var))
+    ax.set_title("{}: {:.3f}, {}: {:.3f}".format(title_list[0], beta_mean, title_list[1], beta_var))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
+
     return ax
 
 
-def forceAspect(ax, aspect=1):
+def forceAspect(
+    ax, 
+    aspect=1
+):
+    """
+    Forces an aspect on the image ``ax``.
+
+    Parameters
+    ----------
+    ax: matplotlib.AxesSubplot
+        figure axes
+    aspect: int
+        aspect ratio of the image
+
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
     im = ax.get_images()
     extent = im[0].get_extent()
     ax.set_aspect(abs((extent[1] - extent[0]) / (extent[3] - extent[2])) / aspect)
