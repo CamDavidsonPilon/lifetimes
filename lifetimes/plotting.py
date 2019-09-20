@@ -627,7 +627,7 @@ def plot_dropout_rate_heterogeneity(
     **kwargs
 ):
     """
-    Plot the estimated gamma distribution of p.
+    Plot the estimated beta distribution of p.
 
     p - (customers' probability of dropping out immediately after a transaction).
 
