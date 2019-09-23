@@ -51,6 +51,7 @@ class ParetoNBDFitter(BaseFitter):
         """
 
         self.penalizer_coef = penalizer_coef
+        self.params_names = ["r", "alpha", "s", "beta"]
 
     def fit(
         self,
@@ -517,6 +518,27 @@ class ParetoNBDFitter(BaseFitter):
         minimize_options["maxiter"] = maxiter
         minimize_options.update(kwargs)
 
+        self.solution_iter = []
+        def callback_solution_saver(
+            xk
+        ):
+            """
+            Instantiated inside ``scipy.optimize`` ``minimize()`` call 
+            inside the ``_fit()`` method.
+
+            Saves the solution at the fitter's ``solution_iter`` property.
+
+            Note that neither ``exp()`` nor scaling to ``alpha`` are applied here.
+            For those operations, use the ``solution_iter_summary`` property.
+
+            Parameters
+            ----------
+            xk : array-like
+                Solution at the current iteration.
+            """
+
+            self.solution_iter.append(xk.tolist())
+
         total_count = 0
         while total_count < iterative_fitting:
             current_init_params = (
@@ -532,9 +554,11 @@ class ParetoNBDFitter(BaseFitter):
                 x0=current_init_params,
                 args=minimizing_function_args,
                 options=minimize_options,
+                callback=callback_solution_saver
             )
             sols.append(output.x)
             ll.append(output.fun)
+            self.nit = output.nit # Number of Iterations performed
 
             total_count += 1
         argmin_ll, min_ll = min(enumerate(ll), key=lambda x: x[1])

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""plots, lots of plots"""
+
 import numpy as np
 import pandas as pd
 from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
@@ -19,6 +21,10 @@ __all__ = [
 
 
 def coalesce(*args):
+    """
+    Creates a generator for the parameters.
+    """
+
     return next(s for s in args if s is not None)
 
 
@@ -51,8 +57,8 @@ def plot_period_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     labels = kwargs.pop("label", ["Actual", "Model"])
@@ -71,11 +77,16 @@ def plot_period_transactions(
     plt.title(title)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
+
     return ax
 
 
 def plot_calibration_purchases_vs_holdout_purchases(
-    model, calibration_holdout_matrix, kind="frequency_cal", n=7, **kwargs
+    model, 
+    calibration_holdout_matrix, 
+    kind="frequency_cal", 
+    n=7, 
+    **kwargs
 ):
     """
     Plot calibration purchases vs holdout.
@@ -98,8 +109,8 @@ def plot_calibration_purchases_vs_holdout_purchases(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     x_labels = {
@@ -171,8 +182,8 @@ def plot_frequency_recency_matrix(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if max_frequency is None:
@@ -244,8 +255,8 @@ def plot_probability_alive_matrix(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     z = model.conditional_probability_alive_matrix(max_frequency, max_recency)
@@ -298,8 +309,8 @@ def plot_expected_repeat_purchases(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -323,6 +334,7 @@ def plot_expected_repeat_purchases(
     plt.title(title)
     plt.xlabel(xlabel)
     plt.legend(loc="lower right")
+
     return ax
 
 
@@ -352,8 +364,8 @@ def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_dat
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if start_date is None:
@@ -446,8 +458,8 @@ def plot_cumulative_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -474,6 +486,7 @@ def plot_cumulative_transactions(
     ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+
     return ax
 
 
@@ -534,8 +547,8 @@ def plot_incremental_transactions(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     if ax is None:
@@ -564,6 +577,7 @@ def plot_incremental_transactions(
     ax.axvline(x=x_vline, color="r", linestyle="--")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+
     return ax
 
 
@@ -594,8 +608,8 @@ def plot_transaction_rate_heterogeneity(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     r, alpha = model._unload_params("r", "alpha")
@@ -615,6 +629,7 @@ def plot_transaction_rate_heterogeneity(
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
+
     return ax
 
 
@@ -647,8 +662,8 @@ def plot_dropout_rate_heterogeneity(
     Returns
     -------
     axes: matplotlib.AxesSubplot
-
     """
+
     from matplotlib import pyplot as plt
 
     a, b = model._unload_params("a", "b")
@@ -668,10 +683,125 @@ def plot_dropout_rate_heterogeneity(
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.plot(x, rv.pdf(x), **kwargs)
+
     return ax
 
 
+def plot_fitter_log_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Parameters Convergence before Any Transformations",
+    ax=None,
+    figsize=(8, 6),
+    **kwargs
+):
+    """
+    Plots the fitter's approximated log of the parameters convergence.
+
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    figsize: tuple
+        size of the image
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
+
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
+    from matplotlib import pyplot as plt
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = figsize)
+
+    plt.plot(model.solution_iter)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    plt.legend(model.params_names)
+
+    return ax
+
+
+def plot_fitter_params(
+    model,
+    xlabel="iteration",
+    ylabel="value of the parameter",
+    title="Iterative Convergence of the Fitter's Parameters",
+    figsize=(15, 15),
+    ax=None,
+    **kwargs
+):
+    """
+    Plots the fitter's approximated parameters convergence.
+
+    Parameters
+    ----------
+    model: lifetimes model
+        A fitted lifetimes model, for now only for BG/NBD
+    title: str, optional
+        Figure title
+    xlabel: str, optional
+        Figure xlabel
+    ylabel: str, optional
+        Figure ylabel
+    ax: matplotlib.AxesSubplot, optional
+        Using user axes
+    kwargs
+        Passed into the pandas.DataFrame.plot command.
+
+    Returns
+    -------
+    axes: matplotlib.AxesSubplot
+    """
+
+    from matplotlib import pyplot as plt
+
+    nrows, ncols = 2, 2
+    fig, axes = plt.subplots(nrows, ncols, figsize = figsize)
+
+    subplot_counter = 0
+    params = model.solution_iter_summary.columns
+    for i in range(nrows):
+        for j in range(ncols):
+
+            if subplot_counter < len(params):
+                ax = axes[i, j]
+                param = params[subplot_counter]
+
+                ax.plot(
+                    model.solution_iter_summary[param],
+                    label = param,
+                )
+
+                ax.set_xlabel('iteration')
+                ax.set_ylabel('value of the parameter')
+                ax.set_title('Iterative Convergence of Parameter {}'.format(param))
+
+                subplot_counter += 1
+
+    return axes
+
+
 def forceAspect(ax, aspect=1):
+    """
+    Forces an aspect to the plots.
+    """
+
     im = ax.get_images()
     extent = im[0].get_extent()
     ax.set_aspect(abs((extent[1] - extent[0]) / (extent[3] - extent[2])) / aspect)
