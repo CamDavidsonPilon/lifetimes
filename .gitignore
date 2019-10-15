@@ -66,3 +66,6 @@ target/
 
 # VS Code
 .vscode/
+
+# Benchmarks Images
+benchmarks/images
