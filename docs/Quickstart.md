@@ -24,6 +24,7 @@ For all models, the following nomenclature is used:
 - `frequency` represents the number of *repeat* purchases the customer has made. This means that it's one less than the total number of purchases. This is actually slightly wrong. It's the count of time periods the customer had a purchase in. So if using days as units, then it's the count of days the customer had a purchase on.
 - `T` represents the age of the customer in whatever time units chosen (weekly, in the above dataset). This is equal to the duration between a customer's first purchase and the end of the period under study.
 - `recency` represents the age of the customer when they made their most recent purchases. This is equal to the duration between a customer's first purchase and their latest purchase. (Thus if they have made only 1 purchase, the recency is 0.)
+- `monetary_value` represents the average value of a given customer's purchases. This is equal to the sum of all a customer's purchases divided by the total number of purchases. Note that the denominator here is different than the `frequency` described above.
 
 If your data is not in the format (very common), there are [utility functions](#example-using-transactional-datasets) in lifetimes to transform your data to look like this
 
@@ -238,6 +239,9 @@ customer_id
 9                    2    35.71  38.86           25.55
 """
 ```
+
+If computing the monetary value from your own data, note that it is the __mean__ of a given customer's value, not the __sum__.
+`monetary_value` can be used to represent profit, or revenue, or any value as long as it is consistently calculated for each customer.
 
 #### The Gamma-Gamma model and the independence assumption
 The model we are going to use to estimate the CLV for our userbase is called the Gamma-Gamma submodel,
