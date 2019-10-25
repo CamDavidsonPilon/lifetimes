@@ -15,6 +15,7 @@ SELECT
   customer_id,
   COUNT(distinct date(transaction_at)) - 1 as frequency,
   datediff('day', MIN(transaction_at), MAX(transaction_at)) as recency,
+  AVG(total_price) as monetary_value,
   datediff('day', CURRENT_DATE, MIN(transaction_at)) as T
 FROM orders
 GROUP BY customer_id
