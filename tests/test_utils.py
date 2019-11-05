@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test lifetimes utils."""
+import os
 import pytest
 import pandas as pd
 import numpy as np
@@ -9,10 +10,11 @@ from numpy.testing import assert_almost_equal, assert_allclose
 from lifetimes import utils, BetaGeoFitter, ParetoNBDFitter
 from lifetimes.datasets import load_dataset
 
+DATASETS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lifetimes/datasets')
 
 @pytest.fixture()
 def example_transaction_data():
-    return pd.read_csv("lifetimes/datasets/example_transactions.csv", parse_dates=["date"])
+    return pd.read_csv(os.path.join(DATASETS_PATH, "example_transactions.csv"), parse_dates=["date"])
 
 
 @pytest.fixture()
@@ -29,7 +31,6 @@ def fitted_bg(example_summary_data):
         example_summary_data["frequency"],
         example_summary_data["recency"],
         example_summary_data["T"],
-        iterative_fitting=2,
         tol=1e-6,
     )
     return bg
@@ -353,7 +354,7 @@ def test_summary_statistics_are_indentical_to_hardies_paper_confirming_correct_a
     # see http://brucehardie.com/papers/rfm_clv_2005-02-16.pdf
     # RFM and CLV: Using Iso-value Curves for Customer Base Analysis
     df = pd.read_csv(
-        "lifetimes/datasets/CDNOW_sample.txt",
+        os.path.join(DATASETS_PATH, "CDNOW_sample.txt"),
         sep=r"\s+",
         header=None,
         names=["_id", "id", "date", "cds_bought", "spent"],

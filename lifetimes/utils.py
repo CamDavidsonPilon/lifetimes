@@ -2,7 +2,8 @@
 """Lifetimes utils and helpers."""
 
 from __future__ import division
-import numpy as np
+#import numpy as np
+import autograd.numpy as np
 import pandas as pd
 import dill
 
@@ -306,10 +307,10 @@ def summary_data_from_transaction_data(
 
 
 def calculate_alive_path(
-    model, 
-    transactions, 
-    datetime_col, 
-    t, 
+    model,
+    transactions,
+    datetime_col,
+    t,
     freq="D"
 ):
     """
@@ -375,9 +376,9 @@ def _scale_time(
 
 
 def _check_inputs(
-    frequency, 
-    recency=None, 
-    T=None, 
+    frequency,
+    recency=None,
+    T=None,
     monetary_value=None
 ):
     """
@@ -424,13 +425,13 @@ def _check_inputs(
 
 
 def _customer_lifetime_value(
-    transaction_prediction_model, 
-    frequency, 
-    recency, 
-    T, 
-    monetary_value, 
-    time=12, 
-    discount_rate=0.01, 
+    transaction_prediction_model,
+    frequency,
+    recency,
+    T,
+    monetary_value,
+    time=12,
+    discount_rate=0.01,
     freq="D"
 ):
     """
@@ -500,7 +501,7 @@ def expected_cumulative_transactions(
     This function follows the formulation on page 8 of [1]_.
 
     In more detail, we take only the customers who have made their first
-    transaction before the specific date and then multiply them by the distribution of the 
+    transaction before the specific date and then multiply them by the distribution of the
     ``expected_number_of_purchases_up_to_time()`` for their whole future. Doing that for
     all dates and then summing the distributions will give us the *complete cumulative
     purchases*.
@@ -542,7 +543,7 @@ def expected_cumulative_transactions(
     A Note on Implementing the Pareto/NBD Model in MATLAB.
     http://brucehardie.com/notes/008/
     """
-    
+
     start_date = pd.to_datetime(transactions[datetime_col], format=datetime_format).min()
     start_period = start_date.to_period(freq)
     observation_period_end = start_period + t
@@ -615,9 +616,9 @@ def expected_cumulative_transactions(
 
 
 def _save_obj_without_attr(
-    obj, 
-    attr_list, 
-    path, 
+    obj,
+    attr_list,
+    path,
     values_to_save=None
 ):
     """
@@ -652,3 +653,13 @@ def _save_obj_without_attr(
 
     for attr, item in saved_attr_dict.items():
         setattr(obj, attr, item)
+
+def _concat2(*arrays):
+    """
+    Extend arrays up to second dimension and concatenate them along last axis.
+    :param arrays:
+    :return:
+    """
+    arrays = [np.array(ar) for ar in arrays]
+    arrays = [ar.reshape((-1,1)) if ar.ndim < 2 else ar for ar in arrays]
+    return np.concatenate(arrays, axis=-1)

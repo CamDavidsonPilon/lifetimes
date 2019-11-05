@@ -24,7 +24,7 @@ class BaseFitter(object):
             subj_str = ""
 
         try:
-            param_str = ", ".join("{}: {:.2f}".format(par, val) for par, val in sorted(self.params_.items()))
+            param_str = ", ".join("{}: {}".format(par, val) for par, val in sorted(self.params_.items()))
             return "<lifetimes.{classname}:{subj_str} {param_str}>".format(
                 classname=classname, subj_str=subj_str, param_str=param_str
             )
