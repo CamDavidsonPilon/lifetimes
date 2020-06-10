@@ -31,6 +31,7 @@ def calibration_and_holdout_data(
     calibration_period_end,
     observation_period_end=None,
     freq="D",
+    freq_multiplier=1,
     datetime_format=None,
     monetary_value_col=None,
 ):
@@ -55,7 +56,12 @@ def calibration_and_holdout_data(
          a string or datetime to denote the final date of the study.
          Events after this date are truncated. If not given, defaults to the max 'datetime_col'.
     freq: string, optional
-        Default 'D' for days. Other examples: 'W' for weekly.
+        Default: 'D' for days. Possible values listed here:
+        https://numpy.org/devdocs/reference/arrays.datetime.html#datetime-units
+    freq_multiplier: int, optional
+        Default: 1. Useful for getting exact recency & T. Example:
+        With freq='D' and freq_multiplier=1, we get recency=591 and T=632
+        With freq='h' and freq_multiplier=24, we get recency=590.125 and T=631.375
     datetime_format: string, optional
         a string that represents the timestamp format. Useful if Pandas can't understand
         the provided format.
@@ -95,6 +101,7 @@ def calibration_and_holdout_data(
         datetime_format=datetime_format,
         observation_period_end=calibration_period_end,
         freq=freq,
+        freq_multiplier=freq_multiplier,
         monetary_value_col=monetary_value_col,
     )
     calibration_summary_data.columns = [c + "_cal" for c in calibration_summary_data.columns]
@@ -126,7 +133,7 @@ def calibration_and_holdout_data(
     combined_data.fillna(0, inplace=True)
 
     delta_time = (to_period(observation_period_end) - to_period(calibration_period_end)).n
-    combined_data["duration_holdout"] = delta_time
+    combined_data["duration_holdout"] = delta_time / freq_multiplier
 
     return combined_data
 
@@ -166,8 +173,8 @@ def _find_first_transactions(
         a string that represents the timestamp format. Useful if Pandas can't understand
         the provided format.
     freq: string, optional
-        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+        Default: 'D' for days. Possible values listed here:
+        https://numpy.org/devdocs/reference/arrays.datetime.html#datetime-units
     """
 
     if observation_period_end is None:
@@ -249,14 +256,12 @@ def summary_data_from_transaction_data(
         a string that represents the timestamp format. Useful if Pandas can't understand
         the provided format.
     freq: string, optional
-        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+        Default: 'D' for days. Possible values listed here:
+        https://numpy.org/devdocs/reference/arrays.datetime.html#datetime-units
     freq_multiplier: int, optional
-        Default 1, could be use to get exact recency and T, i.e. with freq='W'
-        row for user id_sample=1 will be recency=30 and T=39 while data in
-        CDNOW summary are different. Exact values could be obtained with
-        freq='D' and freq_multiplier=7 which will lead to recency=30.43
-        and T=38.86
+        Default: 1. Useful for getting exact recency & T. Example:
+        With freq='D' and freq_multiplier=1, we get recency=591 and T=632
+        With freq='h' and freq_multiplier=24, we get recency=590.125 and T=631.375
 
     Returns
     -------
@@ -327,8 +332,9 @@ def calculate_alive_path(
         the column in the transactions that denotes the datetime the purchase was made
     t: array_like
         the number of time units since the birth for which we want to draw the p_alive
-    freq: string
-        Default 'D' for days. Other examples= 'W' for weekly
+    freq: string, optional
+        Default: 'D' for days. Possible values listed here:
+        https://numpy.org/devdocs/reference/arrays.datetime.html#datetime-units
 
     Returns
     -------
@@ -488,8 +494,8 @@ def expected_cumulative_transactions(
     t,
     datetime_format=None,
     freq="D",
-    set_index_date=False,
     freq_multiplier=1,
+    set_index_date=False,
 ):
     """
     Get expected and actual repeated cumulative transactions.
@@ -522,14 +528,14 @@ def expected_cumulative_transactions(
         a string that represents the timestamp format. Useful if Pandas can't
         understand the provided format.
     freq: string, optional
-        Default 'D' for days, 'W' for weeks, 'M' for months... etc. Full list here:
-        http://pandas.pydata.org/pandas-docs/stable/timeseries.html#dateoffset-objects
+        Default: 'D' for days. Possible values listed here:
+        https://numpy.org/devdocs/reference/arrays.datetime.html#datetime-units
+    freq_multiplier: int, optional
+        Default: 1. Useful for getting exact recency & T. Example:
+        With freq='D' and freq_multiplier=1, we get recency=591 and T=632
+        With freq='h' and freq_multiplier=24, we get recency=590.125 and T=631.375
     set_index_date: bool, optional
         when True set date as Pandas DataFrame index, default False - number of time units
-    freq_multiplier: int, optional
-        Default 1, could be use to get exact cumulative transactions predicted
-        by model, i.e. model trained with freq='W', passed freq to
-        expected_cumulative_transactions is freq='D', and freq_multiplier=7.
 
     Returns
     -------
