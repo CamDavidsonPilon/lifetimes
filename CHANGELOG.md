@@ -1,5 +1,8 @@
 # Changelog
 
+### 0.11.2
+ - some convergence improvements
+
 ### 0.11.1
  - bump the Pandas requirements to >= 0.24.0. This should have been done in 0.11.0
  - suppress some warnings from autograd.

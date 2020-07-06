@@ -1,8 +1,5 @@
-lifetimes.datasets package
+lifetimes.datasets
 ==========================
-
-Module contents
----------------
 
 .. automodule:: lifetimes.datasets
     :members:

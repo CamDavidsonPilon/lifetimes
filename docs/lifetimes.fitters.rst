@@ -1,16 +1,6 @@
-lifetimes.fitters package
+lifetimes.fitters
 =========================
 
-Submodules
-----------
-
-lifetimes.fitters.base\_fitter module
--------------------------------------
-
-.. automodule:: lifetimes.fitters.base_fitter
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 lifetimes.fitters.beta\_geo\_beta\_binom\_fitter module
 -------------------------------------------------------
@@ -52,9 +42,6 @@ lifetimes.fitters.pareto\_nbd\_fitter module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
 
 .. automodule:: lifetimes.fitters
     :members:

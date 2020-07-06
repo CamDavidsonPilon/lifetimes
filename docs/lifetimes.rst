@@ -1,24 +1,12 @@
 lifetimes package
 =================
 
-Subpackages
------------
-
 .. toctree::
 
-    lifetimes.datasets
     lifetimes.fitters
+    lifetimes.utils
+    lifetimes.datasets
 
-Submodules
-----------
-
-lifetimes.estimation module
----------------------------
-
-.. automodule:: lifetimes.estimation
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 lifetimes.generate\_data module
 -------------------------------
@@ -43,18 +31,6 @@ lifetimes.utils module
     :members:
     :undoc-members:
     :show-inheritance:
-
-lifetimes.version module
-------------------------
-
-.. automodule:: lifetimes.version
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
 
 .. automodule:: lifetimes
     :members:
