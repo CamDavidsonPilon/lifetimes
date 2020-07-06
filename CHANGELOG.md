@@ -1,6 +1,6 @@
 # Changelog
 
-### 0.11.2
+### 0.11.3
  - a version bump for conda packaging
 
 ### 0.11.2
