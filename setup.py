@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import io
 import os
 from setuptools import setup
 
@@ -10,7 +11,7 @@ exec(compile(open("lifetimes/version.py").read(), "lifetimes/version.py", "exec"
 readme_path = os.path.join(os.path.dirname(__file__), "README.md")
 
 
-long_description = open(readme_path).read()
+long_description = io.open(readme_path, encoding="utf8").read()
 
 
 setup(
