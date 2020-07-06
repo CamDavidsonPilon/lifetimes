@@ -50,18 +50,15 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "recommonmark",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
 # for parsing markdown files
-source_parsers = {".md": "recommonmark.parser.CommonMarkParser"}
+source_suffix = {".rst": "restructuredtext", ".txt": "markdown", ".md": "markdown"}
 
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-#
-source_suffix = [".rst", ".md"]
 
 # The master toctree document.
 master_doc = "index"
@@ -76,7 +73,7 @@ author = "Cameron Davidson-Pilon"
 # built documents.
 #
 # The short X.Y version.
-version = "0.11.1"
+version = "0.11.2"
 # The full version, including alpha/beta/rc tags.
 release = version
 
