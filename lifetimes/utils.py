@@ -34,6 +34,7 @@ def calibration_and_holdout_data(
     freq_multiplier=1,
     datetime_format=None,
     monetary_value_col=None,
+    include_first_transaction=False,
 ):
     """
     Create a summary of each customer over a calibration and holdout period.
@@ -68,6 +69,11 @@ def calibration_and_holdout_data(
     monetary_value_col: string, optional
         the column in transactions that denotes the monetary value of the transaction.
         Optional, only needed for customer lifetime value estimation models.
+    include_first_transaction: bool, optional
+        Default: False
+        By default the first transaction is not included while calculating frequency and
+        monetary_value. Can be set to True to include it.
+        Should be False if you are going to use this data with any fitters in lifetimes package
 
     Returns
     -------
@@ -103,6 +109,7 @@ def calibration_and_holdout_data(
         freq=freq,
         freq_multiplier=freq_multiplier,
         monetary_value_col=monetary_value_col,
+        include_first_transaction=include_first_transaction,
     )
     calibration_summary_data.columns = [c + "_cal" for c in calibration_summary_data.columns]
 
@@ -229,6 +236,7 @@ def summary_data_from_transaction_data(
     observation_period_end=None,
     freq="D",
     freq_multiplier=1,
+    include_first_transaction=False,
 ):
     """
     Return summary data from transactions.
@@ -262,6 +270,11 @@ def summary_data_from_transaction_data(
         Default: 1. Useful for getting exact recency & T. Example:
         With freq='D' and freq_multiplier=1, we get recency=591 and T=632
         With freq='h' and freq_multiplier=24, we get recency=590.125 and T=631.375
+    include_first_transaction: bool, optional
+        Default: False
+        By default the first transaction is not included while calculating frequency and
+        monetary_value. Can be set to True to include it.
+        Should be False if you are going to use this data with any fitters in lifetimes package
 
     Returns
     -------
@@ -288,8 +301,11 @@ def summary_data_from_transaction_data(
     # count all orders by customer.
     customers = repeated_transactions.groupby(customer_id_col, sort=False)[datetime_col].agg(["min", "max", "count"])
 
-    # subtract 1 from count, as we ignore their first order.
-    customers["frequency"] = customers["count"] - 1
+    if not include_first_transaction:
+        # subtract 1 from count, as we ignore their first order.
+        customers["frequency"] = customers["count"] - 1
+    else:
+        customers["frequency"] = customers["count"]
 
     customers["T"] = (observation_period_end - customers["min"]) / np.timedelta64(1, freq) / freq_multiplier
     customers["recency"] = (customers["max"] - customers["min"]) / np.timedelta64(1, freq) / freq_multiplier
@@ -297,11 +313,12 @@ def summary_data_from_transaction_data(
     summary_columns = ["frequency", "recency", "T"]
 
     if monetary_value_col:
-        # create an index of all the first purchases
-        first_purchases = repeated_transactions[repeated_transactions["first"]].index
-        # by setting the monetary_value cells of all the first purchases to NaN,
-        # those values will be excluded from the mean value calculation
-        repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
+        if not include_first_transaction:
+            # create an index of all the first purchases
+            first_purchases = repeated_transactions[repeated_transactions["first"]].index
+            # by setting the monetary_value cells of all the first purchases to NaN,
+            # those values will be excluded from the mean value calculation
+            repeated_transactions.loc[first_purchases, monetary_value_col] = np.nan
         customers["monetary_value"] = (
             repeated_transactions.groupby(customer_id_col)[monetary_value_col].mean().fillna(0)
         )
@@ -311,10 +328,10 @@ def summary_data_from_transaction_data(
 
 
 def calculate_alive_path(
-    model, 
-    transactions, 
-    datetime_col, 
-    t, 
+    model,
+    transactions,
+    datetime_col,
+    t,
     freq="D"
 ):
     """
@@ -381,9 +398,9 @@ def _scale_time(
 
 
 def _check_inputs(
-    frequency, 
-    recency=None, 
-    T=None, 
+    frequency,
+    recency=None,
+    T=None,
     monetary_value=None
 ):
     """
@@ -430,13 +447,13 @@ def _check_inputs(
 
 
 def _customer_lifetime_value(
-    transaction_prediction_model, 
-    frequency, 
-    recency, 
-    T, 
-    monetary_value, 
-    time=12, 
-    discount_rate=0.01, 
+    transaction_prediction_model,
+    frequency,
+    recency,
+    T,
+    monetary_value,
+    time=12,
+    discount_rate=0.01,
     freq="D"
 ):
     """
@@ -506,7 +523,7 @@ def expected_cumulative_transactions(
     This function follows the formulation on page 8 of [1]_.
 
     In more detail, we take only the customers who have made their first
-    transaction before the specific date and then multiply them by the distribution of the 
+    transaction before the specific date and then multiply them by the distribution of the
     ``expected_number_of_purchases_up_to_time()`` for their whole future. Doing that for
     all dates and then summing the distributions will give us the *complete cumulative
     purchases*.
@@ -548,7 +565,7 @@ def expected_cumulative_transactions(
     A Note on Implementing the Pareto/NBD Model in MATLAB.
     http://brucehardie.com/notes/008/
     """
-    
+
     start_date = pd.to_datetime(transactions[datetime_col], format=datetime_format).min()
     start_period = start_date.to_period(freq)
     observation_period_end = start_period + t
@@ -621,9 +638,9 @@ def expected_cumulative_transactions(
 
 
 def _save_obj_without_attr(
-    obj, 
-    attr_list, 
-    path, 
+    obj,
+    attr_list,
+    path,
     values_to_save=None
 ):
     """
