@@ -494,7 +494,7 @@ def plot_incremental_transactions(
     **kwargs
 ):
     """
-    Plot a figure of the predicted and actual cumulative transactions of users.
+    Plot a figure of the predicted and actual incremental transactions of users.
 
     Parameters
     ----------
