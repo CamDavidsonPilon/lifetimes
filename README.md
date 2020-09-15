@@ -5,6 +5,12 @@
 [![Documentation Status](https://readthedocs.org/projects/lifetimes/badge/?version=latest)](http://lifetimes.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 [![Coverage Status](https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master)](https://coveralls.io/r/CamDavidsonPilon/lifetimes?branch=master)
+[![Inactively Maintained](https://img.shields.io/badge/Maintenance%20Level-Inactively%20Maintained-yellowgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
+
+
+## Read me first: Latest on the lifetimes project
+
+👋 This project has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues on this project (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. I would love to see a successor library that elevates RFM even further (and please include covariates!)
 
 
 ## Introduction
@@ -46,7 +52,7 @@ Please refer to the [Contributing Guide](https://github.com/CamDavidsonPilon/lif
 
 ## Questions? Comments? Requests?
 
-Please create an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes). 
+Please create an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes).
 
 ## Main Articles
 
