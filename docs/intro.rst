@@ -5,6 +5,13 @@ Measuring users is hard. Lifetimes makes it easy.
 
 |PyPI version| |Documentation Status| |Build Status| |Coverage Status|
 
+
+Read me first: Latest on the lifetimes project
+-----------------------------------------------
+
+👋 This project has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues on this project (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. I would love to see a successor library that elevates RFM even further (and please include covariates!)
+
+
 Introduction
 ------------
 
