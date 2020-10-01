@@ -13,7 +13,7 @@
 👋 This project has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues on this project (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. I would love to see a successor library that elevates RFM even further (and please include covariates!)
 
 
-## Introduction
+### Introduction :
 
 Lifetimes can be used to analyze your users based on a few assumption:
 
@@ -22,7 +22,7 @@ Lifetimes can be used to analyze your users based on a few assumption:
 
 I've quoted "alive" and "die" as these are the most abstract terms: feel free to use your own definition of "alive" and "die" (they are used similarly to "birth" and "death" in survival analysis). Whenever we have individuals repeating occurrences, we can use Lifetimes to help understand user behaviour.
 
-### Applications
+### Applications :
 
 If this is too abstract, consider these applications:
 
@@ -32,35 +32,35 @@ If this is too abstract, consider these applications:
  - Predicting repeat purchases from a customer. (Alive = actively purchasing. Die = became disinterested with your product)
  - Predicting the lifetime value of your customers
 
-### Specific Application: Customer Lifetime Value
+### Specific Application: Customer Lifetime Value :
 
 As emphasized by P. Fader and B. Hardie, understanding and acting on customer lifetime value (CLV) is the most important part of your business's sales efforts. [And (apparently) everyone is doing it wrong (Prof. Fader's Video Lecture)](https://www.youtube.com/watch?v=guj2gVEEx4s). *Lifetimes* is a Python library to calculate CLV for you.
 
-## Installation
+### Installation :
 
 ```bash
 pip install lifetimes
 ```
 
-## Contributing
+### Contributing :
 
 Please refer to the [Contributing Guide](https://github.com/CamDavidsonPilon/lifetimes/blob/master/CONTRIBUTING.md) before creating any *Pull Requests*. It will make life easier for everyone.
 
-## Documentation and tutorials
+### Documentation and tutorials :
 [Official documentation](http://lifetimes.readthedocs.io/en/latest/)
 
 
-## Questions? Comments? Requests?
+### Questions? Comments? Requests?
 
 Please create an issue in the [lifetimes repository](https://github.com/CamDavidsonPilon/lifetimes).
 
-## Main Articles
+### Main Articles :
 
 1. Probably, the seminal article of Non-Contractual CLV is [*Counting Your Customers: Who Are They and What Will They Do Next?*](https://www.jstor.org/stable/2631608?seq=1#page_scan_tab_contents), by David C. Schmittlein, Donald G. Morrison and Richard Colombo. Despite it being paid, it is worth the read. The relevant information will eventually end up in this library's documentation though.
 1. The other (more recent) paper is [*“Counting Your Customers” the Easy Way:
 An Alternative to the Pareto/NBD Model*](http://brucehardie.com/papers/018/fader_et_al_mksc_05.pdf), by Peter Fader, Bruce Hardie and Ka Lok Lee.
 
-## More Information
+### More Information :
 
 1. [Roberto Medri](http://cdn.oreillystatic.com/en/assets/1/event/85/Case%20Study_%20What_s%20a%20Customer%20Worth_%20Presentation.pdf) did a nice presentation on CLV at Etsy.
 1. [Papers](http://mktg.uni-svishtov.bg/ivm/resources/Counting_Your_Customers.pdf), lots of [papers](http://brucehardie.com/notes/009/pareto_nbd_derivations_2005-11-05.pdf).
