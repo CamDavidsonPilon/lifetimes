@@ -282,8 +282,6 @@ def plot_expected_repeat_purchases(
     ----------
     model: lifetimes model
         A fitted lifetimes model.
-    max_frequency: int, optional
-        The maximum frequency to plot.
     title: str, optional
         Figure title
     xlabel: str, optional
