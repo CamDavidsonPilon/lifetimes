@@ -10,7 +10,9 @@
 
 ## Read me first: Latest on the lifetimes project
 
-👋 This project has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues on this project (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. I would love to see a successor library that elevates RFM even further (and please include covariates!)
+👋 This codebase has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues in this codebase (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. 
+
+A project has emerged as a (WIP) successor to lifetimes, [ColtAllen/lifetimes](https://github.com/ColtAllen/lifetimes), please check it out!   
 
 
 ## Introduction
