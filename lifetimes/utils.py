@@ -486,7 +486,7 @@ def _customer_lifetime_value(
         series with customer ids as index and the estimated customer lifetime values as values
     """
 
-    df = pd.DataFrame(index=frequency.index)
+    df = pd.DataFrame(index=range(len(frequency)))
     df["clv"] = 0  # initialize the clv column to zeros
 
     steps = np.arange(1, time + 1)
