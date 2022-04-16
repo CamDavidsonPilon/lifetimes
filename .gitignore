@@ -73,3 +73,5 @@ benchmarks/images
 # AzureML
 .amlignore
 .amltmp
+*.amltmp 
+*.amltemp
