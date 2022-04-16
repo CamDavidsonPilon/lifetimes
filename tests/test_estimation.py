@@ -32,9 +32,9 @@ class TestBaseFitter:
         assert repr(base_fitter) == "<lifetimes.BaseFitter>"
         base_fitter.params_ = pd.Series(dict(x=12.3, y=42))
         base_fitter.data = np.array([1, 2, 3])
-        assert repr(base_fitter) == "<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.30, y: 42.00>"
+        assert repr(base_fitter) == "<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.3, y: 42.0>"
         base_fitter.data = None
-        assert repr(base_fitter) == "<lifetimes.BaseFitter: x: 12.30, y: 42.00>"
+        assert repr(base_fitter) == "<lifetimes.BaseFitter: x: 12.3, y: 42.0>"
 
     def test_unload_params(self):
         base_fitter = lt.BaseFitter()
@@ -931,3 +931,245 @@ class TestModifiedBetaGammaFitter:
         mbgf = lt.ModifiedBetaGeoFitter()
         mbgf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], index=None)
         assert (mbgf.data.index == index).all() == False
+
+
+class TestBetaGeoCovarsFitter:
+    def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
+        bgcf = lt.BetaGeoCovarsFitter()
+        x = np.array([1, 3])
+        t_x = np.array([2, 2])
+        t = np.array([5, 6])
+        tr = np.array([[2, 2]])
+        do = np.array([[2, 2]])
+        weights = np.array([1, 1])
+        params = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        sc1 = bgcf._negative_log_likelihood(params, x[0], np.array([t_x[0]]), np.array([t[0]]),
+                                            np.array([tr[0]]), np.array([do[0]]), weights[0], 0)
+        sc2 = bgcf._negative_log_likelihood(params, x[1], np.array([t_x[1]]), np.array([t[1]]),
+                                            np.array([tr[0]]), np.array([do[0]]), weights[1], 0)
+        ar = bgcf._negative_log_likelihood(params, x, t_x, t, tr, do, weights, 0)
+        assert (sc1 + sc2) / 2 == ar
+
+    def test_conditional_expectation_returns_same_value_as_Hardie_excel_sheet(self, cdnow_customers):
+        bgcf = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 5))
+        X_do = np.ones((cdnow_customers.shape[0], 5))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        x = 2
+        t_x = 30.43
+        T = 38.86
+        t = 39
+        expected = 1.226
+        actual = bgcf.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T, X_tr[0], X_do[0])
+        assert abs(expected - actual) < 0.001
+
+    def test_expectation_returns_same_value_Hardie_excel_sheet(self, cdnow_customers):
+        bgcf = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 2))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do, tol=1e-6)
+
+        times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
+        expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
+        actual = bgcf.expected_number_of_purchases_up_to_time(times, np.ones((1,2)), np.ones((1,1)))
+        npt.assert_array_almost_equal(actual, expected, decimal=3)
+
+    def test_conditional_probability_alive_returns_1_if_no_repeat_purchases(self, cdnow_customers):
+        bgcf = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 2))
+        X_do = np.ones((cdnow_customers.shape[0], 2))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+
+        assert bgcf.conditional_probability_alive(0, 1, 1, [1, 1], [1,1]) == 1.0
+
+    def test_conditional_probability_alive_is_between_0_and_1(self, cdnow_customers):
+        bgcf = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+
+        for i in range(0, 100, 10):
+            for j in range(0, 100, 10):
+                for k in range(j, 100, 10):
+                    assert 0 <= bgcf.conditional_probability_alive(i, j, k, X_tr[0], X_do[0]) <= 1.0
+
+    def test_penalizer_term_will_shrink_coefs_to_0(self, cdnow_customers):
+        frequency = cdnow_customers["frequency"]
+        recency = cdnow_customers["recency"]
+        T = cdnow_customers["T"]
+        X_tr = np.ones((cdnow_customers.shape[0], 2))
+        X_do = np.ones((cdnow_customers.shape[0], 3))
+        bfcg_no_penalizer = lt.BetaGeoCovarsFitter()
+        bfcg_no_penalizer.fit(frequency, recency, T, X_tr, X_do)
+        params_1 = bfcg_no_penalizer.params_
+
+        bfcg_with_penalizer = lt.BetaGeoCovarsFitter(penalizer_coef=0.1)
+        bfcg_with_penalizer.fit(frequency, recency, T, X_tr, X_do)
+        params_2 = bfcg_with_penalizer.params_
+        assert np.all(params_2 < params_1)
+
+        bfcg_with_more_penalizer = lt.BetaGeoCovarsFitter(penalizer_coef=10)
+        bfcg_with_more_penalizer.fit(frequency, recency, T, X_tr, X_do)
+        params_3 = bfcg_with_more_penalizer.params_
+        assert np.all(params_3 < params_2)
+
+    def test_conditional_probability_alive_matrix(self, cdnow_customers):
+        bfcg = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bfcg.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        Z = bfcg.conditional_probability_alive_matrix(X_tr, X_do)
+        max_t = int(bfcg.data["T"].max())
+        assert Z[0][0] == 1
+
+        for t_x in range(Z.shape[0]):
+            for x in range(Z.shape[1]):
+                assert Z[t_x][x] == bfcg.conditional_probability_alive(x, t_x, max_t, 1, 1)
+
+    def test_scaling_inputs_gives_same_or_similar_results(self, cdnow_customers):
+        bgcf = lt.BetaGeoCovarsFitter()
+        X_tr = np.ones((cdnow_customers.shape[0], 2))
+        X_do = np.ones((cdnow_customers.shape[0], 2))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        scale = 10
+        bgcf_with_large_inputs = lt.BetaGeoCovarsFitter()
+        bgcf_with_large_inputs.fit(
+            cdnow_customers["frequency"], scale * cdnow_customers["recency"], scale * cdnow_customers["T"], X_tr, X_do
+        )
+        assert bgcf_with_large_inputs._scale < 1.0
+
+        assert (
+            abs(
+                bgcf_with_large_inputs.conditional_probability_alive(1, scale * 1, scale * 2, X_tr[0], X_do[0])
+                - bgcf.conditional_probability_alive(1, 1, 2, X_tr[0], X_do[0])
+            )
+            < 10e-5
+        )
+        assert (
+            abs(
+                bgcf_with_large_inputs.conditional_probability_alive(1, scale * 2, scale * 10, X_tr[0], X_do[0])
+                - bgcf.conditional_probability_alive(1, 2, 10, X_tr[0], X_do[0])
+            )
+            < 10e-5
+        )
+
+    def test_save_load(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD."""
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        bgcf.save_model(PATH_SAVE_BGNBD_MODEL)
+
+        bgcf_new = lt.BetaGeoCovarsFitter()
+        bgcf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgcf_new.__dict__["penalizer_coef"] == bgcf.__dict__["penalizer_coef"]
+        assert bgcf_new.__dict__["_scale"] == bgcf.__dict__["_scale"]
+        assert bgcf_new.__dict__["params_"].equals(bgcf.__dict__["params_"])
+        assert bgcf_new.__dict__["_negative_log_likelihood_"] == bgcf.__dict__["_negative_log_likelihood_"]
+        assert (bgcf_new.__dict__["data"] == bgcf.__dict__["data"]).all().all()
+        assert bgcf_new.__dict__["predict"](1, 1, 2, 5, 1, 1) == bgcf.__dict__["predict"](1, 1, 2, 5, 1, 1)
+        assert bgcf_new.expected_number_of_purchases_up_to_time(1, 1, 1) == \
+               bgcf.expected_number_of_purchases_up_to_time(1, 1, 1)
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_no_data(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data."""
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        bgcf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False, save_generate_data_method=False)
+
+        bgcf_new = lt.BetaGeoCovarsFitter()
+        bgcf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgcf_new.__dict__["penalizer_coef"] == bgcf.__dict__["penalizer_coef"]
+        assert bgcf_new.__dict__["_scale"] == bgcf.__dict__["_scale"]
+        assert bgcf_new.__dict__["params_"].equals(bgcf.__dict__["params_"])
+        assert bgcf_new.__dict__["_negative_log_likelihood_"] == bgcf.__dict__["_negative_log_likelihood_"]
+        assert bgcf_new.__dict__["predict"](1, 1, 2, 5, 1, 1) == bgcf.__dict__["predict"](1, 1, 2, 5, 1, 1)
+        assert bgcf_new.expected_number_of_purchases_up_to_time(1, 1, 1) == \
+               bgcf.expected_number_of_purchases_up_to_time(1, 1, 1)
+        assert bgcf_new.__dict__["data"] is None
+        assert bgcf_new.__dict__["generate_new_data"] is None
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_save_load_no_data_replace_with_empty_str(self, cdnow_customers):
+        """Test saving and loading model for BG/NBD without data with replaced value empty str."""
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+        bgcf.save_model(PATH_SAVE_BGNBD_MODEL, save_data=False, values_to_save=[""])
+
+        bgcf_new = lt.BetaGeoCovarsFitter()
+        bgcf_new.load_model(PATH_SAVE_BGNBD_MODEL)
+        assert bgcf_new.__dict__["penalizer_coef"] == bgcf.__dict__["penalizer_coef"]
+        assert bgcf_new.__dict__["_scale"] == bgcf.__dict__["_scale"]
+        assert bgcf_new.__dict__["params_"].equals(bgcf.__dict__["params_"])
+        assert bgcf_new.__dict__["_negative_log_likelihood_"] == bgcf.__dict__["_negative_log_likelihood_"]
+        assert bgcf_new.__dict__["predict"](1, 1, 2, 5, 1, 1) == bgcf.__dict__["predict"](1, 1, 2, 5, 1, 1)
+        assert bgcf_new.expected_number_of_purchases_up_to_time(1, 1, 1) == \
+               bgcf.expected_number_of_purchases_up_to_time(1, 1, 1)
+        assert bgcf_new.__dict__["data"] is ""
+        # remove saved model
+        os.remove(PATH_SAVE_BGNBD_MODEL)
+
+    def test_fit_with_index(self, cdnow_customers):
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        index = range(len(cdnow_customers), 0, -1)
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do, index=index)
+        assert (bgcf.data.index == index).all() == True
+
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do, index=None)
+        assert (bgcf.data.index == index).all() == False
+
+    def test_no_runtime_warnings_high_frequency(self, cdnow_customers):
+        X_tr = np.ones((cdnow_customers.shape[0], 1))
+        X_do = np.ones((cdnow_customers.shape[0], 1))
+        old_settings = np.seterr(all="raise")
+        bgcf = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        bgcf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], X_tr, X_do)
+
+        p_alive = bgcf.conditional_probability_alive(frequency=1000, recency=10, T=100, X_tr=1, X_do=1)
+        np.seterr(**old_settings)
+        assert p_alive == 0.0
+
+    def test_using_weights_col_gives_correct_results(self, cdnow_customers):
+        cdnow_customers_weights = cdnow_customers.copy()
+        cdnow_customers_weights["weights"] = 1.0
+        cdnow_customers_weights["X_tr"] = 1.0
+        cdnow_customers_weights["X_do"] = 2.0
+        cdnow_customers_weights = cdnow_customers_weights.groupby(["frequency", "recency", "T", "X_tr", "X_do"]).sum()
+        cdnow_customers_weights = cdnow_customers_weights.reset_index()
+        assert (cdnow_customers_weights["weights"] > 1).any()
+
+        bgcf_weights = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        bgcf_weights.fit(
+            cdnow_customers_weights["frequency"],
+            cdnow_customers_weights["recency"],
+            cdnow_customers_weights["T"],
+            np.array(cdnow_customers_weights["X_tr"]).reshape((-1,1)),
+            np.array(cdnow_customers_weights["X_do"]).reshape((-1,1)),
+            cdnow_customers_weights["weights"],
+        )
+
+        bgcf_no_weights = lt.BetaGeoCovarsFitter(penalizer_coef=0.0)
+        bgcf_no_weights.fit(
+            cdnow_customers["frequency"],
+            cdnow_customers["recency"],
+            cdnow_customers["T"],
+            np.ones((cdnow_customers.shape[0], 1)),
+            np.ones((cdnow_customers.shape[0], 1))*2.0,
+        )
+
+        npt.assert_almost_equal(
+            np.array(bgcf_no_weights._unload_params("r", "alpha0", "a0", "b0")),
+            np.array(bgcf_weights._unload_params("r", "alpha0", "a0", "b0")),
+            decimal=3,
+        )
