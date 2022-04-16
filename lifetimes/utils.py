@@ -2,7 +2,8 @@
 """Lifetimes utils and helpers."""
 
 from __future__ import division
-import numpy as np
+#import numpy as np
+import autograd.numpy as np
 import pandas as pd
 import dill
 
@@ -486,7 +487,7 @@ def _customer_lifetime_value(
         series with customer ids as index and the estimated customer lifetime values as values
     """
 
-    df = pd.DataFrame(index=frequency.index)
+    df = pd.DataFrame(index=range(len(frequency)))
     df["clv"] = 0  # initialize the clv column to zeros
 
     steps = np.arange(1, time + 1)
@@ -675,3 +676,14 @@ def _save_obj_without_attr(
 
     for attr, item in saved_attr_dict.items():
         setattr(obj, attr, item)
+
+
+def _concat2(*arrays):
+    """
+    Extend arrays up to second dimension and concatenate them along last axis.
+    :param arrays:
+    :return:
+    """
+    arrays = [np.array(ar) for ar in arrays]
+    arrays = [ar.reshape((-1,1)) if ar.ndim < 2 else ar for ar in arrays]
+    return np.concatenate(arrays, axis=-1)
