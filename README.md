@@ -11,7 +11,7 @@
 
 ## Read me first: Latest on the Lifetimes Project
 
-As of March 2022, this project has been forked and resumed active development. Plans are underway to incorporate additional models written in pymc3 and Stan, along with distributed processing in dask and GPU/TPU inference with JAX.
+As of late March 2022, this project has been forked and resumed active development, with the intention of refactoring Lifetimes into a purely Bayesian framework using [PyMC](https://github.com/pymc-devs) as a backend.
 
 
 ## Introduction
