@@ -30,7 +30,7 @@ from .fitters.modified_beta_geo_fitter import ModifiedBetaGeoFitter
 from .fitters.pareto_nbd_fitter import ParetoNBDFitter
 from .fitters.gamma_gamma_fitter import GammaGammaFitter
 from .fitters.beta_geo_covar_fitter import BetaGeoCovarsFitter
-from .inference import BaseInference
+from .models import BaseInferencer
 
 __version__ = "0.1.0"
 
