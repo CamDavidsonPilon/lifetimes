@@ -329,3 +329,22 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
     def predict(self) -> None:
         pass
     
+    def generate_rfm_data(self) -> pd.DataFrame:
+        """
+        Generate synthetic RFM data from fitted model parameters. Useful for checking PPD metric.
+
+        Returns
+        -------
+        pd.DataFrame
+            dataframe containing ["frequency", "recency", "T", "lambda", "p", "alive", "customer_id"] columns.
+
+        """
+        
+        alpha, r, a, b = self._unload_params()
+
+        self.synthetic_df = beta_geometric_nbd_model(
+            self.T, r, alpha, a, b, size=len(self.T)
+            )
+        
+        return self.synthetic_df
+    

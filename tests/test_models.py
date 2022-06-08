@@ -196,7 +196,7 @@ class TestBetaGeoModel:
         """ 
         GIVEN a fitted BetaGeoModel object,
         WHEN self.probability_of_n_purchases_up_to_time() is called,
-        THEN output should be within 1e-02 tolerance with that of the BTYD R package: https://cran.r-project.org/web/packages/BTYD/BTYD.pdf 
+        THEN output should approximate that of the BTYD R package: https://cran.r-project.org/web/packages/BTYD/BTYD.pdf 
         """
 
         # probability that a customer will make 10 repeat transactions in the
@@ -249,13 +249,39 @@ class TestBetaGeoModel:
         THEN parameters and predictions should match for both, raising exceptions otherwise and for predictions attempted without RFM data.
         """
 
-        bgf_new = lt.BetaGeoModel()
-        bgf_new.load_params(PATH_BGNBD_MODEL)
-        assert bgf_new._unload_params() == fitted_bgm._unload_params()
+        bgm_new = lt.BetaGeoModel()
+        bgm_new.load_params(PATH_BGNBD_MODEL)
+        assert bgm_new._unload_params() == fitted_bgm._unload_params()
         
         # assert param exception (need another saved model and additions to self.load_params())
         # assert predictions match (@pytest.parameterize()?)
         # assert prediction exception
 
         os.remove(PATH_BGNBD_MODEL)
+    
+    def test_generate_rfm_data(self, cdnow_customers, fitted_bgm):
+        """
+        GIVEN fitted BetaGeoModel and BetaGeoFitter objects,
+        WHEN synthetic data is generated from their parameters,
+        THEN the BetaGeoModel should have a better posterior predictive deviation metric.
+        """
+
+        # 
+        frequency, recency, T, _, _ = lt.BaseModel._dataframe_parser(cdnow_customers) 
+        mle_df = lt.BetaGeoFitter().fit(frequency, recency, T).generate_new_data(size=len(cdnow_customers))
+        mle_freq = mle_df['frequency'].values
+        mle_rec = mle_df['recency'].values
+        ppc_mle = utils.posterior_predictive_deviation(frequency, mle_freq, recency, mle_rec)
+
+        bayes_df = fitted_bgm.generate_rfm_data()
+        bayes_freq = mle_df['frequency'].values
+        bayes_rec = mle_df['recency'].values
+        ppc_bayes_self = utils.posterior_predictive_deviation(fitted_bgm.frequency, bayes_freq, fitted_bgm.recency, bayes_rec)
+        ppc_bayes_obs = utils.posterior_predictive_deviation(frequency, bayes_freq, recency, bayes_rec)
+        assert ppc_bayes_self == ppc_bayes_obs
+
+        assert ppc_bayes_obs <= ppc_mle #0.0899339600992113!, # 0.12174678527333853!
+
+        
+
     
