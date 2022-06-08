@@ -1,19 +1,8 @@
-"""BaseInferencer class for all BTYD models.
-
-This model defines the BaseInferencer and AbstractRFM abstract classes, which contain base methods shared by all BTYD models via inheritance, and an API boilerplate for all RFM models, respectively.
-
-License:
-    Copyright (c) 2022, Colt Allen
-
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
-"""
-
 from __future__ import generator_stop
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 import warnings
 import json
 import psutil
@@ -24,83 +13,54 @@ import pymc as pm
 import arviz as az
 import aesara.tensor as at
 
+from ..utils import _check_inputs
 
 
-from ..utils import ConvergenceError
+class BaseModel(ABC):
 
+    # This attribute must be defined in subclasses.
+    remove_hypers: list
 
-class BaseInferencer:
+    @abstractmethod
+    def _model(self):
+        """ pymc model defining priors for model parameters and calling _loglike in Potential()."""
+        pass
 
-    def __init__(self,model:pm.Model()=pm.Model()):
-
-        self.model = model # Custom object class
+    @abstractmethod
+    def _loglike(self):
+        """ Log-likelihood function for randomly drawn individual from customer population. Must be constructed from aesara tensors. """
+        pass
+    
+    @abstractmethod
+    def predict(self):
+        pass
 
     def __repr__(self) -> str:
         """Representation of BTYD model object."""
         classname = self.__class__.__name__
         try:
-            row_str = f"estimated with {self.data.shape[0]} subjects."
+            row_str = f"estimated with {self.frequency.shape[0]} customers."
         except AttributeError:
             row_str = ""
 
         try:
-            param_str = self.params
-            return f"<btyd.{classname}: {param_str} on {param_str} posterior parameters>"
-  
+            param_keys = [key.split(f'{classname}::')[1] for key in list(self.param_dict.get('data_vars').keys())]
+            param_vals = np.around(self._unload_params(),decimals=1)
+            param_str = str(dict(zip(param_keys, param_vals)))
+            return f"<btyd.{classname}: Parameters {param_str} {row_str}>"
         except AttributeError:
             return f"<btyd.{classname}>"
-
-    def save_model(self, path):
-        """
-        Save InferenceData summary in JSON format.
-
-        Parameters
-        ----------
-        path: str
-            Path where to save model.
-
-        """
-        
-        self.idata.to_json(path)
-
-    def load_model(self, path):
-        """
-        Load posterior distributions of model parameters and estimation metadata from JSON.
-
-        Parameters
-        ----------
-        path: str
-            From what path load model.
-
-        Returns
-        -------
-        posterior_dict : dict
-            Posterior distributions of model parameters and other inference metadata.
-        """
-        with open(path, "rb") as arviz_json:
-            self.posterior_dict = json.load(arviz_json)
-        return self.posterior_dict
     
-    @classmethod
-    @abstractmethod
-    def _loglike(cls,*args):
+    def fit(self,rfm_df,tune=1100,draws=1100):
         """
-        Log-likelihood function for model subclass. Must be constructed from aesara tensors.
-        """
-        pass
-    
-    def fit(self,rfm_df,model,tune=500,draws=1000,chains=psutil.Process().cpu_affinity()):
-        """
-        Save InferenceData summary in JSON format.
+        Fit a custom pymc model with parameter prior definitions to observed RFM data.
 
         Parameters
         ----------
         rfm_df: pandas.DataFrame
             Pandas dataframe containing customer ids, frequency, recency, T and monetary value columns.
-        model: pymc.Model()
-            Custom pymc model class used for inference.
         tune: int
-            Number of samples for posterior parameter distribution convergence. These are discarded for inference.
+            Number of beginning 'burn-in' samples for posterior parameter distribution convergence. These are discarded after model is fit.
         draws: int
             Number of samples from posterior parameter distrutions after tune period. These are retained for model usage.
         chain: int
@@ -113,17 +73,102 @@ class BaseInferencer:
         
         """
 
-        with model:
-            idata = pm.sample(
+        self.frequency, self.recency, self.T, self.monetary_value, _ = self._dataframe_parser(rfm_df)
+
+        self.model = self._model()
+
+        with self.model:
+            self.idata = pm.sample(
                 tune=tune,
                 draws=draws,
                 chains=4,
+                cores=len(psutil.Process().cpu_affinity()), 
                 target_accept=0.95,
                 return_inferencedata=True
             )
         
-        self.param_posteriors = idata
-        return self.param_posteriors
+        self.param_dict = self.idata.posterior.to_dict()
+
+        # Remove unneeded items from param_dict.
+        del self.param_dict['coords']
+        for var in self.remove_hypers:
+            del self.param_dict.get('data_vars')[var]
+        
+        return self
+        
+    def save_params(self, path: str):
+        """
+        Save InferenceData object of posterior distributions for model parameters in JSON format.
+
+        Parameters
+        ----------
+        path: str
+            Filepath and/or name to save model.
+
+        """
+        
+        with open(path, "w") as outfile:
+            json.dump(self.param_dict, outfile)
+
+    def load_params(self, path: str):
+        """
+        Load posterior distributions for model parameters and estimation metadata from JSON.
+
+        Parameters
+        ----------
+        path: str
+            From what path load model.
+
+        Returns
+        -------
+        self.idata : dict
+            Posterior distributions of model parameters and other inference metadata.
+        """
+
+        with open(path, "rb") as model_json:
+            self.param_dict = json.load(model_json)
+        
+        # TODO: Raise BTYDException.
+        # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.param_dict.get('data_vars').items()))
+            # raise BTYDException
+
+        return self.param_dict
+    
+    def _unload_params(self, posterior=False):
+
+        param_list = deepcopy(self.param_dict.get('data_vars'))
+
+        for key in param_list:
+            param_list[key]['data'] = np.array(param_list[key].get('data')).flatten()
+            
+        if not posterior:
+            for key in param_list:
+                param_list[key]['data'] = np.atleast_1d(param_list[key].get('data').mean())
+                # param_list[key]['data'] = param_list[key].get('data').mean()
+
+        return [param_list.get(var).get('data') for var in list(param_list.keys())]
+    
+    @staticmethod
+    def _dataframe_parser(rfm_df):
+        """ Parse input dataframe into separate RFM components. """
+
+        rfm_df.columns = rfm_df.columns.str.upper()
+
+        # The load_cdnow_summary_with_monetary_value() function needs an ID column for testing.
+        if 'ID' not in rfm_df.columns:
+            customer = rfm_df.index.values
+        else:
+            customer = rfm_df['ID'].values
+        
+        frequency = rfm_df['FREQUENCY'].values
+        recency = rfm_df['RECENCY'].values
+        T = rfm_df['T'].values
+        monetary_value = rfm_df['MONETARY_VALUE'].values
+
+        # TODO: Add monetary_value to this, and consider ID continengent on predict() outputs.
+        _check_inputs(frequency, recency, T)
+
+        return frequency, recency, T, monetary_value, customer
 
     @staticmethod
     def _sample(array, n_samples):
