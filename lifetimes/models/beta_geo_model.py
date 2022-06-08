@@ -2,25 +2,25 @@ from __future__ import generator_stop
 from __future__ import annotations
 import warnings
 
+from typing import Union, Tuple
+
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 
 import pymc as pm
 import aesara.tensor as at
-from aesara import function
+
+from autograd.scipy.special import gammaln, beta, gamma
+from scipy.special import hyp2f1
+from scipy.special import expit
 
 from . import BaseModel
 from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
-from autograd.scipy.special import gammaln, beta, gamma
-from scipy.special import hyp2f1
-from scipy.special import expit
-from ..utils import _scale_time, _check_inputs
-from ..generate_data import beta_geometric_nbd_model
 
-
-class BetaGeoModel(BaseModel):
+class BetaGeoModel(BaseModel['BetaGeoModel']):
     """
     Also known as the BG/NBD model.
     Based on [2]_, this model has the following assumptions:
@@ -50,7 +50,7 @@ class BetaGeoModel(BaseModel):
     
     remove_hypers = ['BetaGeoModel::phi','BetaGeoModel::kappa']
 
-    def _model(self):
+    def _model(self) -> pm.Model():
 
         with pm.Model(name=f'{self.__class__.__name__}') as self.model:
             # Priors for lambda parameters.
@@ -69,7 +69,17 @@ class BetaGeoModel(BaseModel):
         
         return self.model
 
-    def _loglike(self, frequency, recency, T, a, b, alpha, r, testing=False):
+    def _loglike(
+        self, 
+        frequency: npt.ArrayLike, 
+        recency: npt.ArrayLike, 
+        T: at.var.TensorVariable, 
+        a: at.var.TensorVariable, 
+        b: at.var.TensorVariable, 
+        alpha: at.var.TensorVariable, 
+        r: at.var.TensorVariable,
+        testing: bool =False
+        ) -> Union[Tuple[at.var.TensorVariable],at.var.TensorVariable]:
         """Log-likelihood function to estimate model parameters for entire population of customers.
 
         This function was originally introduced in equation 6 of [2]_, and reformulated in section 7 of [3]_
@@ -133,12 +143,12 @@ class BetaGeoModel(BaseModel):
             return loglike
 
     def conditional_expected_number_of_purchases_up_to_time(
-            self, 
-            t, 
-            frequency, 
-            recency, 
-            T
-        ):
+        self, 
+        t: npt.ArrayLike, 
+        frequency: npt.ArrayLike, 
+        recency: npt.ArrayLike,
+        T: npt.ArrayLike
+        ) -> np.ndarray:
             """
             Conditional expected number of purchases up to time.
 
@@ -193,10 +203,10 @@ class BetaGeoModel(BaseModel):
 
     def conditional_probability_alive(
         self, 
-        frequency, 
-        recency, 
-        T
-    ):
+        frequency: npt.ArrayLike,
+        recency: npt.ArrayLike,
+        T: npt.ArrayLike,
+        ) -> np.ndarray:
         """
         Compute conditional probability alive.
 
@@ -230,8 +240,8 @@ class BetaGeoModel(BaseModel):
 
     def expected_number_of_purchases_up_to_time(
         self, 
-        t
-    ):
+        t: npt.ArrayLike,
+        ) -> np.ndarray:
         """
         Calculate the expected number of repeat purchases up to time t.
 
@@ -263,9 +273,9 @@ class BetaGeoModel(BaseModel):
 
     def probability_of_n_purchases_up_to_time(
         self, 
-        t, 
-        n
-    ):
+        t: float, 
+        n: int
+        ) -> np.ndarray:
         r"""
         Compute the probability of n purchases.
 
@@ -316,6 +326,6 @@ class BetaGeoModel(BaseModel):
 
         return first_term + second_term
 
-    def predict(self):
+    def predict(self) -> None:
         pass
     

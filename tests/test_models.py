@@ -84,7 +84,7 @@ class TestBetaGeoModel:
         """
         GIVEN the BetaGeo log-likelihood function
         WHEN it is called with the inputs and parameters specified in Farder-Hardie's notes,
-        THEN term values and output should match those in the paper.
+        THEN term values and output should match those in the paper. 
         """
         
         values = {

@@ -6,8 +6,10 @@ from copy import deepcopy
 import warnings
 import json
 import psutil
+from typing import Dict, List, Iterable, TypeVar, Generic
 
 import numpy as np
+import pandas as pd
 
 import pymc as pm
 import arviz as az
@@ -16,23 +18,25 @@ import aesara.tensor as at
 from ..utils import _check_inputs
 
 
-class BaseModel(ABC):
+SELF = TypeVar("SELF")
+
+class BaseModel(ABC, Generic[SELF]):
 
     # This attribute must be defined in subclasses.
     remove_hypers: list
 
     @abstractmethod
-    def _model(self):
+    def _model() -> None:
         """ pymc model defining priors for model parameters and calling _loglike in Potential()."""
         pass
 
     @abstractmethod
-    def _loglike(self):
+    def _loglike() -> None:
         """ Log-likelihood function for randomly drawn individual from customer population. Must be constructed from aesara tensors. """
         pass
     
     @abstractmethod
-    def predict(self):
+    def predict() -> None:
         pass
 
     def __repr__(self) -> str:
@@ -51,7 +55,7 @@ class BaseModel(ABC):
         except AttributeError:
             return f"<btyd.{classname}>"
     
-    def fit(self,rfm_df,tune=1100,draws=1100):
+    def fit(self, rfm_df: pd.DataFrame, tune: int = 1200, draws: int = 1200) -> SELF:
         """
         Fit a custom pymc model with parameter prior definitions to observed RFM data.
 
@@ -75,9 +79,9 @@ class BaseModel(ABC):
 
         self.frequency, self.recency, self.T, self.monetary_value, _ = self._dataframe_parser(rfm_df)
 
-        self.model = self._model()
+        #self.model = self._model()
 
-        with self.model:
+        with self._model():
             self.idata = pm.sample(
                 tune=tune,
                 draws=draws,
@@ -96,7 +100,7 @@ class BaseModel(ABC):
         
         return self
         
-    def save_params(self, path: str):
+    def save_params(self, path: str) -> None:
         """
         Save InferenceData object of posterior distributions for model parameters in JSON format.
 
@@ -110,7 +114,7 @@ class BaseModel(ABC):
         with open(path, "w") as outfile:
             json.dump(self.param_dict, outfile)
 
-    def load_params(self, path: str):
+    def load_params(self, path: str) -> Dict[str, float, int, List[List[float]], Tuple(str), dict]:
         """
         Load posterior distributions for model parameters and estimation metadata from JSON.
 
@@ -134,7 +138,7 @@ class BaseModel(ABC):
 
         return self.param_dict
     
-    def _unload_params(self, posterior=False):
+    def _unload_params(self, posterior: bool = False) -> List[np.ndarray]:
 
         param_list = deepcopy(self.param_dict.get('data_vars'))
 
@@ -149,7 +153,7 @@ class BaseModel(ABC):
         return [param_list.get(var).get('data') for var in list(param_list.keys())]
     
     @staticmethod
-    def _dataframe_parser(rfm_df):
+    def _dataframe_parser(rfm_df: pd.DataFrame) -> Tuple[np.ndarray]:
         """ Parse input dataframe into separate RFM components. """
 
         rfm_df.columns = rfm_df.columns.str.upper()
@@ -171,7 +175,7 @@ class BaseModel(ABC):
         return frequency, recency, T, monetary_value, customer
 
     @staticmethod
-    def _sample(array, n_samples):
+    def _sample(array: npt.ArrayLike, n_samples: int = 100) -> np.ndarray:
         """Utility function for sampling from parameter posteriors."""
         idx = np.random.choice(np.arange(len(array)), n_samples, replace=True)
         return array[idx]
