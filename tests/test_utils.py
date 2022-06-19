@@ -705,3 +705,13 @@ def test_expected_cumulative_transactions_date_index(cdnow_transactions):
     assert all(dates == date_index)
     assert_allclose(actual, actual_trans)
     assert_allclose(predicted, expected_trans, atol=1e-2)
+
+def test_posterior_predictive_deviation():
+    """
+    GIVEN four arrays of equal length,
+    WHEN provided as inputs into posterior_prediction_deviation(),
+    THEN the correct standardized wasserstein distance is returned.
+    """
+    ppc = utils.posterior_predictive_deviation([0, 1], [0, 1], [3, 1], [2, 2])
+    assert ppc == .5
+    

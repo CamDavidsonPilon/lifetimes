@@ -288,8 +288,6 @@ class GammaGammaFitter(BaseFitter):
             Series object with customer ids as index and the estimated customer
             lifetime values as values
         """
-
-        frequency, recency, T, monetary_value = np.asarray(frequency), np.asarray(recency), np.asarray(T), np.asarray(monetary_value)
         
         # use the Gamma-Gamma estimates for the monetary_values
         adjusted_monetary_value = self.conditional_expected_average_profit(frequency, monetary_value)
