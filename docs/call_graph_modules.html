@@ -1,0 +1,559 @@
+<!--
+ * Copyright (c) 2015 Mountainstorm
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * Original from https://github.com/mountainstorm/jquery.graphviz.svg/blob/master/demo.html
+ -->
+<html>
+	<head>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap.min.css">
+		<!-- <link rel="stylesheet" href="css/graphviz.svg.css"> -->
+	</head>
+
+	<style>
+        #instructions {
+            color: #000000;
+            position: absolute;
+            z-index: 100;
+            bottom: 0px;
+            left: 0px;
+        }
+    </style>
+	<body>
+		<h4 id="instructions">Click node to highlight; Shift-scroll to zoom; Esc to unhighlight</h4>
+		<div id="graph" style="width: 100%; height: 100%; overflow: scroll;"></div>
+
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/jquery/jquery-mousewheel/master/jquery.mousewheel.min.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/jquery/jquery-color/master/jquery.color.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		<script type="text/javascript">!function(t){"use strict";String.prototype.startsWith=function(t){return 0==this.indexOf(t)},String.prototype.endsWith=function(t){return-1!==this.indexOf(t,this.length-t.length)};var e=function(t,e){this.type=null,this.options=null,this.enabled=null,this.$element=null,this.init("graphviz.svg",t,e)};e.VERSION="1.0.1",e.GVPT_2_PX=32.5,e.DEFAULTS={url:null,svg:null,shrink:"0.125pt",tooltips:{init:function(e){var i=t(this);i.tooltip({container:e,placement:"auto left",animation:!1,viewport:null}).on("hide.bs.tooltip",function(){if(i.attr("data-tooltip-keepvisible"))return!1})},show:function(){var e=t(this);e.attr("data-tooltip-keepvisible",!0),e.tooltip("show")},hide:function(){var e=t(this);e.removeAttr("data-tooltip-keepvisible"),e.tooltip("hide")},update:function(){var e=t(this);e.attr("data-tooltip-keepvisible")&&e.tooltip("show")}},zoom:!0,highlight:{selected:function(t,e){return t},unselected:function(t,e){return jQuery.Color(t).transition(e,.9)}},ready:null},e.prototype.init=function(e,i,n){if(this.enabled=!0,this.type=e,this.$element=t(i),this.options=this.getOptions(n),n.url){var o=this;t.get(n.url,null,function(e){var i=t("svg",e);o.$element.html(document.adoptNode(i[0])),o.setup()},"xml")}else n.svg&&this.$element.html(n.svg),this.setup()},e.prototype.getDefaults=function(){return e.DEFAULTS},e.prototype.getOptions=function(e){return(e=t.extend({},this.getDefaults(),this.$element.data(),e)).shrink&&("object"!=typeof e.shrink&&(e.shrink={x:e.shrink,y:e.shrink}),e.shrink.x=this.convertToPx(e.shrink.x),e.shrink.y=this.convertToPx(e.shrink.y)),e},e.prototype.setup=function(){var e=this.options,i=t(this.$element.children("svg")),n=i.children("g:first");this.$svg=i,this.$graph=n,this.$background=n.children("polygon:first"),this.$nodes=n.children(".node"),this.$edges=n.children(".edge"),this._nodesByName={},this._edgesByName={},this.$element.addClass("graphviz-svg"),this.$background.length&&this.$element.css("background",this.$background.attr("fill"));var o=this;this.$nodes.each(function(){o.setupNodesEdges(t(this),!0)}),this.$edges.each(function(){o.setupNodesEdges(t(this),!1)});var r=this.$graph.children("title");this.$graph.attr("data-name",r.text()),r.remove(),e.zoom&&this.setupZoom(),e.ready&&e.ready.call(this)},e.prototype.setupNodesEdges=function(e,i){var n=this,o=this.options;e.find("polygon, ellipse, path").each(function(){var e=t(this);e.data("graphviz.svg.color",{fill:e.attr("fill"),stroke:e.attr("stroke")}),i&&o.shrink&&n.scaleNode(e)});var r,s,h=e.children("title");if(h[0]){var a=h.text().replace(/:[snew][ew]?/g,"");e.attr("data-name",a),h.remove(),i?this._nodesByName[a]=e[0]:this._edgesByName[a]=e[0];for(var l=e[0].previousSibling;l&&8!=l.nodeType;)l=l.previousSibling;if(null!=l&&8==l.nodeType){var p=(r=l.nodeValue.trim(),(s=document.createElement("div")).innerHTML=r,s.childNodes[0].nodeValue);p!=a&&e.attr("data-comment",p)}}e.children("a").filter(function(){return t(this).attr("xlink:title")}).each(function(){var e=t(this);e.attr("title",e.attr("xlink:title")),e.removeAttr("xlink:title"),o.tooltips&&o.tooltips.init.call(this,n.$element)})},e.prototype.setupZoom=function(){var t=this,e=this.$element,i=this.$svg;this.zoom={width:i.attr("width"),height:i.attr("height"),percentage:null},this.scaleView(100),e.mousewheel(function(n){if(n.shiftKey){var o=t.zoom.percentage;(o-=n.deltaY*n.deltaFactor)<100&&(o=100);var r=n.pageX-i.offset().left,s=n.pageY-i.offset().top,h=r/i.width(),a=s/i.height(),l=n.pageX-e.offset().left,p=n.pageY-e.offset().top;return t.scaleView(o),e.scrollLeft(h*i.width()+.5-l),e.scrollTop(a*i.height()+.5-p),!1}})},e.prototype.scaleView=function(t){var e=this,i=this.$svg;i.attr("width",t+"%"),i.attr("height",t+"%"),this.zoom.percentage=t,this.$nodes.add(this.$edges).children("a[title]").each(function(){e.options.tooltips.update.call(this)})},e.prototype.scaleNode=function(t){var e=this.options.shrink.x,i=this.options.shrink.y,n=t.prop("tagName");if("ellipse"==n)t.attr("rx",parseFloat(t.attr("rx"))-e),t.attr("ry",parseFloat(t.attr("ry"))-i);else if("polygon"==n){var o=t[0].getBBox(),r=o.x+o.width/2,s=o.y+o.height/2,h=t.attr("points").split(" "),a="";for(var l in h){var p=h[l].split(","),d=parseFloat(p[0]),u=parseFloat(p[1]);a+=(r-d)/(o.width/2)*e+d+","+((s-u)/(o.height/2)*i+u)+" "}t.attr("points",a)}},e.prototype.convertToPx=function(t){var i=t;if("string"==typeof t){var n=t.length,o=1;t.endsWith("px")?n-=2:t.endsWith("pt")&&(n-=2,o=e.GVPT_2_PX),i=parseFloat(t.substring(0,n))*o}return i},e.prototype.findEdge=function(t,e,i){var n=[];for(var o in this._edgesByName){var r=e(t,o);r&&(i&&i.push(this._edgesByName[o]),n.push(r))}return n},e.prototype.findLinked=function(e,i,n,o){var r=t(e),s=null;i&&(s=o);var h=this.findEdge(r.attr("data-name"),n,s);for(var a in h){var l=this._nodesByName[h[a]];o.is(l)||(o.push(l),this.findLinked(l,i,n,o))}},e.prototype.colorElement=function(e,i){var n=this.$element.css("background");e.find("polygon, ellipse, path").each(function(){var e=t(this),o=e.data("graphviz.svg.color");o.fill&&"path"!=e.prop("tagName")&&e.attr("fill",i(o.fill,n)),o.stroke&&e.attr("stroke",i(o.stroke,n))})},e.prototype.restoreElement=function(e){e.find("polygon, ellipse, path").each(function(){var e=t(this),i=e.data("graphviz.svg.color");i.fill&&e.attr("fill",i.fill),i.stroke&&e.attr("stroke",i.stroke)})},e.prototype.nodes=function(){return this.$nodes},e.prototype.edges=function(){return this.$edges},e.prototype.nodesByName=function(){return this._nodesByName},e.prototype.edgesByName=function(){return this._edgesByName},e.prototype.linkedTo=function(e,i){var n=t();return this.findLinked(e,i,function(t,e){var i=null,n="->"+t;return e.endsWith(n)&&(i=e.substring(0,e.length-n.length)),i},n),n},e.prototype.linkedFrom=function(e,i){var n=t();return this.findLinked(e,i,function(t,e){var i=null,n=t+"->";return e.startsWith(n)&&(i=e.substring(n.length)),i},n),n},e.prototype.linked=function(e,i){var n=t();return this.findLinked(e,i,function(t,e){return"^"+name+"--(.*)$"},n),this.findLinked(e,i,function(t,e){return"^(.*)--"+name+"$"},n),n},e.prototype.tooltip=function(e,i){var n=this.options;e.each(function(){t(this).children("a[title]").each(function(){i?n.tooltips.show.call(this):n.tooltips.hide.call(this)})})},e.prototype.bringToFront=function(t){t.detach().appendTo(this.$graph)},e.prototype.sendToBack=function(t){this.$background.length?$element.insertAfter(this.$background):t.detach().prependTo(this.$graph)},e.prototype.highlight=function(e,i){var n=this,o=this.options,r=this.$nodes.add(this.$edges);e&&e.length>0?(r.not(e).each(function(){n.colorElement(t(this),o.highlight.unselected),n.tooltip(t(this))}),e.each(function(){n.colorElement(t(this),o.highlight.selected)}),i&&this.tooltip(e,!0)):(r.each(function(){n.restoreElement(t(this))}),this.tooltip(r))},e.prototype.destroy=function(){var t=this;this.hide(function(){t.$element.off("."+t.type).removeData(t.type)})};var i=t.fn.graphviz;t.fn.graphviz=function(i){return this.each(function(){var n=t(this),o=n.data("graphviz.svg"),r="object"==typeof i&&i;!o&&/destroy/.test(i)||(o||n.data("graphviz.svg",o=new e(this,r)),"string"==typeof i&&o[i]())})},t.fn.graphviz.Constructor=e,t.fn.graphviz.noConflict=function(){return t.fn.graphviz=i,this}}(jQuery);</script>
+		<script type="text/javascript">
+ 			$(document).ready(function(){
+                $("#graph").graphviz({
+                    svg: `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 3.0.0 (20220315.2325)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="1817pt" height="1459pt"
+ viewBox="0.00 0.00 1816.86 1458.88" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 1454.88)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1454.88 1812.86,-1454.88 1812.86,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_G</title>
+<path fill="#808080" fill-opacity="0.094118" stroke="black" d="M20,-22.88C20,-22.88 1788.86,-22.88 1788.86,-22.88 1794.86,-22.88 1800.86,-28.88 1800.86,-34.88 1800.86,-34.88 1800.86,-1430.88 1800.86,-1430.88 1800.86,-1436.88 1794.86,-1442.88 1788.86,-1442.88 1788.86,-1442.88 20,-1442.88 20,-1442.88 14,-1442.88 8,-1436.88 8,-1430.88 8,-1430.88 8,-34.88 8,-34.88 8,-28.88 14,-22.88 20,-22.88"/>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_lifetimes__generate_data</title>
+<path fill="#808080" fill-opacity="0.094118" stroke="black" d="M309.48,-1143.88C309.48,-1143.88 756.44,-1143.88 756.44,-1143.88 762.44,-1143.88 768.44,-1149.88 768.44,-1155.88 768.44,-1155.88 768.44,-1422.88 768.44,-1422.88 768.44,-1428.88 762.44,-1434.88 756.44,-1434.88 756.44,-1434.88 309.48,-1434.88 309.48,-1434.88 303.48,-1434.88 297.48,-1428.88 297.48,-1422.88 297.48,-1422.88 297.48,-1155.88 297.48,-1155.88 297.48,-1149.88 303.48,-1143.88 309.48,-1143.88"/>
+<text text-anchor="middle" x="532.96" y="-1419.68" font-family="Times,serif" font-size="14.00">lifetimes.generate_data</text>
+</g>
+<g id="clust3" class="cluster">
+<title>cluster_lifetimes__plotting</title>
+<path fill="#808080" fill-opacity="0.094118" stroke="black" d="M296.48,-543.88C296.48,-543.88 1017.32,-543.88 1017.32,-543.88 1023.32,-543.88 1029.32,-549.88 1029.32,-555.88 1029.32,-555.88 1029.32,-1092.88 1029.32,-1092.88 1029.32,-1098.88 1023.32,-1104.88 1017.32,-1104.88 1017.32,-1104.88 296.48,-1104.88 296.48,-1104.88 290.48,-1104.88 284.48,-1098.88 284.48,-1092.88 284.48,-1092.88 284.48,-555.88 284.48,-555.88 284.48,-549.88 290.48,-543.88 296.48,-543.88"/>
+<text text-anchor="middle" x="656.9" y="-1089.68" font-family="Times,serif" font-size="14.00">lifetimes.plotting</text>
+</g>
+<g id="clust4" class="cluster">
+<title>cluster_lifetimes__utils</title>
+<path fill="#808080" fill-opacity="0.094118" stroke="black" d="M813.44,-42.88C813.44,-42.88 1780.86,-42.88 1780.86,-42.88 1786.86,-42.88 1792.86,-48.88 1792.86,-54.88 1792.86,-54.88 1792.86,-523.88 1792.86,-523.88 1792.86,-529.88 1786.86,-535.88 1780.86,-535.88 1780.86,-535.88 813.44,-535.88 813.44,-535.88 807.44,-535.88 801.44,-529.88 801.44,-523.88 801.44,-523.88 801.44,-54.88 801.44,-54.88 801.44,-48.88 807.44,-42.88 813.44,-42.88"/>
+<text text-anchor="middle" x="1297.15" y="-520.68" font-family="Times,serif" font-size="14.00">lifetimes.utils</text>
+</g>
+<g id="clust5" class="cluster">
+<title>cluster_lifetimes__utils__calibration_and_holdout_data</title>
+<path fill="#808080" fill-opacity="0.094118" stroke="black" d="M1173.15,-150.88C1173.15,-150.88 1477.04,-150.88 1477.04,-150.88 1483.04,-150.88 1489.04,-156.88 1489.04,-162.88 1489.04,-162.88 1489.04,-213.88 1489.04,-213.88 1489.04,-219.88 1483.04,-225.88 1477.04,-225.88 1477.04,-225.88 1173.15,-225.88 1173.15,-225.88 1167.15,-225.88 1161.15,-219.88 1161.15,-213.88 1161.15,-213.88 1161.15,-162.88 1161.15,-162.88 1161.15,-156.88 1167.15,-150.88 1173.15,-150.88"/>
+<text text-anchor="middle" x="1325.09" y="-210.68" font-family="Times,serif" font-size="14.00">lifetimes.utils.calibration_and_holdout_data</text>
+</g>
+<!-- lifetimes -->
+<g id="node1" class="node">
+<title>lifetimes</title>
+<ellipse fill="#ffffff" fill-opacity="0.698039" stroke="black" cx="136.24" cy="-1373.88" rx="51.19" ry="18"/>
+<text text-anchor="middle" x="136.24" y="-1370.18" font-family="Times,serif" font-size="14.00" fill="#000000">lifetimes</text>
+</g>
+<!-- lifetimes__generate_data -->
+<g id="node2" class="node">
+<title>lifetimes__generate_data</title>
+<ellipse fill="#ffffff" fill-opacity="0.698039" stroke="black" cx="136.24" cy="-1277.88" rx="120.48" ry="18"/>
+<text text-anchor="middle" x="136.24" y="-1274.18" font-family="Times,serif" font-size="14.00" fill="#000000">lifetimes.generate_data</text>
+</g>
+<!-- lifetimes__generate_data__beta_geometric_beta_binom_model -->
+<g id="node6" class="node">
+<title>lifetimes__generate_data__beta_geometric_beta_binom_model</title>
+<ellipse fill="#feff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1385.88" rx="172.77" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1382.18" font-family="Times,serif" font-size="14.00" fill="#000000">beta_geometric_beta_binom_model</text>
+</g>
+<!-- lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_beta_binom_model -->
+<g id="edge1" class="edge">
+<title>lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_beta_binom_model</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M166.05,-1295.51C201.63,-1316.97 260.41,-1351.29 284.48,-1358.88 310.27,-1367.03 338.23,-1372.8 365.77,-1376.88"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="365.5,-1380.37 375.89,-1378.31 366.47,-1373.44 365.5,-1380.37"/>
+</g>
+<!-- lifetimes__generate_data__beta_geometric_nbd_model -->
+<g id="node7" class="node">
+<title>lifetimes__generate_data__beta_geometric_nbd_model</title>
+<ellipse fill="#feff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1331.88" rx="137.28" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1328.18" font-family="Times,serif" font-size="14.00" fill="#000000">beta_geometric_nbd_model</text>
+</g>
+<!-- lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_nbd_model -->
+<g id="edge2" class="edge">
+<title>lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_nbd_model</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M209.34,-1292.19C233.19,-1296.63 259.92,-1301.3 284.48,-1304.88 325.48,-1310.87 370.48,-1316.16 410.74,-1320.44"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="410.55,-1323.94 420.86,-1321.5 411.28,-1316.98 410.55,-1323.94"/>
+</g>
+<!-- lifetimes__generate_data__beta_geometric_nbd_model_transactional_data -->
+<g id="node8" class="node">
+<title>lifetimes__generate_data__beta_geometric_nbd_model_transactional_data</title>
+<ellipse fill="#feff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1277.88" rx="227.46" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1274.18" font-family="Times,serif" font-size="14.00" fill="#000000">beta_geometric_nbd_model_transactional_data</text>
+</g>
+<!-- lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_nbd_model_transactional_data -->
+<g id="edge5" class="edge">
+<title>lifetimes__generate_data&#45;&gt;lifetimes__generate_data__beta_geometric_nbd_model_transactional_data</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M256.74,-1277.88C269.12,-1277.88 282,-1277.88 295.11,-1277.88"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="295.19,-1281.38 305.19,-1277.88 295.19,-1274.38 295.19,-1281.38"/>
+</g>
+<!-- lifetimes__generate_data__modified_beta_geometric_nbd_model -->
+<g id="node9" class="node">
+<title>lifetimes__generate_data__modified_beta_geometric_nbd_model</title>
+<ellipse fill="#feff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1223.88" rx="181.17" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1220.18" font-family="Times,serif" font-size="14.00" fill="#000000">modified_beta_geometric_nbd_model</text>
+</g>
+<!-- lifetimes__generate_data&#45;&gt;lifetimes__generate_data__modified_beta_geometric_nbd_model -->
+<g id="edge4" class="edge">
+<title>lifetimes__generate_data&#45;&gt;lifetimes__generate_data__modified_beta_geometric_nbd_model</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M209.34,-1263.58C233.19,-1259.14 259.92,-1254.47 284.48,-1250.88 318.93,-1245.85 356.2,-1241.32 391.1,-1237.46"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="391.81,-1240.9 401.37,-1236.34 391.05,-1233.94 391.81,-1240.9"/>
+</g>
+<!-- lifetimes__generate_data__pareto_nbd_model -->
+<g id="node10" class="node">
+<title>lifetimes__generate_data__pareto_nbd_model</title>
+<ellipse fill="#feff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1169.88" rx="95.58" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1166.18" font-family="Times,serif" font-size="14.00" fill="#000000">pareto_nbd_model</text>
+</g>
+<!-- lifetimes__generate_data&#45;&gt;lifetimes__generate_data__pareto_nbd_model -->
+<g id="edge3" class="edge">
+<title>lifetimes__generate_data&#45;&gt;lifetimes__generate_data__pareto_nbd_model</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M161.91,-1260.3C190.1,-1241.19 238.29,-1211.46 284.48,-1196.88 330.17,-1182.46 382.7,-1175.46 427.58,-1172.17"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="427.88,-1175.66 437.62,-1171.48 427.41,-1168.67 427.88,-1175.66"/>
+</g>
+<!-- lifetimes__plotting -->
+<g id="node3" class="node">
+<title>lifetimes__plotting</title>
+<ellipse fill="#ffffff" fill-opacity="0.698039" stroke="black" cx="136.24" cy="-866.88" rx="90.98" ry="18"/>
+<text text-anchor="middle" x="136.24" y="-863.18" font-family="Times,serif" font-size="14.00" fill="#000000">lifetimes.plotting</text>
+</g>
+<!-- lifetimes__plotting__coalesce -->
+<g id="node11" class="node">
+<title>lifetimes__plotting__coalesce</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-1028.88" rx="50.09" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-1025.18" font-family="Times,serif" font-size="14.00" fill="#000000">coalesce</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__coalesce -->
+<g id="edge17" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__coalesce</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M142.26,-885.15C156,-931.08 199,-1051 284.48,-1097.88 332.11,-1124.01 726.2,-1124.73 773.44,-1097.88 794.58,-1085.87 781.21,-1064.37 801.44,-1050.88 829.06,-1032.47 865.71,-1026.7 896.24,-1025.67"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="896.4,-1029.16 906.33,-1025.48 896.27,-1022.16 896.4,-1029.16"/>
+</g>
+<!-- lifetimes__plotting__forceAspect -->
+<g id="node12" class="node">
+<title>lifetimes__plotting__forceAspect</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-893.88" rx="65.79" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-890.18" font-family="Times,serif" font-size="14.00" fill="#000000">forceAspect</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__forceAspect -->
+<g id="edge14" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__forceAspect</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M142.97,-884.97C157.95,-928.69 202.83,-1039.73 284.48,-1082.88 332.51,-1108.27 729.19,-1114.41 773.44,-1082.88 804.46,-1060.78 778.54,-1032.33 801.44,-1001.88 830.8,-962.84 878.4,-932.46 912.77,-914"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="914.41,-917.09 921.64,-909.34 911.16,-910.89 914.41,-917.09"/>
+</g>
+<!-- lifetimes__plotting__plot_calibration_purchases_vs_holdout_purchases -->
+<g id="node13" class="node">
+<title>lifetimes__plotting__plot_calibration_purchases_vs_holdout_purchases</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1055.88" rx="240.46" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-1052.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_calibration_purchases_vs_holdout_purchases</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_calibration_purchases_vs_holdout_purchases -->
+<g id="edge6" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_calibration_purchases_vs_holdout_purchases</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M147.4,-884.9C168.1,-919.65 218.77,-995.43 284.48,-1028.88 295.65,-1034.57 307.46,-1039.31 319.63,-1043.26"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="318.88,-1046.69 329.46,-1046.25 320.91,-1039.99 318.88,-1046.69"/>
+</g>
+<!-- lifetimes__plotting__plot_cumulative_transactions -->
+<g id="node14" class="node">
+<title>lifetimes__plotting__plot_cumulative_transactions</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-731.88" rx="146.47" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-728.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_cumulative_transactions</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_cumulative_transactions -->
+<g id="edge9" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_cumulative_transactions</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M154.83,-849.03C180.68,-824.05 231.59,-779.44 284.48,-758.88 313.83,-747.47 346.52,-740.37 378.28,-736.05"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="379.07,-739.48 388.55,-734.74 378.18,-732.53 379.07,-739.48"/>
+</g>
+<!-- lifetimes__plotting__plot_dropout_rate_heterogeneity -->
+<g id="node15" class="node">
+<title>lifetimes__plotting__plot_dropout_rate_heterogeneity</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-947.88" rx="162.47" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-944.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_dropout_rate_heterogeneity</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_dropout_rate_heterogeneity -->
+<g id="edge10" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_dropout_rate_heterogeneity</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M174.3,-883.33C203.62,-895.64 245.91,-911.85 284.48,-920.88 315.94,-928.25 350.13,-933.62 382.78,-937.53"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="382.52,-941.02 392.86,-938.7 383.33,-934.07 382.52,-941.02"/>
+</g>
+<!-- lifetimes__plotting__plot_expected_repeat_purchases -->
+<g id="node16" class="node">
+<title>lifetimes__plotting__plot_expected_repeat_purchases</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-1001.88" rx="161.37" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-998.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_expected_repeat_purchases</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_expected_repeat_purchases -->
+<g id="edge11" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_expected_repeat_purchases</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M154.83,-884.74C180.68,-909.71 231.59,-954.32 284.48,-974.88 310.24,-984.9 338.58,-991.6 366.6,-996.01"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="366.09,-999.47 376.49,-997.47 367.11,-992.54 366.09,-999.47"/>
+</g>
+<!-- lifetimes__plotting__plot_frequency_recency_matrix -->
+<g id="node17" class="node">
+<title>lifetimes__plotting__plot_frequency_recency_matrix</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-893.88" rx="155.17" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-890.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_frequency_recency_matrix</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_frequency_recency_matrix -->
+<g id="edge8" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_frequency_recency_matrix</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M222.4,-872.71C270.93,-876.03 333.02,-880.28 388.83,-884.09"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="388.6,-887.59 398.81,-884.78 389.08,-880.6 388.6,-887.59"/>
+</g>
+<!-- lifetimes__plotting__plot_history_alive -->
+<g id="node18" class="node">
+<title>lifetimes__plotting__plot_history_alive</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-623.88" rx="92.08" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-620.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_history_alive</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_history_alive -->
+<g id="edge13" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_history_alive</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M143.52,-848.72C159.42,-805.8 205.68,-698.18 284.48,-650.88 330.59,-623.21 390.34,-616.06 439.58,-616.02"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="439.57,-619.52 449.6,-616.11 439.63,-612.52 439.57,-619.52"/>
+</g>
+<!-- lifetimes__plotting__plot_incremental_transactions -->
+<g id="node19" class="node">
+<title>lifetimes__plotting__plot_incremental_transactions</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-785.88" rx="150.57" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-782.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_incremental_transactions</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_incremental_transactions -->
+<g id="edge15" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_incremental_transactions</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M174.3,-850.44C203.62,-838.13 245.91,-821.92 284.48,-812.88 318.09,-805.01 354.81,-799.42 389.44,-795.46"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="390.07,-798.91 399.63,-794.33 389.3,-791.95 390.07,-798.91"/>
+</g>
+<!-- lifetimes__plotting__plot_period_transactions -->
+<g id="node20" class="node">
+<title>lifetimes__plotting__plot_period_transactions</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-677.88" rx="124.58" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-674.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_period_transactions</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_period_transactions -->
+<g id="edge12" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_period_transactions</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M147.4,-848.87C168.1,-814.12 218.77,-738.33 284.48,-704.88 319.84,-686.89 361.66,-678.32 400.76,-674.74"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="401.49,-678.2 411.17,-673.9 400.92,-671.22 401.49,-678.2"/>
+</g>
+<!-- lifetimes__plotting__plot_probability_alive_matrix -->
+<g id="node21" class="node">
+<title>lifetimes__plotting__plot_probability_alive_matrix</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-839.88" rx="145.67" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-836.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_probability_alive_matrix</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_probability_alive_matrix -->
+<g id="edge7" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_probability_alive_matrix</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M222.4,-861.06C272.75,-857.61 337.69,-853.17 395.07,-849.25"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="395.59,-852.72 405.32,-848.55 395.11,-845.74 395.59,-852.72"/>
+</g>
+<!-- lifetimes__plotting__plot_transaction_rate_heterogeneity -->
+<g id="node22" class="node">
+<title>lifetimes__plotting__plot_transaction_rate_heterogeneity</title>
+<ellipse fill="#99ff99" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-569.88" rx="178.97" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-566.18" font-family="Times,serif" font-size="14.00" fill="#000000">plot_transaction_rate_heterogeneity</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_transaction_rate_heterogeneity -->
+<g id="edge16" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__plotting__plot_transaction_rate_heterogeneity</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M141.01,-848.85C152.49,-798.97 191.98,-658.83 284.48,-596.88 302.7,-584.68 323.41,-576.26 344.92,-570.59"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="345.96,-573.94 354.85,-568.18 344.31,-567.14 345.96,-573.94"/>
+</g>
+<!-- lifetimes__utils__calculate_alive_path -->
+<g id="node30" class="node">
+<title>lifetimes__utils__calculate_alive_path</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-486.88" rx="103.98" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-483.18" font-family="Times,serif" font-size="14.00" fill="#000000">calculate_alive_path</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__utils__calculate_alive_path -->
+<g id="edge30" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__utils__calculate_alive_path</title>
+<path fill="none" stroke="#000000" d="M139.13,-848.77C146.12,-791.9 176.03,-616.22 284.48,-539.88 371.89,-478.36 677.31,-477.74 844.02,-482.37"/>
+<polygon fill="#000000" stroke="#000000" points="844.21,-485.88 854.3,-482.67 844.41,-478.88 844.21,-485.88"/>
+</g>
+<!-- lifetimes__utils__expected_cumulative_transactions -->
+<g id="node32" class="node">
+<title>lifetimes__utils__expected_cumulative_transactions</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="1325.09" cy="-122.88" rx="170.07" ry="18"/>
+<text text-anchor="middle" x="1325.09" y="-119.18" font-family="Times,serif" font-size="14.00" fill="#000000">expected_cumulative_transactions</text>
+</g>
+<!-- lifetimes__plotting&#45;&gt;lifetimes__utils__expected_cumulative_transactions -->
+<g id="edge31" class="edge">
+<title>lifetimes__plotting&#45;&gt;lifetimes__utils__expected_cumulative_transactions</title>
+<path fill="none" stroke="#000000" d="M141.62,-885.16C154.18,-932.96 195.29,-1061.43 284.48,-1111.88 324.01,-1134.25 1069.35,-1140.54 1101.91,-1108.88 1178.61,-1034.33 1065.79,-225.87 1137.91,-146.88 1142.63,-141.71 1147.88,-137.24 1153.52,-133.38"/>
+<polygon fill="#000000" stroke="#000000" points="1155.35,-136.36 1162.06,-128.16 1151.7,-130.39 1155.35,-136.36"/>
+</g>
+<!-- lifetimes__utils -->
+<g id="node4" class="node">
+<title>lifetimes__utils</title>
+<ellipse fill="#ffffff" fill-opacity="0.698039" stroke="black" cx="532.96" cy="-216.88" rx="74.99" ry="18"/>
+<text text-anchor="middle" x="532.96" y="-213.18" font-family="Times,serif" font-size="14.00" fill="#000000">lifetimes.utils</text>
+</g>
+<!-- lifetimes__utils__ConvergenceError -->
+<g id="node23" class="node">
+<title>lifetimes__utils__ConvergenceError</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-108.88" rx="96.68" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-105.18" font-family="Times,serif" font-size="14.00" fill="#000000">ConvergenceError</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils__ConvergenceError -->
+<g id="edge20" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils__ConvergenceError</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M576.61,-202.24C629.04,-184.64 720.97,-155.08 801.44,-135.88 823.42,-130.64 847.41,-125.94 869.74,-121.98"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="870.62,-125.38 879.87,-120.22 869.42,-118.49 870.62,-125.38"/>
+</g>
+<!-- lifetimes__utils___check_inputs -->
+<g id="node24" class="node">
+<title>lifetimes__utils___check_inputs</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-432.88" rx="75.29" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-429.18" font-family="Times,serif" font-size="14.00" fill="#000000">_check_inputs</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___check_inputs -->
+<g id="edge19" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___check_inputs</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M552.3,-234.35C593.3,-272.3 696.99,-362.37 801.44,-405.88 824.13,-415.34 850.05,-421.48 874.04,-425.48"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="873.77,-428.98 884.19,-427.06 874.84,-422.06 873.77,-428.98"/>
+</g>
+<!-- lifetimes__utils___concat2 -->
+<g id="node25" class="node">
+<title>lifetimes__utils___concat2</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-378.88" rx="51.19" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-375.18" font-family="Times,serif" font-size="14.00" fill="#000000">_concat2</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___concat2 -->
+<g id="edge28" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___concat2</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M560.53,-233.64C607.35,-262.38 708.39,-320.96 801.44,-351.88 831.93,-362.02 867.18,-368.57 896.18,-372.67"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="895.77,-376.15 906.15,-374.02 896.71,-369.21 895.77,-376.15"/>
+</g>
+<!-- lifetimes__utils___customer_lifetime_value -->
+<g id="node26" class="node">
+<title>lifetimes__utils___customer_lifetime_value</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-324.88" rx="128.08" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-321.18" font-family="Times,serif" font-size="14.00" fill="#000000">_customer_lifetime_value</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___customer_lifetime_value -->
+<g id="edge23" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___customer_lifetime_value</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M576.61,-231.53C629.04,-249.13 720.97,-278.68 801.44,-297.88 819.9,-302.29 839.76,-306.31 858.88,-309.83"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="858.33,-313.28 868.79,-311.62 859.57,-306.39 858.33,-313.28"/>
+</g>
+<!-- lifetimes__utils___find_first_transactions -->
+<g id="node27" class="node">
+<title>lifetimes__utils___find_first_transactions</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="1666.57" cy="-68.88" rx="118.08" ry="18"/>
+<text text-anchor="middle" x="1666.57" y="-65.18" font-family="Times,serif" font-size="14.00" fill="#000000">_find_first_transactions</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___find_first_transactions -->
+<g id="edge25" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___find_first_transactions</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M552.43,-199.25C593.28,-161.62 696.06,-74.31 801.44,-42.88 1083.69,41.3 1440.99,-18.86 1592.43,-51.53"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="1592.02,-55.03 1602.54,-53.74 1593.51,-48.19 1592.02,-55.03"/>
+</g>
+<!-- lifetimes__utils___save_obj_without_attr -->
+<g id="node28" class="node">
+<title>lifetimes__utils___save_obj_without_attr</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-270.88" rx="116.18" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-267.18" font-family="Times,serif" font-size="14.00" fill="#000000">_save_obj_without_attr</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___save_obj_without_attr -->
+<g id="edge26" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___save_obj_without_attr</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M599.23,-225.26C667.74,-234.06 776.26,-247.98 855.39,-258.14"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="855.01,-261.62 865.38,-259.42 855.9,-254.68 855.01,-261.62"/>
+</g>
+<!-- lifetimes__utils___scale_time -->
+<g id="node29" class="node">
+<title>lifetimes__utils___scale_time</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-216.88" rx="63.89" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-213.18" font-family="Times,serif" font-size="14.00" fill="#000000">_scale_time</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils___scale_time -->
+<g id="edge22" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils___scale_time</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M607.72,-216.88C684.74,-216.88 804.81,-216.88 881.58,-216.88"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="881.65,-220.38 891.65,-216.88 881.65,-213.38 881.65,-220.38"/>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils__calculate_alive_path -->
+<g id="edge18" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils__calculate_alive_path</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M547.3,-234.56C582.91,-280.31 685.4,-402.98 801.44,-459.88 816.95,-467.49 834.27,-472.98 851.53,-476.94"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="851.17,-480.44 861.68,-479.1 852.62,-473.59 851.17,-480.44"/>
+</g>
+<!-- lifetimes__utils__calibration_and_holdout_data -->
+<g id="node31" class="node">
+<title>lifetimes__utils__calibration_and_holdout_data</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="955.67" cy="-162.88" rx="146.47" ry="18"/>
+<text text-anchor="middle" x="955.67" y="-159.18" font-family="Times,serif" font-size="14.00" fill="#000000">calibration_and_holdout_data</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils__calibration_and_holdout_data -->
+<g id="edge24" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils__calibration_and_holdout_data</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M599.23,-208.51C664.28,-200.16 765.42,-187.17 843.21,-177.19"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="844.07,-180.61 853.54,-175.87 843.18,-173.67 844.07,-180.61"/>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils__expected_cumulative_transactions -->
+<g id="edge21" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils__expected_cumulative_transactions</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M557.89,-199.89C602.93,-169.05 704.53,-104.95 801.44,-81.88 931.35,-50.96 970.66,-57.26 1101.91,-81.88 1118.78,-85.05 1121.31,-91.51 1137.91,-95.88 1156.55,-100.79 1176.5,-104.87 1196.15,-108.25"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="1195.64,-111.71 1206.08,-109.9 1196.79,-104.81 1195.64,-111.71"/>
+</g>
+<!-- lifetimes__utils__summary_data_from_transaction_data -->
+<g id="node33" class="node">
+<title>lifetimes__utils__summary_data_from_transaction_data</title>
+<ellipse fill="#99feff" fill-opacity="0.698039" stroke="black" cx="1325.09" cy="-68.88" rx="187.37" ry="18"/>
+<text text-anchor="middle" x="1325.09" y="-65.18" font-family="Times,serif" font-size="14.00" fill="#000000">summary_data_from_transaction_data</text>
+</g>
+<!-- lifetimes__utils&#45;&gt;lifetimes__utils__summary_data_from_transaction_data -->
+<g id="edge27" class="edge">
+<title>lifetimes__utils&#45;&gt;lifetimes__utils__summary_data_from_transaction_data</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M554.32,-199.4C596.79,-164.24 699.34,-85.94 801.44,-57.88 868.98,-39.33 1045.08,-47.15 1174.28,-56.28"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="1174.05,-59.77 1184.28,-57 1174.55,-52.79 1174.05,-59.77"/>
+</g>
+<!-- lifetimes__version -->
+<g id="node5" class="node">
+<title>lifetimes__version</title>
+<ellipse fill="#ffffff" fill-opacity="0.698039" stroke="black" cx="136.24" cy="-444.88" rx="88.28" ry="18"/>
+<text text-anchor="middle" x="136.24" y="-441.18" font-family="Times,serif" font-size="14.00" fill="#000000">lifetimes.version</text>
+</g>
+<!-- lifetimes__plotting__plot_cumulative_transactions&#45;&gt;lifetimes__utils__expected_cumulative_transactions -->
+<g id="edge36" class="edge">
+<title>lifetimes__plotting__plot_cumulative_transactions&#45;&gt;lifetimes__utils__expected_cumulative_transactions</title>
+<path fill="none" stroke="#000000" d="M665.02,-724.12C801.54,-708.1 1008.3,-659.62 1101.91,-513.88 1146.2,-444.93 1080.85,-205.7 1137.91,-146.88 1142.87,-141.78 1148.33,-137.36 1154.18,-133.57"/>
+<polygon fill="#000000" stroke="#000000" points="1156.12,-136.49 1163.01,-128.44 1152.61,-130.43 1156.12,-136.49"/>
+</g>
+<!-- lifetimes__plotting__plot_expected_repeat_purchases&#45;&gt;lifetimes__plotting__coalesce -->
+<g id="edge34" class="edge">
+<title>lifetimes__plotting__plot_expected_repeat_purchases&#45;&gt;lifetimes__plotting__coalesce</title>
+<path fill="none" stroke="#000000" d="M673.17,-1010.82C749.01,-1015.69 838.84,-1021.45 896.27,-1025.14"/>
+<polygon fill="#000000" stroke="#000000" points="896.05,-1028.63 906.25,-1025.78 896.5,-1021.64 896.05,-1028.63"/>
+</g>
+<!-- lifetimes__plotting__plot_frequency_recency_matrix&#45;&gt;lifetimes__plotting__forceAspect -->
+<g id="edge32" class="edge">
+<title>lifetimes__plotting__plot_frequency_recency_matrix&#45;&gt;lifetimes__plotting__forceAspect</title>
+<path fill="none" stroke="#000000" d="M688.53,-893.88C753.68,-893.88 826.54,-893.88 879.53,-893.88"/>
+<polygon fill="#000000" stroke="#000000" points="879.85,-897.38 889.85,-893.88 879.85,-890.38 879.85,-897.38"/>
+</g>
+<!-- lifetimes__plotting__plot_history_alive&#45;&gt;lifetimes__utils__calculate_alive_path -->
+<g id="edge35" class="edge">
+<title>lifetimes__plotting__plot_history_alive&#45;&gt;lifetimes__utils__calculate_alive_path</title>
+<path fill="none" stroke="#000000" d="M612.09,-633.25C662.46,-635.18 726.99,-629.57 773.44,-596.88 796.52,-580.64 780.28,-558.57 801.44,-539.88 821.27,-522.36 847.21,-510.56 872.08,-502.64"/>
+<polygon fill="#000000" stroke="#000000" points="873.35,-505.92 881.92,-499.69 871.33,-499.21 873.35,-505.92"/>
+</g>
+<!-- lifetimes__plotting__plot_incremental_transactions&#45;&gt;lifetimes__utils__expected_cumulative_transactions -->
+<g id="edge37" class="edge">
+<title>lifetimes__plotting__plot_incremental_transactions&#45;&gt;lifetimes__utils__expected_cumulative_transactions</title>
+<path fill="none" stroke="#000000" d="M683.61,-786.69C818.5,-778.33 1009.42,-741.87 1101.91,-609.88 1161.14,-525.37 1066.81,-221.68 1137.91,-146.88 1142.74,-141.81 1148.07,-137.41 1153.78,-133.62"/>
+<polygon fill="#000000" stroke="#000000" points="1155.61,-136.61 1162.41,-128.49 1152.03,-130.59 1155.61,-136.61"/>
+</g>
+<!-- lifetimes__plotting__plot_probability_alive_matrix&#45;&gt;lifetimes__plotting__forceAspect -->
+<g id="edge33" class="edge">
+<title>lifetimes__plotting__plot_probability_alive_matrix&#45;&gt;lifetimes__plotting__forceAspect</title>
+<path fill="none" stroke="#000000" d="M644.34,-851.5C684.96,-855.99 731.33,-861.38 773.44,-866.88 811.62,-871.88 854.22,-878.19 888.51,-883.45"/>
+<polygon fill="#000000" stroke="#000000" points="888,-886.91 898.42,-884.98 889.07,-879.99 888,-886.91"/>
+</g>
+<!-- lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__summary_data_from_transaction_data -->
+<g id="edge38" class="edge">
+<title>lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__summary_data_from_transaction_data</title>
+<path fill="none" stroke="#000000" d="M1065.34,-150.86C1078.12,-147.1 1090.61,-142.22 1101.91,-135.88 1122.77,-124.19 1116.82,-107.16 1137.91,-95.88 1147.39,-90.81 1157.52,-86.6 1167.96,-83.11"/>
+<polygon fill="#000000" stroke="#000000" points="1169.12,-86.41 1177.63,-80.1 1167.04,-79.73 1169.12,-86.41"/>
+</g>
+<!-- lifetimes__utils__calibration_and_holdout_data__to_period -->
+<g id="node34" class="node">
+<title>lifetimes__utils__calibration_and_holdout_data__to_period</title>
+<ellipse fill="#65feff" fill-opacity="0.698039" stroke="black" cx="1325.09" cy="-176.88" rx="53.89" ry="18"/>
+<text text-anchor="middle" x="1325.09" y="-173.18" font-family="Times,serif" font-size="14.00" fill="#000000">to_period</text>
+</g>
+<!-- lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__calibration_and_holdout_data__to_period -->
+<g id="edge29" class="edge">
+<title>lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__calibration_and_holdout_data__to_period</title>
+<path fill="none" stroke="#838b8b" stroke-dasharray="5,2" d="M1101.89,-161.8C1158.71,-163.57 1220.68,-166.42 1264.7,-169.5"/>
+<polygon fill="#838b8b" stroke="#838b8b" points="1264.71,-173 1274.93,-170.24 1265.21,-166.02 1264.71,-173"/>
+</g>
+<!-- lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__calibration_and_holdout_data__to_period -->
+<g id="edge39" class="edge">
+<title>lifetimes__utils__calibration_and_holdout_data&#45;&gt;lifetimes__utils__calibration_and_holdout_data__to_period</title>
+<path fill="none" stroke="#000000" d="M1072.93,-173.64C1135.28,-176.83 1209.67,-179.3 1261.23,-179.72"/>
+<polygon fill="#000000" stroke="#000000" points="1261.53,-183.22 1271.55,-179.78 1261.57,-176.22 1261.53,-183.22"/>
+</g>
+<!-- lifetimes__utils__expected_cumulative_transactions&#45;&gt;lifetimes__utils___find_first_transactions -->
+<g id="edge41" class="edge">
+<title>lifetimes__utils__expected_cumulative_transactions&#45;&gt;lifetimes__utils___find_first_transactions</title>
+<path fill="none" stroke="#000000" d="M1428.61,-108.59C1455.83,-104.64 1485.19,-100.23 1512.28,-95.88 1534.26,-92.36 1557.97,-88.3 1580.01,-84.43"/>
+<polygon fill="#000000" stroke="#000000" points="1580.77,-87.85 1590.01,-82.66 1579.56,-80.95 1580.77,-87.85"/>
+</g>
+<!-- lifetimes__utils__summary_data_from_transaction_data&#45;&gt;lifetimes__utils___find_first_transactions -->
+<g id="edge40" class="edge">
+<title>lifetimes__utils__summary_data_from_transaction_data&#45;&gt;lifetimes__utils___find_first_transactions</title>
+<path fill="none" stroke="#000000" d="M1512.71,-68.88C1521.26,-68.88 1529.74,-68.88 1538.08,-68.88"/>
+<polygon fill="#000000" stroke="#000000" points="1538.18,-72.38 1548.18,-68.88 1538.18,-65.38 1538.18,-72.38"/>
+</g>
+</g>
+</svg>
+`,
+                    ready: function() {
+                        var gv = this
+                        gv.nodes().click(function () {
+                            var $set = $()
+                            $set.push(this)
+                            $set = $set.add(gv.linkedFrom(this, true))
+                            $set = $set.add(gv.linkedTo(this, true))
+                            gv.highlight($set, true)
+                            gv.bringToFront($set)
+                        })
+                        $(document).keydown(function (evt) {
+                            if (evt.keyCode == 27) {
+                                gv.highlight()
+                            }
+                        })
+                    }
+                });
+            });
+		</script>
+	</body>
+</html>
