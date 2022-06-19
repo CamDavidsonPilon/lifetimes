@@ -8,10 +8,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_equal
 
-from lifetimes import plotting
-from lifetimes import BetaGeoFitter, ParetoNBDFitter, ModifiedBetaGeoFitter
-from lifetimes.datasets import load_cdnow_summary, load_transaction_data, load_dataset
-from lifetimes import utils
+from btyd import plotting
+from btyd import BetaGeoFitter, ParetoNBDFitter, ModifiedBetaGeoFitter
+from btyd.datasets import load_cdnow_summary, load_transaction_data, load_dataset
+from btyd import utils
 
 
 @pytest.fixture()

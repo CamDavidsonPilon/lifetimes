@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Test lifetimes utils."""
+"""Test btyd utils."""
 import os
 import pytest
 import pandas as pd
@@ -7,11 +7,11 @@ import numpy as np
 from pandas.util.testing import assert_frame_equal
 from numpy.testing import assert_almost_equal, assert_allclose
 
-from lifetimes import utils, BetaGeoFitter, ParetoNBDFitter
-from lifetimes.datasets import load_dataset
+from btyd import utils, BetaGeoFitter, ParetoNBDFitter
+from btyd.datasets import load_dataset
 
 
-DATASETS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lifetimes/datasets')
+DATASETS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'btyd/datasets')
 
 @pytest.fixture()
 def example_transaction_data():
@@ -529,7 +529,7 @@ def test_scale_time():
 def test_customer_lifetime_value_with_known_values(fitted_bg):
     """
     >>> print fitted_bg
-    <lifetimes.BetaGeoFitter: fitted with 5000 subjects, r: 0.16, alpha: 1.86, a: 1.85, b: 3.18>
+    <btyd.BetaGeoFitter: fitted with 5000 subjects, r: 0.16, alpha: 1.86, a: 1.85, b: 3.18>
     >>> t = fitted_bg.data.head()
     >>> t
        frequency  recency    T

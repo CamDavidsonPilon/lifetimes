@@ -79,6 +79,6 @@ benchmarks/images
 # Miscellaneous CI/CD  Artifacts
 requirements.in
 
-# lifetimes Testing Artifacts
+# btyd Testing Artifacts
 betageo_fitter.pkl
 exploded.csv
