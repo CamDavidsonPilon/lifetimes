@@ -14,7 +14,7 @@ A "good" contribution would follow this flow:
 
 Most topics on this library are far from trivial, newcomers might misunderstand some concepts and, thus, if they blindly try to create *Pull Request*, their efforts might be for naught.
 
-Therefore, post your question on the [Issues Section](https://github.com/CamDavidsonPilon/lifetimes/issues) of the library first. It will be quickly (hopefully) labeled and other people's collaboration will provide enough feedback for you to know what to do next.
+Therefore, post your question on the [Issues Section](https://github.com/ColtAllen/btyd/issues) of the library first. It will be quickly (hopefully) labeled and other people's collaboration will provide enough feedback for you to know what to do next.
 
 ## Prove that What You've Created is Better than What Already Exists (or not)
 
@@ -30,11 +30,9 @@ This is very similar to what (Data) Scientists do when they create `Jupyter Note
 
 There are already quite a lot of tests in this library. However, nothing guarantees that what you're creating won't break an existing feature. It is recommended that you thus:
 
-1. Go through all the existing tests.
-    - Travis CI will do that automatically.
-1. Examine the existing tests to see if they already guarantee that what you're doing is enough.
-    - This can be difficult because you will probably not know all of the tests. Nevertheless, using `Ctrl + F` is always your friend. Anyway, try your best.
-1. Write new tests *if* necessary.
+1. Go through all existing tests pertaining to the scripts you are modifying.
+1. Examine the existing tests to see if they already cover the changes you are making.
+1. Write new tests *only if* necessary.
 
 Additionally, if it were me, even if there already exists a test covering my code, I might end up writing a custom one &mdash; or mentioning the name of the existing one &mdash; in my `benchmarks` file anyway, just for the sake of documentation.
 
