@@ -1,7 +1,0 @@
-numpy>1.10.0
-scipy>=1.0.0
-pandas>=0.24.0
-dill>=0.2.6
-# autograd>=1.2.0
-# TODO, should be updated when new pip release for the autograd would be available
--e git://github.com/HIPS/autograd.git@4ec5aede380c5accf20afd4f4a96d59f1a9cd1df#egg=autograd
