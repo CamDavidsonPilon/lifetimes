@@ -1,7 +1,7 @@
 # BTYD
 
 [![Actively Maintained](https://img.shields.io/badge/Development%20Status-Active%20-yellowgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
-[![PyPI version](https://badge.fury.io/py/btyd.svg)](https://badge.fury.io/py/Lifetimes)
+[![PyPI version](https://badge.fury.io/py/btyd.svg)](https://badge.fury.io/py/btyd)
 [![GitHub license](https://img.shields.io/github/license/ColtAllen/btyd)](https://github.com/ColtAllen/btyd/blob/master/LICENSE.txt)
 
 
@@ -42,7 +42,7 @@ Please refer to the [Contributing Guide](https://github.com/ColtAllen/btyd/blob/
 
 ## Questions? Comments? Requests?
 
-Please create an issue in the [BTYD repository](https://github.com/ColtAllen/btyd).
+Please create an issue in the [BTYD repository](https://github.com/ColtAllen/btyd/issues).
 
 ## Supported Models
 
