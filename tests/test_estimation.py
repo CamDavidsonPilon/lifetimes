@@ -8,9 +8,9 @@ import pytest
 import os
 from collections import OrderedDict
 
-import lifetimes as lt
-import lifetimes.utils as utils
-from lifetimes.datasets import (
+import btyd as lt
+import btyd.utils as utils
+from btyd.datasets import (
     load_cdnow_summary,
     load_cdnow_summary_data_with_monetary_value,
     load_donations,
@@ -29,12 +29,12 @@ def cdnow_customers():
 class TestBaseFitter:
     def test_repr(self):
         base_fitter = lt.BaseFitter()
-        assert repr(base_fitter) == "<lifetimes.BaseFitter>"
+        assert repr(base_fitter) == "<btyd.BaseFitter>"
         base_fitter.params_ = pd.Series(dict(x=12.3, y=42))
         base_fitter.data = np.array([1, 2, 3])
-        assert repr(base_fitter) == "<lifetimes.BaseFitter: fitted with 3 subjects, x: 12.3, y: 42.0>"
+        assert repr(base_fitter) == "<btyd.BaseFitter: fitted with 3 subjects, x: 12.3, y: 42.0>"
         base_fitter.data = None
-        assert repr(base_fitter) == "<lifetimes.BaseFitter: x: 12.3, y: 42.0>"
+        assert repr(base_fitter) == "<btyd.BaseFitter: x: 12.3, y: 42.0>"
 
     def test_unload_params(self):
         base_fitter = lt.BaseFitter()

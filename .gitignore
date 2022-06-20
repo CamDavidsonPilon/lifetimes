@@ -76,6 +76,9 @@ benchmarks/images
 *.amltmp 
 *.amltemp
 
-# lifetimes Testing Artifacts
+# Miscellaneous CI/CD  Artifacts
+requirements.in
+
+# btyd Testing Artifacts
 betageo_fitter.pkl
 exploded.csv

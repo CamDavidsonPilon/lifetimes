@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-"""Lifetimes utils and helpers."""
-
 from __future__ import division
 
 import autograd.numpy as np
@@ -80,7 +77,7 @@ def calibration_and_holdout_data(
         Default: False
         By default the first transaction is not included while calculating frequency and
         monetary_value. Can be set to True to include it.
-        Should be False if you are going to use this data with any fitters in lifetimes package
+        Should be False if you are going to use this data with any fitters in BTYD package
 
     Returns
     -------
@@ -281,7 +278,7 @@ def summary_data_from_transaction_data(
         Default: False
         By default the first transaction is not included while calculating frequency and
         monetary_value. Can be set to True to include it.
-        Should be False if you are going to use this data with any fitters in lifetimes package
+        Should be False if you are going to use this data with any fitters in BTYD package
 
     Returns
     -------
@@ -349,7 +346,7 @@ def calculate_alive_path(
     Parameters
     ----------
     model:
-        A fitted lifetimes model
+        A fitted BTYD model
     transactions: DataFrame
         a Pandas DataFrame containing the transactions history of the customer_id
     datetime_col: string
@@ -538,7 +535,7 @@ def expected_cumulative_transactions(
     Parameters
     ----------
     model:
-        A fitted lifetimes model
+        A fitted BTYD model
     transactions: :obj: DataFrame
         a Pandas DataFrame containing the transactions history of the customer_id
     datetime_col: string

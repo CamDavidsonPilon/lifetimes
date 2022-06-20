@@ -15,7 +15,7 @@ __all__ = [
 
 def load_dataset(filename, **kwargs):
     """
-    Load a dataset from lifetimes.datasets.
+    Load a dataset from btyd.datasets.
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ def load_dataset(filename, **kwargs):
     DataFrame
 
     """
-    return pd.read_csv(resource_filename("lifetimes", "datasets/" + filename), **kwargs)
+    return pd.read_csv(resource_filename("btyd", "datasets/" + filename), **kwargs)
 
 
 def load_donations(**kwargs):
@@ -57,7 +57,7 @@ def load_transaction_data(**kwargs):
     3  2014-04-09 00:00:00   2
     4  2014-05-21 00:00:00   2
 
-    The data was artificially created using Lifetimes data generation routines. Data was generated
+    The data was artificially created using BTYD data generation routines. Data was generated
     between 2014-01-01 to 2014-12-31.
 
     """

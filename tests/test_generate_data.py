@@ -7,15 +7,15 @@ import numpy.testing as npt
 
 import scipy.stats as stats
 
-from lifetimes import BetaGeoBetaBinomFitter
-from lifetimes.generate_data import (
+from btyd import BetaGeoBetaBinomFitter
+from btyd.generate_data import (
     beta_geometric_nbd_model,
     pareto_nbd_model,
     modified_beta_geometric_nbd_model,
     beta_geometric_beta_binom_model,
     beta_geometric_nbd_model_transactional_data,
 )
-from lifetimes.utils import summary_data_from_transaction_data
+from btyd.utils import summary_data_from_transaction_data
 
 
 def setup_module(module):

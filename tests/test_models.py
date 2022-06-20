@@ -14,9 +14,9 @@ import arviz as az
 import pymc as pm
 import aesara.tensor as at
 
-import lifetimes as lt
-import lifetimes.utils as utils
-from lifetimes.datasets import (
+import btyd as lt
+import btyd.utils as utils
+from btyd.datasets import (
     load_cdnow_summary,
     load_cdnow_summary_data_with_monetary_value,
     load_donations,
@@ -42,7 +42,7 @@ class TestBaseModel:
         THEN a string representation containing library name, module and model class are returned.
         """
         
-        assert repr(lt.BaseModel) == "<class 'lifetimes.models.BaseModel'>"
+        assert repr(lt.BaseModel) == "<class 'btyd.models.BaseModel'>"
 
     def test_sample(self):
         """
@@ -114,7 +114,7 @@ class TestBetaGeoModel:
         THEN string representations of library name, module, BetaGeoModel class, parameters, and # rows used in estimation are returned.
         """
 
-        assert repr(lt.BetaGeoModel) == "<class 'lifetimes.models.beta_geo_model.BetaGeoModel'>"
+        assert repr(lt.BetaGeoModel) == "<class 'btyd.models.beta_geo_model.BetaGeoModel'>"
         assert repr(lt.BetaGeoModel()) == "<btyd.BetaGeoModel>"
         assert repr(fitted_bgm) == "<btyd.BetaGeoModel: Parameters {'alpha': array([4.4]), 'r': array([0.2]), 'a': array([0.8]), 'b': array([2.4])} estimated with 2357 customers.>"
     

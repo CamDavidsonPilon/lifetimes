@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
-from lifetimes.utils import calculate_alive_path, expected_cumulative_transactions
+from btyd.utils import calculate_alive_path, expected_cumulative_transactions
 from scipy import stats
 
 __all__ = [
@@ -35,8 +35,8 @@ def plot_period_transactions(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     max_frequency: int, optional
         The maximum frequency to plot.
     title: str, optional
@@ -80,12 +80,12 @@ def plot_calibration_purchases_vs_holdout_purchases(
     """
     Plot calibration purchases vs holdout.
 
-    This currently relies too much on the lifetimes.util calibration_and_holdout_data function.
+    This currently relies too much on the BTYD.util calibration_and_holdout_data function.
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     calibration_holdout_matrix: pandas DataFrame
         DataFrame from calibration_and_holdout_data function.
     kind: str, optional
@@ -150,8 +150,8 @@ def plot_frequency_recency_matrix(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     T: fload, optional
         Next units of time to make predictions for
     max_frequency: int, optional
@@ -225,8 +225,8 @@ def plot_probability_alive_matrix(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     max_frequency: int, optional
         The maximum frequency to plot. Default is max observed frequency.
     max_recency: int, optional
@@ -280,8 +280,8 @@ def plot_expected_repeat_purchases(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     max_frequency: int, optional
         The maximum frequency to plot.
     title: str, optional
@@ -332,8 +332,8 @@ def plot_history_alive(model, t, transactions, datetime_col, freq="D", start_dat
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model.
+    model: BTYD model
+        A fitted BTYD model.
     t: int
         the number of time units since the birth we want to draw the p_alive
     transactions: pandas DataFrame
@@ -410,8 +410,8 @@ def plot_cumulative_transactions(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model
+    model: BTYD model
+        A fitted BTYD model
     transactions: pandas DataFrame
         DataFrame containing the transactions history of the customer_id
     datetime_col: str
@@ -498,8 +498,8 @@ def plot_incremental_transactions(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model
+    model: BTYD model
+        A fitted BTYD model
     transactions: pandas DataFrame
         DataFrame containing the transactions history of the customer_id
     datetime_col: str
@@ -580,8 +580,8 @@ def plot_transaction_rate_heterogeneity(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model, for now only for BG/NBD
+    model: BTYD model
+        A fitted BTYD model, for now only for BG/NBD
     suptitle: str, optional
         Figure suptitle
     xlabel: str, optional
@@ -633,8 +633,8 @@ def plot_dropout_rate_heterogeneity(
 
     Parameters
     ----------
-    model: lifetimes model
-        A fitted lifetimes model, for now only for BG/NBD
+    model: BTYD model
+        A fitted BTYD model, for now only for BG/NBD
     suptitle: str, optional
         Figure suptitle
     xlabel: str, optional

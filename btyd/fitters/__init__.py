@@ -25,11 +25,11 @@ class BaseFitter(object):
 
         try:
             param_str = ", ".join("{}: {}".format(par, val) for par, val in sorted(self.params_.items()))
-            return "<lifetimes.{classname}:{subj_str} {param_str}>".format(
+            return "<btyd.{classname}:{subj_str} {param_str}>".format(
                 classname=classname, subj_str=subj_str, param_str=param_str
             )
         except AttributeError:
-            return "<lifetimes.{classname}>".format(classname=classname)
+            return "<btyd.{classname}>".format(classname=classname)
 
     def _unload_params(self, *args):
         if not hasattr(self, "params_"):
