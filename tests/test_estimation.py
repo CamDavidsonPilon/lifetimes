@@ -54,6 +54,11 @@ class TestBaseFitter:
         assert repr(base_fitter) == repr(base_fitter_saved)
         os.remove(PATH_SAVE_MODEL)
 
+    def test_summary(self):
+        base_fitter = lt.BaseFitter()
+        with pytest.raises(ValueError):
+            base_fitter.summary()
+
 
 class TestBetaGeoBetaBinomFitter:
     @pytest.fixture()
@@ -507,6 +512,17 @@ class TestParetoNBDFitter:
             decimal=2,
         )
 
+    def test_summary(self):
+        ptf = lt.ParetoNBDFitter()
+        ptf.fit(
+            cdnow_customers["frequency"],
+            cdnow_customers["recency"],
+            cdnow_customers["T"],
+            iterative_fitting=3,
+        )
+        df = ptf.summary()
+        assert "coef" in df.columns
+
 
 class TestBetaGeoFitter:
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
@@ -762,6 +778,18 @@ class TestBetaGeoFitter:
             np.array(bgf_weights._unload_params("r", "alpha", "a", "b")),
             decimal=3,
         )
+
+    def test_summary(self):
+        bgf = lt.BetaGeoFitter()
+        bgf.fit(
+            cdnow_customers_with_monetary_value["frequency"],
+            cdnow_customers_with_monetary_value["recency"],
+            cdnow_customers_with_monetary_value["T"],
+        )
+        assert "coef" in df.columns
+        assert "se(coef)" in df.columns
+        assert "lower 95% bound" in df.columns
+        assert "upper 95% bound" in df.columns
 
 
 class TestModifiedBetaGammaFitter:

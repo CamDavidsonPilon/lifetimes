@@ -134,9 +134,15 @@ class BaseFitter(object):
         --------
         ``print_summary``
         """
+        if not hasattr(self, "params_"):
+            raise ValueError(
+                "Model has not been fit yet. Please call the .fit method first."
+            )
         df = pd.DataFrame(index=self.params_.index)
         df["coef"] = self.params_
-        df["se(coef)"] = self.standard_errors_
-        df["lower 95% bound"] = self.confidence_intervals_["lower 95% bound"]
-        df["upper 95% bound"] = self.confidence_intervals_["upper 95% bound"]
+        if hasattr(self, "standard_errors_"):
+            df["se(coef)"] = self.standard_errors_
+        if hasattr(self, "confidence_intervals_"):
+            df["lower 95% bound"] = self.confidence_intervals_["lower 95% bound"]
+            df["upper 95% bound"] = self.confidence_intervals_["upper 95% bound"]
         return df
