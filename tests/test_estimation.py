@@ -57,7 +57,7 @@ class TestBaseFitter:
     def test_summary(self):
         base_fitter = lt.BaseFitter()
         with pytest.raises(ValueError):
-            base_fitter.summary()
+            base_fitter.summary
 
 
 class TestBetaGeoBetaBinomFitter:
@@ -512,7 +512,7 @@ class TestParetoNBDFitter:
             decimal=2,
         )
 
-    def test_summary(self):
+    def test_summary(self, cdnow_customers):
         ptf = lt.ParetoNBDFitter()
         ptf.fit(
             cdnow_customers["frequency"],
@@ -520,7 +520,7 @@ class TestParetoNBDFitter:
             cdnow_customers["T"],
             iterative_fitting=3,
         )
-        df = ptf.summary()
+        df = ptf.summary
         assert "coef" in df.columns
 
 
@@ -779,14 +779,14 @@ class TestBetaGeoFitter:
             decimal=3,
         )
 
-    def test_summary(self):
+    def test_summary(self, cdnow_customers):
         bgf = lt.BetaGeoFitter()
         bgf.fit(
-            cdnow_customers_with_monetary_value["frequency"],
-            cdnow_customers_with_monetary_value["recency"],
-            cdnow_customers_with_monetary_value["T"],
+            cdnow_customers["frequency"],
+            cdnow_customers["recency"],
+            cdnow_customers["T"],
         )
-        df = bgf.summary()
+        df = bgf.summary
         assert "coef" in df.columns
         assert "se(coef)" in df.columns
         assert "lower 95% bound" in df.columns
