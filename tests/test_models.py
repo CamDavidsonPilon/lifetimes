@@ -259,29 +259,22 @@ class TestBetaGeoModel:
 
         os.remove(PATH_BGNBD_MODEL)
     
-    def test_generate_rfm_data(self, cdnow_customers, fitted_bgm):
+    def test_generate_rfm_data(self, fitted_bgm):
         """
-        GIVEN fitted BetaGeoModel and BetaGeoFitter objects,
-        WHEN synthetic data is generated from their parameters,
-        THEN the BetaGeoModel should have a better posterior predictive deviation metric.
+        GIVEN a fitted BetaGeoModel,
+        WHEN synthetic data is generated from its parameters,
+        THEN the resultant dataframe should contain the expected column names and row count.
         """
 
-        # 
-        frequency, recency, T, _, _ = lt.BaseModel._dataframe_parser(cdnow_customers) 
-        mle_df = lt.BetaGeoFitter().fit(frequency, recency, T).generate_new_data(size=len(cdnow_customers))
-        mle_freq = mle_df['frequency'].values
-        mle_rec = mle_df['recency'].values
-        ppc_mle = utils.posterior_predictive_deviation(frequency, mle_freq, recency, mle_rec)
+        # Test default value of size argument.
+        synthetic_df = fitted_bgm.generate_rfm_data()
+        assert len(synthetic_df) == 1000
 
-        bayes_df = fitted_bgm.generate_rfm_data()
-        bayes_freq = mle_df['frequency'].values
-        bayes_rec = mle_df['recency'].values
-        ppc_bayes_self = utils.posterior_predictive_deviation(fitted_bgm.frequency, bayes_freq, fitted_bgm.recency, bayes_rec)
-        ppc_bayes_obs = utils.posterior_predictive_deviation(frequency, bayes_freq, recency, bayes_rec)
-        assert ppc_bayes_self == ppc_bayes_obs
+        # Test custom value of size argument.
+        synthetic_df = fitted_bgm.generate_rfm_data(size=123)
+        assert len(synthetic_df) == 123
 
-        assert ppc_bayes_obs <= ppc_mle #0.0899339600992113!, # 0.12174678527333853!
+        expected_cols = ["frequency", "recency", "T", "lambda", "p", "alive"]
+        actual_cols = list(synthetic_df.columns)
 
-        
-
-    
+        assert actual_cols == expected_cols
