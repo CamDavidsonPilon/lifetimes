@@ -1,4 +1,0 @@
-autograd==1.4
-dill==0.3.5.1
-psutil==5.8.0
-pymc==4.0.0
