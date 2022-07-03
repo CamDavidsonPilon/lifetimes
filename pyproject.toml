@@ -9,7 +9,6 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 pymc = "^4.0.0"
-psutil = "^5.8.0"
 autograd = "1.4"
 dill = "0.3.5.1"
 

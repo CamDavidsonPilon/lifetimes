@@ -78,7 +78,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         b: at.var.TensorVariable, 
         alpha: at.var.TensorVariable, 
         r: at.var.TensorVariable,
-        testing: bool =False
+        testing: bool = False
         ) -> Union[Tuple[at.var.TensorVariable],at.var.TensorVariable]:
         """Log-likelihood function to estimate model parameters for entire population of customers.
 
@@ -329,9 +329,14 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
     def predict(self) -> None:
         pass
     
-    def generate_rfm_data(self) -> pd.DataFrame:
+    def generate_rfm_data(self, size:int = 1000) -> pd.DataFrame:
         """
-        Generate synthetic RFM data from fitted model parameters. Useful for checking PPD metric.
+        Generate synthetic RFM data from fitted model parameters. Useful for posterior predictive checks of model performance.
+
+        Parameters
+        ----------
+        t: int
+            rows of synthetic RFM data to generate. Default is 1000.
 
         Returns
         -------
@@ -343,7 +348,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         alpha, r, a, b = self._unload_params()
 
         self.synthetic_df = beta_geometric_nbd_model(
-            self.T, r, alpha, a, b, size=len(self.T)
+            self.T, r, alpha, a, b, size=size
             )
         
         return self.synthetic_df

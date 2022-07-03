@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 import warnings
 import json
-import psutil
 from typing import Dict, List, Iterable, TypeVar, Generic
 
 import numpy as np
@@ -86,7 +85,7 @@ class BaseModel(ABC, Generic[SELF]):
                 tune=tune,
                 draws=draws,
                 chains=4,
-                cores=len(psutil.Process().cpu_affinity()), 
+                cores=4, 
                 target_accept=0.95,
                 return_inferencedata=True
             )
