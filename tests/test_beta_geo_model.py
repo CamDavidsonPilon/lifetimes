@@ -10,7 +10,6 @@ import pytest
 
 import pandas as pd
 import numpy as np
-# from numpy import array, isin
 import arviz as az
 
 import pymc as pm
@@ -28,123 +27,12 @@ from btyd.datasets import (
 
 PATH_BGNBD_MODEL = "./bgnbd.json"
 
+# PUT THIS IN CONFTEST.PY
 @pytest.fixture(scope='module')
 def cdnow_customers() -> pd.DataFrame:
     """ Create an RFM dataframe for multiple tests and fixtures. """
     rfm_df = load_cdnow_summary_data_with_monetary_value()
     return rfm_df
-
-@pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.AliveAPI])
-def test_isabstract(obj):
-        """
-        GIVEN the BaseModel and AliveAPI model factory objects,
-        WHEN they are inspected for inheritance from ABC,
-        THEN they should both identify as abstract objects.
-        """
-
-        assert inspect.isabstract(obj) is True
-
-
-class TestBaseModel:
-
-    def test_repr(self):
-        """
-        GIVEN a BaseModel that has not been instantiated,
-        WHEN repr() is called on this object,
-        THEN a string representation containing library name, module and model class are returned.
-        """
-        
-        assert repr(btyd.BaseModel) == "<class 'btyd.models.BaseModel'>"
-    
-    def test_abstract_methods(self):
-        """
-        GIVEN the BaseModel model factory object,
-        WHEN its abstract methods are overridden,
-        THEN they should all return None.
-        """
-
-        # Override abstract methods:
-        btyd.BaseModel.__abstractmethods__ = set()
-
-        # Create concrete class for testing:
-        class ConcreteBaseModel(btyd.BaseModel):
-            pass
-        
-        # Instantiate concrete testing class and call all abstrast methods:
-        concrete_base = ConcreteBaseModel()
-        model = concrete_base._model()
-        log_likelihood = concrete_base._log_likelihood()
-        generate_rfm_data = concrete_base.generate_rfm_data()
-
-        assert model is None
-        assert log_likelihood is None
-        assert generate_rfm_data is None
-
-    def test_sample(self):
-        """
-        GIVEN the _sample() static method,
-        WHEN a numpy array and sample quantity are provided,
-        THEN a numpy array of the specified length containing some or all of the original elements is returned.
-        """
-        posterior_distribution = np.array([.456,.358,1.8,2.,.999])
-        samples = 7
-        posterior_samples = btyd.BaseModel._sample(posterior_distribution,samples) 
-        assert len(posterior_samples) == samples
-        
-        # Convert numpy arrays to sets to test intersections of elements.
-        dist_set = set(posterior_distribution.flatten())
-        sample_set = set(posterior_samples.flatten())
-        assert len(sample_set.intersection(dist_set)) <= len(posterior_distribution)
-    
-    def test_dataframe_parser(self,cdnow_customers):
-        """
-        GIVEN an RFM dataframe,
-        WHEN the _dataframe_parser() static method is called on it,
-        THEN five numpy arrays should be returned.
-        """
-
-        parsed = btyd.BaseModel._dataframe_parser(cdnow_customers) 
-        assert len(parsed) == 5
-
-
-class TestAliveAPI:
-    
-    def test_call_dict(self):
-        """
-        GIVEN the AliveAPI model factory object,
-        WHEN the keys of the 'quantities_of_interest' call dictionary attribute are returned,
-        THEN they should match the list of expected keys.
-        """
-
-        expected = ['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time']
-        actual = list(btyd.AliveAPI.quantities_of_interest.keys()) 
-        assert actual == expected
-    
-    def test_abstract_methods(self):
-        """
-        GIVEN the AliveAPI model factory object,
-        WHEN its abstract methods are overridden,
-        THEN they should all return None.
-        """
-
-        # Override abstract methods:
-        btyd.AliveAPI.__abstractmethods__ = set()
-
-        # Create concrete class for testing:
-        class ConcreteAliveAPI(btyd.AliveAPI):
-            pass
-        
-        # Instantiate concrete testing class and call all abstrast methods:
-        concrete_api = ConcreteAliveAPI()
-        cond_prob_alive = concrete_api._conditional_probability_alive()
-        cond_n_prchs_to_time = concrete_api._conditional_expected_number_of_purchases_up_to_time()
-        n_prchs_to_time = concrete_api._expected_number_of_purchases_up_to_time()
-        prob_n_prchs_to_time = concrete_api._probability_of_n_purchases_up_to_time()
-
-        assert cond_prob_alive is None
-        assert cond_n_prchs_to_time is None
-        assert cond_prob_alive is None
-        assert n_prchs_to_time is None
 
 
 class TestBetaGeoModel:
@@ -156,6 +44,14 @@ class TestBetaGeoModel:
         bgm = btyd.BetaGeoModel().fit(cdnow_customers)
         return bgm
     
+    @pytest.fixture(scope='class')
+    def fitted_bgm_params(self,fitted_bgm):
+        """ Unload params of trained BetaGeoModel for testing predictive quantities of interest. """
+
+        fitted_bgm_params._alpha, fitted_bgm_params._r, fitted_bgm_params._a, fitted_bgm_params._b = fitted_bgm_params._unload_params()
+
+        return fitted_bgm_params._alpha, fitted_bgm_params._r, fitted_bgm_params._a, fitted_bgm_params._b
+
     def test_hyperpriors(self):
         """
         GIVEN an uninstantiated BetaGeoModel,
@@ -245,18 +141,43 @@ class TestBetaGeoModel:
         assert isinstance(fitted_bgm.idata,az.InferenceData)
 
         # Check if arviz methods are supported.
-        summary = az.summary(data=fitted_bgm.idata, var_names=['BetaGeoModel::a','BetaGeoModel::b','BetaGeoModel::alpha','BetaGeoModel::r'])
+        summary = az.summary(
+            data=fitted_bgm.idata, 
+            var_names=['BetaGeoModel::a','BetaGeoModel::b','BetaGeoModel::alpha','BetaGeoModel::r']
+            )
         assert isinstance(summary,pd.DataFrame)
     
     def test_unload_params(self, fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
-        WHEN its parameters are checked via self._unload_params()
+        WHEN its parameters are checked via self._unload_params(),
         THEN they should be within 1e-01 tolerance of the MLE parameters from the original paper.
         """
 
         expected = np.array([4.414, 0.243, 0.793, 2.426])
         np.testing.assert_allclose(expected, np.array(fitted_bgm._unload_params()),rtol=1e-01)
+    
+    @pytest.mark.parametrize('qoi',['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time'])
+    def test_predict(self,fitted_bgm,cdnow_customers,qoi): # ADD TYPE HINTING
+        """
+        GIVEN a fitted BetaGeoModel,
+        WHEN all four quantities of interest are called via BetaGeoModel.predict(),
+        THEN outputs should be numpy arrays.
+        """
+        assert isinstance(fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5),np.Array)
+    
+    def test_posterior_sampling(self,fitted_bgm):
+        """
+        GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
+        WHEN its posterior parameter distributions are sampled via self._unload_params(posterior = True),
+        THEN the length of the numpy arrays should match that of the n_samples argument.
+        """
+
+        sampled_posterior_params = fitted_bgm._unload_params(posterior=True)
+
+        assert len(sampled_posterior_params) == 4
+        assert sampled_posterior_params[0].shape == (100,)
+
 
     def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm):
         """
@@ -265,18 +186,13 @@ class TestBetaGeoModel:
         THEN it should return a value within 1e-02 tolerance to the expected MLE output from the original paper.
         """
 
-        x = 2
-        t_x = 30.43
-        T = 38.86
-        t = 39
-
-        self._frequency = 2
-        self._recency = 30.43
-        self._T = 38.86
+        fitted_bgm._frequency = 2
+        fitted_bgm._recency = 30.43
+        fitted_bgm._T = 38.86
         t = 39
 
         expected = np.array(1.226)
-        actual = fitted_bgm._conditional_expected_number_of_purchases_up_to_time(t, None, x, t_x, T)
+        actual = fitted_bgm._conditional_expected_number_of_purchases_up_to_time(t)
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
 
     def test_expected_number_of_purchases_up_to_time(self, fitted_bgm):

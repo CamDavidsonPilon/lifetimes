@@ -181,81 +181,80 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
 
     def _conditional_expected_number_of_purchases_up_to_time(
         self, 
-        t: npt.ArrayLike,
-        n: int,
+        t: npt.ArrayLike = None,
+        n: int = None,
         frequency:npt.ArrayLike = None,
         recency:npt.ArrayLike = None,
         T:npt.ArrayLike = None
         ) -> np.ndarray:
-            """
-            Conditional expected number of purchases up to time.
+        """
+        Conditional expected number of purchases up to time.
 
-            Calculate the expected number of repeat purchases up to time t for a
-            randomly chosen individual from the population, given they have
-            purchase history (frequency, recency, T).
+        Calculate the expected number of repeat purchases up to time t for a
+        randomly chosen individual from the population, given they have
+        purchase history (frequency, recency, T).
 
-            This function uses equation (10) from [2]_.
+        This function uses equation (10) from [2]_.
 
-            Parameters
-            ----------
-            t: array_like
-                times to calculate the expectation for.
-            frequency: array_like
-                historical frequency of customer.
-            recency: array_like
-                historical recency of customer.
-            T: array_like
-                age of the customer.
+        Parameters
+        ----------
+        t: array_like
+            times to calculate the expectation for.
+        frequency: array_like
+            historical frequency of customer.
+        recency: array_like
+            historical recency of customer.
+        T: array_like
+            age of the customer.
 
-            Returns
-            -------
-            array_like
+        Returns
+        -------
+        array_like
 
-            References
-            ----------
-            .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
-            "Counting Your Customers the Easy Way: An Alternative to the
-            Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
-            """
+        References
+        ----------
+        .. [2] Fader, Peter S., Bruce G.S. Hardie, and Ka Lok Lee (2005a),
+        "Counting Your Customers the Easy Way: An Alternative to the
+        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
+        """
 
-            if frequency is None:
-                x = self._frequency
-            else:
-                x = frequency
-            if recency is None:
-                recency = self._recency
-            if T is None:
-                T = self._T
-            
-            alpha = self._alpha
-            r = self._r
-            a = self._a
-            b = self._b
+        # To get rid of these arguments and IF statements, the pertinent unit test must be refactored.
+        if frequency is None:
+            x = self._frequency
+        else:
+            x = frequency
+        if recency is None:
+            recency = self._recency
+        if T is None:
+            T = self._T
+        
+        alpha = self._alpha
+        r = self._r
+        a = self._a
+        b = self._b
+        
+        _a = r + x
+        _b = b + x
+        _c = a + b + x - 1
+        _z = t / (alpha + T + t)
+        ln_hyp_term = np.log(hyp2f1(_a, _b, _c, _z))
 
-            alpha, r, a,b = self._unload_params()
-            
-            _a = r + x
-            _b = b + x
-            _c = a + b + x - 1
-            _z = t / (alpha + T + t)
-            ln_hyp_term = np.log(hyp2f1(_a, _b, _c, _z))
+        # if the value is inf, we are using a different but equivalent
+        # formula to compute the function evaluation.
+        ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
+        ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
+        first_term = (a + b + x - 1) / (a - 1)
+        second_term = 1 - np.exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
 
-            # if the value is inf, we are using a different but equivalent
-            # formula to compute the function evaluation.
-            ln_hyp_term_alt = np.log(hyp2f1(_c - _a, _c - _b, _c, _z)) + (_c - _a - _b) * np.log(1 - _z)
-            ln_hyp_term = np.where(np.isinf(ln_hyp_term), ln_hyp_term_alt, ln_hyp_term)
-            first_term = (a + b + x - 1) / (a - 1)
-            second_term = 1 - np.exp(ln_hyp_term + (r + x) * np.log((alpha + T) / (alpha + t + T)))
+        numerator = first_term * second_term
+        denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
 
-            numerator = first_term * second_term
-            denominator = 1 + (x > 0) * (a / (b + x - 1)) * ((alpha + T) / (alpha + recency)) ** (r + x)
-
-            return numerator / denominator
+        return numerator / denominator
 
     def _conditional_probability_alive(
         self,
-        t: npt.ArrayLike,
-        n: int,
+        t: npt.ArrayLike = None,
+        n: int = None,
         frequency:npt.ArrayLike = None,
         recency:npt.ArrayLike = None,
         T:npt.ArrayLike = None
@@ -283,6 +282,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
             value representing a probability
         """
 
+        # To get rid of these arguments and IF statements, the pertinent unit test must be refactored.
         if frequency is None:
             frequency = self._frequency
         if recency is None:
@@ -295,8 +295,6 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
         a = self._a
         b = self._b
 
-        alpha, r, a,b = self._unload_params()
-
         log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
             a / (b + np.maximum(frequency, 1) - 1)
         )
@@ -305,8 +303,8 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
 
     def _expected_number_of_purchases_up_to_time(
         self, 
-        t: npt.ArrayLike,
-        n: int,
+        t: npt.ArrayLike = None,
+        n: int = None,
         ) -> np.ndarray:
         """
         Calculate the expected number of repeat purchases up to time t.
@@ -337,16 +335,14 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
         a = self._a
         b = self._b
 
-        alpha, r, a,b = self._unload_params()
-
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
 
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
     def _probability_of_n_purchases_up_to_time(
         self, 
-        t: float, 
-        n: int
+        t: float = None, 
+        n: int = None
         ) -> np.ndarray:
         r"""
         Compute the probability of n purchases.
@@ -381,8 +377,6 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
         r = self._r
         a = self._a
         b = self._b
-
-        alpha, r, a,b = self._unload_params()
 
         first_term = (
             beta(a, b + n)
@@ -423,8 +417,6 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
         r = self._r
         a = self._a
         b = self._b
-
-        alpha, r, a,b = self._unload_params()
 
         self.synthetic_df = beta_geometric_nbd_model(
             self._T, r, alpha, a, b, size=size

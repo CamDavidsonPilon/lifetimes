@@ -26,7 +26,7 @@ class BaseModel(ABC, Generic[SELF]):
 
     @abstractmethod
     def _model(self) -> None:
-        """ pymc model defining priors for model parameters and calling _loglike in Potential()."""
+        """ pymc model defining priors for model parameters and calling _log_likelihood in Potential()."""
         pass
 
     @abstractmethod
@@ -42,7 +42,7 @@ class BaseModel(ABC, Generic[SELF]):
         """Representation of BTYD model object."""
         classname = self.__class__.__name__
         try:
-            row_str = f"estimated with {self.frequency.shape[0]} customers."
+            row_str = f"estimated with {self._frequency.shape[0]} customers."
         except AttributeError:
             row_str = ""
 
@@ -88,11 +88,11 @@ class BaseModel(ABC, Generic[SELF]):
     
     def predict(self, 
         method:str,
-        t: int, 
-        n: int, 
-        sample_posterior: False,
+        t: int = None, 
+        n: int = None, 
+        sample_posterior: bool =  False,
         posterior_draws: int = 100,
-        rfm_df = None,
+        rfm_df: pd.DataFrame = None,
         join_df = False 
         ) -> np.ndarray:
         """
@@ -106,9 +106,10 @@ class BaseModel(ABC, Generic[SELF]):
 
         # TODO: Add exception handling for method argument.
         # TODO: Keep sampling loop here rather than in predictive methods?
-        array_out = self.quantities_of_interest.get(method)(t,n)
+        array_out = self.quantities_of_interest.get(method)(self,t,n)
 
-        sampler = self._sample(array = array_out, n_samples = posterior_draws)
+        # Maybe mode this into _unload_params and add arg for n_samples? 
+        sampler = self._sample(array = self._alpha, n_samples = posterior_draws)
 
         # TODO: Add arg to automatically merge to RFM dataframe?
         if join_df:
@@ -156,13 +157,26 @@ class BaseModel(ABC, Generic[SELF]):
 
         return self
     
-    def _unload_params(self, posterior: bool = False) -> Union[Tuple[np.ndarray],Tuple[np.ndarray]]:
+    def _unload_params(self, posterior: bool = False, n_samples: int = 100) -> Union[Tuple[np.ndarray],Tuple[np.ndarray]]:
         """Extract parameter posteriors from _idata InferenceData attribute of fitted model."""
 
         if posterior:
-            return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values for var in self._param_list])
+            return tuple(
+                [
+                    self._sample(
+                    self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values.flatten(),
+                     n_samples) 
+                     for var in self._param_list
+                    ]
+                )
+
         else:
-            return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() for var in self._param_list])
+            return tuple(
+                [
+                    self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() 
+                    for var in self._param_list
+                    ]
+                )
     
     @staticmethod
     def _dataframe_parser(rfm_df: pd.DataFrame) -> Tuple[np.ndarray]:
@@ -187,10 +201,9 @@ class BaseModel(ABC, Generic[SELF]):
         return frequency, recency, T, monetary_value, customer
 
     @staticmethod
-    def _sample(array: npt.ArrayLike, n_samples: int = 100) -> np.ndarray:
+    def _sample(array: npt.ArrayLike, n_samples: int) -> np.ndarray:
         """Utility function for sampling from parameter posteriors."""
-        idx = np.random.choice(np.arange(len(array)), n_samples, replace=True)
-        return array[idx]
+        return np.random.default_rng().choice(array, n_samples, replace=True)
 
 
 class AliveAPI(ABC, Generic[SELF]):
@@ -200,19 +213,19 @@ class AliveAPI(ABC, Generic[SELF]):
     """
 
     @abstractmethod
-    def _conditional_probability_alive(self) -> None:
+    def _conditional_probability_alive(self,t=None,n=None) -> None:
         pass
     
     @abstractmethod
-    def _conditional_expected_number_of_purchases_up_to_time(self) -> None:
+    def _conditional_expected_number_of_purchases_up_to_time(self,t=None,n=None) -> None:
         pass
     
     @abstractmethod
-    def _expected_number_of_purchases_up_to_time(self) -> None:
+    def _expected_number_of_purchases_up_to_time(self,t=None,n=None) -> None:
         pass
     
     @abstractmethod
-    def _probability_of_n_purchases_up_to_time(self) -> None:
+    def _probability_of_n_purchases_up_to_time(self,t=None,n=None) -> None:
         pass
     
     quantities_of_interest = {
