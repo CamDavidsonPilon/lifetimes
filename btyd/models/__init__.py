@@ -115,11 +115,10 @@ class BaseModel(ABC, Generic[SELF]):
             with loaded ``_idata`` attribute for model evaluation and predictions.
         """
 
-        # with open(path, "rb") as model_json:
-        #     self._idata = json.load(model_json)
         self.idata = az.from_json(filename)
-        # TODO: Raise BTYDException.
-        # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.param_dict.get('data_vars').items()))
+        
+        # BETA TODO: Raise BTYDException.
+        # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.idata.posterior.get('data_vars').items()))
             # raise BTYDException
 
         return self
@@ -127,24 +126,10 @@ class BaseModel(ABC, Generic[SELF]):
     def _unload_params(self, posterior: bool = False) -> List[np.ndarray]: #UPDATE RETURNED TYPE HINTING
         """Extract parameter posteriors from _idata InferenceData attribute of fitted model."""
 
-        # param_list = deepcopy(self.param_dict.get('data_vars'))
-
         if posterior:
             return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values for var in self._param_list])
         else:
             return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() for var in self._param_list])
-
-        # return tuple(param for param in params)
-
-        # for key in param_list:
-        #     param_list[key]['data'] = np.array(param_list[key].get('data')).flatten()
-            
-        # if not posterior:
-        #     for key in param_list:
-        #         param_list[key]['data'] = np.atleast_1d(param_list[key].get('data').mean())
-        #         # param_list[key]['data'] = param_list[key].get('data').mean()
-
-        # return [param_list.get(var).get('data') for var in list(param_list.keys())]
     
     @staticmethod
     def _dataframe_parser(rfm_df: pd.DataFrame) -> Tuple[np.ndarray]:
