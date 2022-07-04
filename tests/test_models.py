@@ -33,7 +33,6 @@ def cdnow_customers() -> pd.DataFrame:
     """ Create an RFM dataframe for multiple tests and fixtures. """
     rfm_df = load_cdnow_summary_data_with_monetary_value()
     return rfm_df
-    
 
 @pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.AliveAPI])
 def test_isabstract(obj):
@@ -76,10 +75,12 @@ class TestBaseModel:
         model = concrete_base._model()
         log_likelihood = concrete_base._log_likelihood()
         predict = concrete_base.predict()
+        generate_rfm_data = concrete_base.generate_rfm_data()
 
         assert model is None
         assert log_likelihood is None
         assert predict is None
+        assert generate_rfm_data is None
 
     def test_sample(self):
         """
@@ -157,9 +158,33 @@ class TestBetaGeoModel:
         bgm = btyd.BetaGeoModel().fit(cdnow_customers)
         return bgm
     
+    def test_hyperpriors(self):
+        """
+        GIVEN an uninstantiated BetaGeoModel,
+        WHEN it is instantiated with custom values for hyperpriors,
+        THEN BetaGeoModel._hyperpriors should differ from defaults and match the custom values set by the user. 
+        """
+    
+        custom_hyperpriors = {
+            'alpha_prior_alpha': 2.,
+            'alpha_prior_beta': 4.,
+            'r_prior_alpha': 3.,
+            'r_prior_beta': 2.,
+            'phi_prior_lower': .1,
+            'phi_prior_upper': .99,
+            'kappa_prior_alpha': 1.1,
+            'kappa_prior_m': 2.5,
+        }
+
+        default_bgm = btyd.BetaGeoModel()
+        custom_bgm = btyd.BetaGeoModel(hyperpriors = custom_hyperpriors)
+
+        assert default_bgm._hyperpriors != custom_bgm._hyperpriors
+        assert custom_hyperpriors == custom_bgm._hyperpriors
+
     def test_log_likelihood(self):
         """
-        GIVEN the BetaGeo log-likelihood function
+        GIVEN the BetaGeo log-likelihood function,
         WHEN it is called with the inputs and parameters specified in Farder-Hardie's notes,
         THEN term values and output should match those in the paper. 
         """

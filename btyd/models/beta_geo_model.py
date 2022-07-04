@@ -2,7 +2,7 @@ from __future__ import generator_stop
 from __future__ import annotations
 import warnings
 
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict
 
 import pandas as pd
 import numpy as np
@@ -30,6 +30,11 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
     3) Individuals purchases follow a Poisson process with rate lambda_i*t .
     4) After each purchase, an individual has a p_i probability of dieing
        (never buying again).
+    
+    Parameters
+    ----------
+    hyperpriors: dict
+        Dictionary containing hyperparameters for model prior parameter distributions.
 
     Attributes
     ----------
@@ -48,20 +53,50 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
     """
 
-    def __init__(self) -> SELF:
+    def __init__(self, hyperpriors: Dict[float] = None) -> SELF:
 
-        self._param_list = ['alpha','r', 'a', 'b'] # Does this even need to be instantiated?
+        if hyperpriors is None:
+            self._hyperpriors = {
+                'alpha_prior_alpha': 1.,
+                'alpha_prior_beta': 6.,
+                'r_prior_alpha': 1.,
+                'r_prior_beta': 1.,
+                'phi_prior_lower': 0.,
+                'phi_prior_upper': 1.,
+                'kappa_prior_alpha': 1.,
+                'kappa_prior_m': 1.5,
+            }
+        else:
+            self._hyperpriors = hyperpriors
+    
+    _param_list = ['alpha','r', 'a', 'b'] # Does this even need to be instantiated?
 
     def _model(self) -> pm.Model():
 
         with pm.Model(name=f'{self.__class__.__name__}') as self.model:
             # Priors for lambda parameters.
-            alpha_prior = pm.Weibull(name="alpha", alpha=1, beta=6)
-            r_prior = pm.Weibull(name="r", alpha=1, beta=1)
+            alpha_prior = pm.Weibull(
+                name="alpha", 
+                alpha=self._hyperpriors.get('alpha_prior_alpha'), 
+                beta=self._hyperpriors.get('alpha_prior_beta'),
+                )
+            r_prior = pm.Weibull(
+                name="r", 
+                alpha=self._hyperpriors.get('r_prior_alpha'), 
+                beta=self._hyperpriors.get('r_prior_beta'),
+                )
 
             # Heirarchical pooling of hyperpriors for beta parameters.
-            phi_prior = pm.Uniform('phi', lower=0.0, upper=1.0)
-            kappa_prior = pm.Pareto('kappa',alpha=1,m=1.5)
+            phi_prior = pm.Uniform(
+                'phi', 
+                lower=self._hyperpriors.get('phi_prior_lower'), 
+                upper=self._hyperpriors.get('phi_prior_upper'),
+                )
+            kappa_prior = pm.Pareto(
+                'kappa',
+                alpha=self._hyperpriors.get('kappa_prior_alpha'),
+                m=self._hyperpriors.get('kappa_prior_m'),
+                )
 
             # Beta parameters.
             a = pm.Deterministic("a", phi_prior*kappa_prior)

@@ -38,6 +38,10 @@ class BaseModel(ABC, Generic[SELF]):
     def predict(self) -> None:
         pass
 
+    @abstractmethod
+    def generate_rfm_data(self) -> None:
+        pass
+
     def __repr__(self) -> str:
         """Representation of BTYD model object."""
         classname = self.__class__.__name__
