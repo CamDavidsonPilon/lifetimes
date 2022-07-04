@@ -7,7 +7,7 @@ from .fitters.modified_beta_geo_fitter import ModifiedBetaGeoFitter
 from .fitters.pareto_nbd_fitter import ParetoNBDFitter
 from .fitters.gamma_gamma_fitter import GammaGammaFitter
 from .fitters.beta_geo_covar_fitter import BetaGeoCovarsFitter
-from .models import BaseModel, AliveAPI
+from .models import BaseModel, AliveMixin
 from .models.beta_geo_model import BetaGeoModel
 
 __version__ = "0.1.0a1"

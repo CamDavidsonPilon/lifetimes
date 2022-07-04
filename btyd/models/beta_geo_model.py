@@ -15,12 +15,12 @@ from scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 from scipy.special import expit
 
-from . import BaseModel, AliveAPI
+from . import BaseModel, AliveMixin
 from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
 
-class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
+class BetaGeoModel(BaseModel['BetaGeoModel']):
     """
     Also known as the BG/NBD model.
     Based on [2]_, this model has the following assumptions:
@@ -69,7 +69,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
         else:
             self._hyperpriors = hyperpriors
     
-    _param_list = ['alpha','r', 'a', 'b'] # Does this even need to be instantiated?
+    _param_list = ['alpha','r', 'a', 'b']
 
     def _model(self) -> pm.Model():
 
@@ -396,6 +396,15 @@ class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
             second_term = 0
 
         return first_term + second_term
+    
+    # BETA TODO: Do not inherit from AliveMixin at this time as there seems to be method resolution order issues to resolve.
+    #            After resolution this attribute can be removed.
+    _quantities_of_interest = {
+        'cond_prob_alive': _conditional_probability_alive,
+        'cond_n_prchs_to_time': _conditional_expected_number_of_purchases_up_to_time,
+        'n_prchs_to_time': _expected_number_of_purchases_up_to_time,
+        'prob_n_prchs_to_time': _probability_of_n_purchases_up_to_time,
+        }
     
     def generate_rfm_data(self, size:int = 1000) -> pd.DataFrame:
         """

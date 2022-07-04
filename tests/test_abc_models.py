@@ -31,10 +31,10 @@ def cdnow_customers() -> pd.DataFrame:
     rfm_df = load_cdnow_summary_data_with_monetary_value()
     return rfm_df
 
-@pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.AliveAPI])
+@pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.AliveMixin])
 def test_isabstract(obj):
         """
-        GIVEN the BaseModel and AliveAPI model factory objects,
+        GIVEN the BaseModel and AliveMixin model factory objects,
         WHEN they are inspected for inheritance from ABC,
         THEN they should both identify as abstract objects.
         """
@@ -104,35 +104,35 @@ class TestBaseModel:
         assert len(parsed) == 5
 
 
-class TestAliveAPI:
+class TestAliveMixin:
     
     def test_call_dict(self):
         """
-        GIVEN the AliveAPI model factory object,
+        GIVEN the AliveMixin model factory object,
         WHEN the keys of the 'quantities_of_interest' call dictionary attribute are returned,
         THEN they should match the list of expected keys.
         """
 
         expected = ['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time']
-        actual = list(btyd.AliveAPI.quantities_of_interest.keys()) 
+        actual = list(btyd.AliveMixin.quantities_of_interest.keys()) 
         assert actual == expected
     
     def test_abstract_methods(self):
         """
-        GIVEN the AliveAPI model factory object,
+        GIVEN the AliveMixin model factory object,
         WHEN its abstract methods are overridden,
         THEN they should all return None.
         """
 
         # Override abstract methods:
-        btyd.AliveAPI.__abstractmethods__ = set()
+        btyd.AliveMixin.__abstractmethods__ = set()
 
         # Create concrete class for testing:
-        class ConcreteAliveAPI(btyd.AliveAPI):
+        class ConcreteAliveMixin(btyd.AliveMixin):
             pass
         
         # Instantiate concrete testing class and call all abstrast methods:
-        concrete_api = ConcreteAliveAPI()
+        concrete_api = ConcreteAliveMixin()
         cond_prob_alive = concrete_api._conditional_probability_alive()
         cond_n_prchs_to_time = concrete_api._conditional_expected_number_of_purchases_up_to_time()
         n_prchs_to_time = concrete_api._expected_number_of_purchases_up_to_time()

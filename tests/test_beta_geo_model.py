@@ -157,15 +157,6 @@ class TestBetaGeoModel:
         expected = np.array([4.414, 0.243, 0.793, 2.426])
         np.testing.assert_allclose(expected, np.array(fitted_bgm._unload_params()),rtol=1e-01)
     
-    @pytest.mark.parametrize('qoi',['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time'])
-    def test_predict(self,fitted_bgm,cdnow_customers,qoi): # ADD TYPE HINTING
-        """
-        GIVEN a fitted BetaGeoModel,
-        WHEN all four quantities of interest are called via BetaGeoModel.predict(),
-        THEN outputs should be numpy arrays.
-        """
-        assert isinstance(fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5),np.Array)
-    
     def test_posterior_sampling(self,fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
@@ -179,7 +170,7 @@ class TestBetaGeoModel:
         assert sampled_posterior_params[0].shape == (100,)
 
 
-    def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm):
+    def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm,fitted_bgm_params):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
         WHEN self._conditional_expected_number_of_purchases_up_to_time() is called,
@@ -195,7 +186,7 @@ class TestBetaGeoModel:
         actual = fitted_bgm._conditional_expected_number_of_purchases_up_to_time(t)
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
 
-    def test_expected_number_of_purchases_up_to_time(self, fitted_bgm):
+    def test_expected_number_of_purchases_up_to_time(self, fitted_bgm,fitted_bgm_params):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
         WHEN self._expected_number_of_purchases_up_to_time() is called,
@@ -207,7 +198,7 @@ class TestBetaGeoModel:
         actual = fitted_bgm._expected_number_of_purchases_up_to_time(times, None)
         np.testing.assert_allclose(actual,expected,rtol=1e-02)
 
-    def test_conditional_probability_alive(self, fitted_bgm):
+    def test_conditional_probability_alive(self, fitted_bgm,fitted_bgm_params):
         """
         GIVEN a fitted BetaGeoModel object,
         WHEN self._conditional_probability_alive() is called,
@@ -220,7 +211,7 @@ class TestBetaGeoModel:
                     assert 0 <= fitted_bgm._conditional_probability_alive(None, None, i, j, k) <= 1.0
         assert fitted_bgm._conditional_probability_alive(None, None, 0, 1, 1) == 1.0
 
-    def test_probability_of_n_purchases_up_to_time(self,fitted_bgm):
+    def test_probability_of_n_purchases_up_to_time(self,fitted_bgm,fitted_bgm_params):
         """ 
         GIVEN a fitted BetaGeoModel object,
         WHEN self._probability_of_n_purchases_up_to_time() is called,
@@ -306,3 +297,22 @@ class TestBetaGeoModel:
         actual_cols = list(synthetic_df.columns)
 
         assert actual_cols == expected_cols
+    
+    # Keep this test at the very end as the the posterior parametrization can impact subsequent tests.
+    @pytest.mark.parametrize("qoi, instance, rows",[("cond_prob_alive",np.ndarray, 2357),
+                                            ("cond_n_prchs_to_time",np.ndarray, 2357), 
+                                            ("n_prchs_to_time",np.float64, 1),
+                                            ("prob_n_prchs_to_time",np.float64, 1)])
+    @pytest.mark.parametrize("posterior",[False, True])
+    def test_predict(self,fitted_bgm,cdnow_customers,qoi, instance, rows, posterior): # ADD TYPE HINTING
+        """
+        GIVEN a fitted BetaGeoModel,
+        WHEN all four quantities of interest are called via BetaGeoModel.predict(),
+        THEN expected output instances and dimensions should be returned.
+        """
+
+        array_out = fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5,sample_posterior=posterior)
+
+        assert isinstance(array_out,instance)
+        assert len(array_out) == rows
+    
