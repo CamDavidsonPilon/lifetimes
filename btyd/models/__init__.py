@@ -48,9 +48,8 @@ class BaseModel(ABC, Generic[SELF]):
             row_str = ""
 
         try:
-            param_keys = [key.split(f'{classname}::')[1] for key in list(self.param_dict.get('data_vars').keys())]
             param_vals = np.around(self._unload_params(),decimals=1)
-            param_str = str(dict(zip(param_keys, param_vals)))
+            param_str = str(dict(zip(self._param_list, param_vals)))
             return f"<btyd.{classname}: Parameters {param_str} {row_str}>"
         except AttributeError:
             return f"<btyd.{classname}>"
@@ -99,7 +98,7 @@ class BaseModel(ABC, Generic[SELF]):
 
         """
         
-        self.idata.to_json(path)
+        self.idata.to_json(filename)
 
     def load_model(self, filename: str) -> SELF:
         """
@@ -131,9 +130,9 @@ class BaseModel(ABC, Generic[SELF]):
         # param_list = deepcopy(self.param_dict.get('data_vars'))
 
         if posterior:
-            return [self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values for var in self._param_list]
+            return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values for var in self._param_list])
         else:
-            return [self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() for var in self._param_list]
+            return tuple([self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() for var in self._param_list])
 
         # return tuple(param for param in params)
 
