@@ -33,10 +33,6 @@ class BaseModel(ABC, Generic[SELF]):
     def _log_likelihood(self) -> None:
         """ Log-likelihood function for randomly drawn individual from customer population. Must be constructed from aesara tensors. """
         pass
-    
-    @abstractmethod
-    def predict(self) -> None:
-        pass
 
     @abstractmethod
     def generate_rfm_data(self) -> None:
@@ -76,7 +72,7 @@ class BaseModel(ABC, Generic[SELF]):
             with ``_idata`` attribute for model evaluation and predictions.
         """
 
-        self.frequency, self.recency, self.T, self.monetary_value, _ = self._dataframe_parser(rfm_df)
+        self._frequency, self._recency, self._T, self._monetary_value, _ = self._dataframe_parser(rfm_df)
 
         with self._model():
             self.idata = pm.sample(
@@ -89,6 +85,40 @@ class BaseModel(ABC, Generic[SELF]):
             )
         
         return self
+    
+    def predict(self, 
+        method:str,
+        t: int, 
+        n: int, 
+        sample_posterior: False,
+        posterior_draws: int = 100,
+        rfm_df = None,
+        join_df = False 
+        ) -> np.ndarray:
+        """
+        Predictive API.
+        """
+
+        self._alpha, self._r, self._a, self._b = self._unload_params(posterior = sample_posterior)
+
+        if rfm_df is None:
+            self._frequency, self._recency, self._T, self._monetary_value, _ = self._dataframe_parser(rfm_df)
+
+        # TODO: Add exception handling for method argument.
+        # TODO: Keep sampling loop here rather than in predictive methods?
+        array_out = self.quantities_of_interest.get(method)(t,n)
+
+        sampler = self._sample(array = array_out, n_samples = posterior_draws)
+
+        # TODO: Add arg to automatically merge to RFM dataframe?
+        if join_df:
+            pass
+        
+        if sample_posterior:
+            # Additional columns will need to be added for mean, confidence intervals, etc.
+            pass
+        
+        return array_out
         
     def save_model(self, filename: str) -> None:
         """

@@ -11,16 +11,16 @@ import numpy.typing as npt
 import pymc as pm
 import aesara.tensor as at
 
-from autograd.scipy.special import gammaln, beta, gamma
+from scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 from scipy.special import expit
 
-from . import BaseModel
+from . import BaseModel, AliveAPI
 from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
 
-class BetaGeoModel(BaseModel['BetaGeoModel']):
+class BetaGeoModel(BaseModel['BetaGeoModel'], AliveAPI['BetaGeoModel']):
     """
     Also known as the BG/NBD model.
     Based on [2]_, this model has the following assumptions:
@@ -102,7 +102,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             a = pm.Deterministic("a", phi_prior*kappa_prior)
             b = pm.Deterministic("b", (1.0-phi_prior)*kappa_prior)
 
-            logp = pm.Potential('loglike', self._log_likelihood(self.frequency, self.recency, self.T, a, b, alpha_prior, r_prior))
+            logp = pm.Potential('loglike', self._log_likelihood(self._frequency, self._recency, self._T, a, b, alpha_prior, r_prior))
         
         return self.model
 
@@ -179,12 +179,13 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             
             return loglike
 
-    def conditional_expected_number_of_purchases_up_to_time(
+    def _conditional_expected_number_of_purchases_up_to_time(
         self, 
-        t: npt.ArrayLike, 
-        frequency: npt.ArrayLike, 
-        recency: npt.ArrayLike,
-        T: npt.ArrayLike
+        t: npt.ArrayLike,
+        n: int,
+        frequency:npt.ArrayLike = None,
+        recency:npt.ArrayLike = None,
+        T:npt.ArrayLike = None
         ) -> np.ndarray:
             """
             Conditional expected number of purchases up to time.
@@ -217,8 +218,21 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
             """
 
-            x = frequency
-            alpha, r, a, b = self._unload_params()
+            if frequency is None:
+                x = self._frequency
+            else:
+                x = frequency
+            if recency is None:
+                recency = self._recency
+            if T is None:
+                T = self._T
+            
+            alpha = self._alpha
+            r = self._r
+            a = self._a
+            b = self._b
+
+            alpha, r, a,b = self._unload_params()
             
             _a = r + x
             _b = b + x
@@ -238,11 +252,13 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
             return numerator / denominator
 
-    def conditional_probability_alive(
-        self, 
-        frequency: npt.ArrayLike,
-        recency: npt.ArrayLike,
-        T: npt.ArrayLike,
+    def _conditional_probability_alive(
+        self,
+        t: npt.ArrayLike,
+        n: int,
+        frequency:npt.ArrayLike = None,
+        recency:npt.ArrayLike = None,
+        T:npt.ArrayLike = None
         ) -> np.ndarray:
         """
         Compute conditional probability alive.
@@ -267,7 +283,19 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             value representing a probability
         """
 
-        alpha, r, a, b = self._unload_params()
+        if frequency is None:
+            frequency = self._frequency
+        if recency is None:
+            recency = self._recency
+        if T is None:
+            T = self._T
+
+        alpha = self._alpha
+        r = self._r
+        a = self._a
+        b = self._b
+
+        alpha, r, a,b = self._unload_params()
 
         log_div = (r + frequency) * np.log((alpha + T) / (alpha + recency)) + np.log(
             a / (b + np.maximum(frequency, 1) - 1)
@@ -275,9 +303,10 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
         return np.atleast_1d(np.where(frequency == 0, 1.0, expit(-log_div)))
 
-    def expected_number_of_purchases_up_to_time(
+    def _expected_number_of_purchases_up_to_time(
         self, 
         t: npt.ArrayLike,
+        n: int,
         ) -> np.ndarray:
         """
         Calculate the expected number of repeat purchases up to time t.
@@ -303,12 +332,18 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
 
-        alpha, r, a, b = self._unload_params()
+        alpha = self._alpha
+        r = self._r
+        a = self._a
+        b = self._b
+
+        alpha, r, a,b = self._unload_params()
+
         hyp = hyp2f1(r, b, a + b - 1, t / (alpha + t))
 
         return (a + b - 1) / (a - 1) * (1 - hyp * (alpha / (alpha + t)) ** r)
 
-    def probability_of_n_purchases_up_to_time(
+    def _probability_of_n_purchases_up_to_time(
         self, 
         t: float, 
         n: int
@@ -342,7 +377,12 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
 
-        alpha, r, a, b = self._unload_params()
+        alpha = self._alpha
+        r = self._r
+        a = self._a
+        b = self._b
+
+        alpha, r, a,b = self._unload_params()
 
         first_term = (
             beta(a, b + n)
@@ -362,9 +402,6 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             second_term = 0
 
         return first_term + second_term
-
-    def predict(self) -> None:
-        pass
     
     def generate_rfm_data(self, size:int = 1000) -> pd.DataFrame:
         """
@@ -382,10 +419,15 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
         """
         
-        alpha, r, a, b = self._unload_params()
+        alpha = self._alpha
+        r = self._r
+        a = self._a
+        b = self._b
+
+        alpha, r, a,b = self._unload_params()
 
         self.synthetic_df = beta_geometric_nbd_model(
-            self.T, r, alpha, a, b, size=size
+            self._T, r, alpha, a, b, size=size
             )
         
         return self.synthetic_df

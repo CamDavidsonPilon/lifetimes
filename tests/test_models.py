@@ -74,12 +74,10 @@ class TestBaseModel:
         concrete_base = ConcreteBaseModel()
         model = concrete_base._model()
         log_likelihood = concrete_base._log_likelihood()
-        predict = concrete_base.predict()
         generate_rfm_data = concrete_base.generate_rfm_data()
 
         assert model is None
         assert log_likelihood is None
-        assert predict is None
         assert generate_rfm_data is None
 
     def test_sample(self):
@@ -263,7 +261,7 @@ class TestBetaGeoModel:
     def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
-        WHEN self.conditional_expected_number_of_purchases_up_to_time() is called,
+        WHEN self._conditional_expected_number_of_purchases_up_to_time() is called,
         THEN it should return a value within 1e-02 tolerance to the expected MLE output from the original paper.
         """
 
@@ -271,52 +269,58 @@ class TestBetaGeoModel:
         t_x = 30.43
         T = 38.86
         t = 39
+
+        self._frequency = 2
+        self._recency = 30.43
+        self._T = 38.86
+        t = 39
+
         expected = np.array(1.226)
-        actual = fitted_bgm.conditional_expected_number_of_purchases_up_to_time(t, x, t_x, T)
+        actual = fitted_bgm._conditional_expected_number_of_purchases_up_to_time(t, None, x, t_x, T)
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
 
     def test_expected_number_of_purchases_up_to_time(self, fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
-        WHEN self.expected_number_of_purchases_up_to_time() is called,
+        WHEN self._expected_number_of_purchases_up_to_time() is called,
         THEN it should return a value within 1e-02 tolerance to the expected MLE output from the original paper.
         """
 
         times = np.array([0.1429, 1.0, 3.00, 31.8571, 32.00, 78.00])
         expected = np.array([0.0078, 0.0532, 0.1506, 1.0405, 1.0437, 1.8576])
-        actual = fitted_bgm.expected_number_of_purchases_up_to_time(times)
+        actual = fitted_bgm._expected_number_of_purchases_up_to_time(times, None)
         np.testing.assert_allclose(actual,expected,rtol=1e-02)
 
     def test_conditional_probability_alive(self, fitted_bgm):
         """
         GIVEN a fitted BetaGeoModel object,
-        WHEN self.conditional_probability_alive() is called,
+        WHEN self._conditional_probability_alive() is called,
         THEN output should always be between 0 and 1, and 1 if a customer has only made a single purchase.
         """
 
         for i in range(0, 100, 10):
             for j in range(0, 100, 10):
                 for k in range(j, 100, 10):
-                    assert 0 <= fitted_bgm.conditional_probability_alive(i, j, k) <= 1.0
-        assert fitted_bgm.conditional_probability_alive(0, 1, 1) == 1.0
+                    assert 0 <= fitted_bgm._conditional_probability_alive(None, None, i, j, k) <= 1.0
+        assert fitted_bgm._conditional_probability_alive(None, None, 0, 1, 1) == 1.0
 
     def test_probability_of_n_purchases_up_to_time(self,fitted_bgm):
         """ 
         GIVEN a fitted BetaGeoModel object,
-        WHEN self.probability_of_n_purchases_up_to_time() is called,
+        WHEN self._probability_of_n_purchases_up_to_time() is called,
         THEN output should approximate that of the BTYD R package: https://cran.r-project.org/web/packages/BTYD/BTYD.pdf 
         """
 
         # probability that a customer will make 10 repeat transactions in the
         # time interval (0,2]
         expected = np.array(1.07869e-07)
-        actual = fitted_bgm.probability_of_n_purchases_up_to_time(2, 10)
+        actual = fitted_bgm._probability_of_n_purchases_up_to_time(2, 10)
         np.testing.assert_allclose(expected, actual,rtol=1e-01)
 
         # probability that a customer will make no repeat transactions in the
         # time interval (0,39]
         expected = 0.5737864
-        actual = fitted_bgm.probability_of_n_purchases_up_to_time(39, 0)
+        actual = fitted_bgm._probability_of_n_purchases_up_to_time(39, 0)
         np.testing.assert_allclose(expected, actual,rtol=1e-03)
 
         # PMF
@@ -334,7 +338,7 @@ class TestBetaGeoModel:
                 0.0002222260,
             ]
         )
-        actual = np.array([fitted_bgm.probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
+        actual = np.array([fitted_bgm._probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
     
     def test_save_model(self, fitted_bgm):
