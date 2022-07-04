@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 import warnings
 import json
-from typing import Dict, List, Iterable, TypeVar, Generic
+from typing import Union, Tuple, TypeVar, Generic
 
 import numpy as np
 import pandas as pd
@@ -123,7 +123,7 @@ class BaseModel(ABC, Generic[SELF]):
 
         return self
     
-    def _unload_params(self, posterior: bool = False) -> List[np.ndarray]: #UPDATE RETURNED TYPE HINTING
+    def _unload_params(self, posterior: bool = False) -> Union[Tuple[np.ndarray],Tuple[np.ndarray]]:
         """Extract parameter posteriors from _idata InferenceData attribute of fitted model."""
 
         if posterior:
@@ -158,3 +158,7 @@ class BaseModel(ABC, Generic[SELF]):
         """Utility function for sampling from parameter posteriors."""
         idx = np.random.choice(np.arange(len(array)), n_samples, replace=True)
         return array[idx]
+
+
+class AliveAPI(ABC, Generic[SELF]):
+
