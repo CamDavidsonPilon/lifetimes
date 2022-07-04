@@ -2,7 +2,9 @@ from __future__ import generator_stop
 from __future__ import annotations
 
 import os
+from abc import ABC
 import warnings
+import inspect
 
 import pytest
 
@@ -27,10 +29,21 @@ from btyd.datasets import (
 PATH_BGNBD_MODEL = "./bgnbd.json"
 
 @pytest.fixture(scope='module')
-def cdnow_customers():
+def cdnow_customers() -> pd.DataFrame:
     """ Create an RFM dataframe for multiple tests and fixtures. """
     rfm_df = load_cdnow_summary_data_with_monetary_value()
     return rfm_df
+    
+
+@pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.AliveAPI])
+def test_isabstract(obj):
+        """
+        GIVEN the BaseModel and AliveAPI model factory objects,
+        WHEN they are inspected for inheritance from ABC,
+        THEN they should both identify as abstract objects.
+        """
+
+        assert inspect.isabstract(obj) is True
 
 
 class TestBaseModel:
@@ -43,6 +56,30 @@ class TestBaseModel:
         """
         
         assert repr(btyd.BaseModel) == "<class 'btyd.models.BaseModel'>"
+    
+    def test_abstract_methods(self):
+        """
+        GIVEN the BaseModel model factory object,
+        WHEN its abstract methods are overridden,
+        THEN they should all return None.
+        """
+
+        # Override abstract methods:
+        btyd.BaseModel.__abstractmethods__ = set()
+
+        # Create concrete class for testing:
+        class ConcreteBaseModel(btyd.BaseModel):
+            pass
+        
+        # Instantiate concrete testing class and call all abstrast methods:
+        concrete_base = ConcreteBaseModel()
+        model = concrete_base._model()
+        log_likelihood = concrete_base._log_likelihood()
+        predict = concrete_base.predict()
+
+        assert model is None
+        assert log_likelihood is None
+        assert predict is None
 
     def test_sample(self):
         """
@@ -72,32 +109,55 @@ class TestBaseModel:
 
 
 class TestAliveAPI:
-    """
-    GIVEN the AliveAPI model factory object,
-    WHEN it is inspected for inheritance from ABC,
-    THEN it should an abstract object.
-    """
+    
+    def test_call_dict(self):
+        """
+        GIVEN the AliveAPI model factory object,
+        WHEN the keys of the 'quantities_of_interest' call dictionary attribute are returned,
+        THEN they should match the list of expected keys.
+        """
 
-    assert inspect.isabstract(btyd.AliveAPI._conditional_probability_alive()) is True
+        expected = ['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time']
+        actual = list(btyd.AliveAPI.quantities_of_interest.keys()) 
+        assert actual == expected
+    
+    def test_abstract_methods(self):
+        """
+        GIVEN the AliveAPI model factory object,
+        WHEN its abstract methods are overridden,
+        THEN they should all return None.
+        """
 
-    def my_isabstract(obj) -> bool: # MAKE THIS A FIXTURE
-    """Get if ABC is in the object's __bases__ attribute."""
-        try:
-            return ABC in obj.__bases__
-        except AttributeError:
-            return False
+        # Override abstract methods:
+        btyd.AliveAPI.__abstractmethods__ = set()
+
+        # Create concrete class for testing:
+        class ConcreteAliveAPI(btyd.AliveAPI):
+            pass
+        
+        # Instantiate concrete testing class and call all abstrast methods:
+        concrete_api = ConcreteAliveAPI()
+        cond_prob_alive = concrete_api._conditional_probability_alive()
+        cond_n_prchs_to_time = concrete_api._conditional_expected_number_of_purchases_up_to_time()
+        n_prchs_to_time = concrete_api._expected_number_of_purchases_up_to_time()
+        prob_n_prchs_to_time = concrete_api._probability_of_n_purchases_up_to_time()
+
+        assert cond_prob_alive is None
+        assert cond_n_prchs_to_time is None
+        assert cond_prob_alive is None
+        assert n_prchs_to_time is None
 
 
 class TestBetaGeoModel:
 
     @pytest.fixture(scope='class')
-    def fitted_bgm(self,cdnow_customers):
+    def fitted_bgm(self,cdnow_customers): # ADD TYPE HINTING
         """ For running multiple tests on a single BetaGeoModel fit() instance. """
 
         bgm = btyd.BetaGeoModel().fit(cdnow_customers)
         return bgm
     
-    def test_loglike(self):
+    def test_log_likelihood(self):
         """
         GIVEN the BetaGeo log-likelihood function
         WHEN it is called with the inputs and parameters specified in Farder-Hardie's notes,
@@ -115,12 +175,12 @@ class TestBetaGeoModel:
         }
 
         # Test term values.
-        loglike_terms = btyd.BetaGeoModel._loglike(self,**values,testing=True)
+        loglike_terms = btyd.BetaGeoModel._log_likelihood(self,**values,testing=True)
         expected = np.array([854.424,-748.1218,9e-05,3.97e-03])
         np.testing.assert_allclose(loglike_terms,expected,rtol=1e-04)
 
         # Test output.
-        loglike_out = btyd.BetaGeoModel._loglike(self,**values).eval()
+        loglike_out = btyd.BetaGeoModel._log_likelihood(self,**values).eval()
         expected = np.array([100.7957])
         np.testing.assert_allclose(loglike_out,expected,rtol=1e-04)
 

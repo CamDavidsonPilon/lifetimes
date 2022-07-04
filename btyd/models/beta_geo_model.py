@@ -50,7 +50,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
     def __init__(self) -> SELF:
 
-        self._param_list = ['alpha','r', 'a', 'b']
+        self._param_list = ['alpha','r', 'a', 'b'] # Does this even need to be instantiated?
 
     def _model(self) -> pm.Model():
 
@@ -67,11 +67,11 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             a = pm.Deterministic("a", phi_prior*kappa_prior)
             b = pm.Deterministic("b", (1.0-phi_prior)*kappa_prior)
 
-            logp = pm.Potential('loglike', self._loglike(self.frequency, self.recency, self.T, a, b, alpha_prior, r_prior))
+            logp = pm.Potential('loglike', self._log_likelihood(self.frequency, self.recency, self.T, a, b, alpha_prior, r_prior))
         
         return self.model
 
-    def _loglike(
+    def _log_likelihood(
         self, 
         frequency: npt.ArrayLike, 
         recency: npt.ArrayLike, 

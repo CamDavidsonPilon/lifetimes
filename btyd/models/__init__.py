@@ -2,7 +2,6 @@ from __future__ import generator_stop
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
 import warnings
 import json
 from typing import Union, Tuple, TypeVar, Generic
@@ -22,21 +21,21 @@ SELF = TypeVar("SELF")
 class BaseModel(ABC, Generic[SELF]):
 
     @abstractmethod
-    def __init__() -> None:
+    def __init__(self) -> SELF:
         """ self._param_list must be instantiated here, as well as model hyperpriors."""
 
     @abstractmethod
-    def _model() -> None:
+    def _model(self) -> None:
         """ pymc model defining priors for model parameters and calling _loglike in Potential()."""
         pass
 
     @abstractmethod
-    def _loglike() -> None:
+    def _log_likelihood(self) -> None:
         """ Log-likelihood function for randomly drawn individual from customer population. Must be constructed from aesara tensors. """
         pass
     
     @abstractmethod
-    def predict() -> None:
+    def predict(self) -> None:
         pass
 
     def __repr__(self) -> str:
@@ -167,19 +166,19 @@ class AliveAPI(ABC, Generic[SELF]):
     """
 
     @abstractmethod
-    def _conditional_probability_alive() -> None:
+    def _conditional_probability_alive(self) -> None:
         pass
     
     @abstractmethod
-    def _conditional_expected_number_of_purchases_up_to_time() -> None:
+    def _conditional_expected_number_of_purchases_up_to_time(self) -> None:
         pass
     
     @abstractmethod
-    def _expected_number_of_purchases_up_to_time() -> None:
+    def _expected_number_of_purchases_up_to_time(self) -> None:
         pass
     
     @abstractmethod
-    def _probability_of_n_purchases_up_to_time() -> None:
+    def _probability_of_n_purchases_up_to_time(self) -> None:
         pass
     
     quantities_of_interest = {
