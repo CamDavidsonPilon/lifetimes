@@ -14,7 +14,7 @@ import arviz as az
 import pymc as pm
 import aesara.tensor as at
 
-import btyd as lt
+import btyd
 import btyd.utils as utils
 from btyd.datasets import (
     load_cdnow_summary,
@@ -42,7 +42,7 @@ class TestBaseModel:
         THEN a string representation containing library name, module and model class are returned.
         """
         
-        assert repr(lt.BaseModel) == "<class 'btyd.models.BaseModel'>"
+        assert repr(btyd.BaseModel) == "<class 'btyd.models.BaseModel'>"
 
     def test_sample(self):
         """
@@ -52,7 +52,7 @@ class TestBaseModel:
         """
         posterior_distribution = np.array([.456,.358,1.8,2.,.999])
         samples = 7
-        posterior_samples = lt.BaseModel._sample(posterior_distribution,samples) 
+        posterior_samples = btyd.BaseModel._sample(posterior_distribution,samples) 
         assert len(posterior_samples) == samples
         
         # Convert numpy arrays to sets to test intersections of elements.
@@ -67,8 +67,25 @@ class TestBaseModel:
         THEN five numpy arrays should be returned.
         """
 
-        parsed = lt.BaseModel._dataframe_parser(cdnow_customers) 
+        parsed = btyd.BaseModel._dataframe_parser(cdnow_customers) 
         assert len(parsed) == 5
+
+
+class TestAliveAPI:
+    """
+    GIVEN the AliveAPI model factory object,
+    WHEN it is inspected for inheritance from ABC,
+    THEN it should an abstract object.
+    """
+
+    assert inspect.isabstract(btyd.AliveAPI._conditional_probability_alive()) is True
+
+    def my_isabstract(obj) -> bool: # MAKE THIS A FIXTURE
+    """Get if ABC is in the object's __bases__ attribute."""
+        try:
+            return ABC in obj.__bases__
+        except AttributeError:
+            return False
 
 
 class TestBetaGeoModel:
@@ -77,7 +94,7 @@ class TestBetaGeoModel:
     def fitted_bgm(self,cdnow_customers):
         """ For running multiple tests on a single BetaGeoModel fit() instance. """
 
-        bgm = lt.BetaGeoModel().fit(cdnow_customers)
+        bgm = btyd.BetaGeoModel().fit(cdnow_customers)
         return bgm
     
     def test_loglike(self):
@@ -98,12 +115,12 @@ class TestBetaGeoModel:
         }
 
         # Test term values.
-        loglike_terms = lt.BetaGeoModel._loglike(self,**values,testing=True)
+        loglike_terms = btyd.BetaGeoModel._loglike(self,**values,testing=True)
         expected = np.array([854.424,-748.1218,9e-05,3.97e-03])
         np.testing.assert_allclose(loglike_terms,expected,rtol=1e-04)
 
         # Test output.
-        loglike_out = lt.BetaGeoModel._loglike(self,**values).eval()
+        loglike_out = btyd.BetaGeoModel._loglike(self,**values).eval()
         expected = np.array([100.7957])
         np.testing.assert_allclose(loglike_out,expected,rtol=1e-04)
 
@@ -114,8 +131,8 @@ class TestBetaGeoModel:
         THEN string representations of library name, module, BetaGeoModel class, parameters, and # rows used in estimation are returned.
         """
 
-        assert repr(lt.BetaGeoModel) == "<class 'btyd.models.beta_geo_model.BetaGeoModel'>"
-        assert repr(lt.BetaGeoModel()) == "<btyd.BetaGeoModel>"
+        assert repr(btyd.BetaGeoModel) == "<class 'btyd.models.beta_geo_model.BetaGeoModel'>"
+        assert repr(btyd.BetaGeoModel()) == "<btyd.BetaGeoModel>"
         
         # Expected parameters may vary slightly due to rounding errors.
         expected = [
@@ -255,7 +272,7 @@ class TestBetaGeoModel:
         THEN InferenceData unloaded parameters should match, raising exceptions otherwise and if predictions attempted without RFM data.
         """
 
-        bgm_new = lt.BetaGeoModel()
+        bgm_new = btyd.BetaGeoModel()
         bgm_new.load_model(PATH_BGNBD_MODEL)
         assert isinstance(bgm_new.idata,az.InferenceData)
         assert bgm_new._unload_params() == fitted_bgm._unload_params()

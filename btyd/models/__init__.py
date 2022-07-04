@@ -161,4 +161,30 @@ class BaseModel(ABC, Generic[SELF]):
 
 
 class AliveAPI(ABC, Generic[SELF]):
+    """
+    Define predictive methods for all models except GammaGamma.
+    In research literature these are commonly referred to as quantities of interest.
+    """
 
+    @abstractmethod
+    def _conditional_probability_alive() -> None:
+        pass
+    
+    @abstractmethod
+    def _conditional_expected_number_of_purchases_up_to_time() -> None:
+        pass
+    
+    @abstractmethod
+    def _expected_number_of_purchases_up_to_time() -> None:
+        pass
+    
+    @abstractmethod
+    def _probability_of_n_purchases_up_to_time() -> None:
+        pass
+    
+    quantities_of_interest = {
+        'cond_prob_alive': _conditional_probability_alive,
+        'cond_n_prchs_to_time': _conditional_expected_number_of_purchases_up_to_time,
+        'n_prchs_to_time': _expected_number_of_purchases_up_to_time,
+        'prob_n_prchs_to_time': _probability_of_n_purchases_up_to_time,
+    }
