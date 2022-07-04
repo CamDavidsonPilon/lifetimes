@@ -149,7 +149,7 @@ class TestBetaGeoModel:
         THEN they should be within 1e-01 tolerance of the MLE parameters from the original paper.
         """
 
-        expected = np.array([[4.414], [0.243], [0.793], [2.426]])
+        expected = np.array([4.414, 0.243, 0.793, 2.426])
         np.testing.assert_allclose(expected, np.array(fitted_bgm._unload_params()),rtol=1e-01)
 
     def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm):
@@ -229,7 +229,7 @@ class TestBetaGeoModel:
         actual = np.array([fitted_bgm.probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
     
-    def test_save_params(self, fitted_bgm):
+    def test_save_model(self, fitted_bgm):
         """
         GIVEN a fitted BetaGeoModel object,
         WHEN self.save_model() is called,
@@ -239,22 +239,22 @@ class TestBetaGeoModel:
         # os.remove(PATH_BGNBD_MODEL)
         assert os.path.isfile(PATH_BGNBD_MODEL) == False
         
-        fitted_bgm.save_params(PATH_BGNBD_MODEL)
+        fitted_bgm.save_model(PATH_BGNBD_MODEL)
         assert os.path.isfile(PATH_BGNBD_MODEL) == True
 
-    def test_load_predict(self, cdnow_customers, fitted_bgm):
+    def test_load_predict(self, fitted_bgm):
         """
         GIVEN fitted and unfitted BetaGeoModel objects,
-        WHEN parameters of the fitted model are loaded via self.load_params() and self.predict() is called on both models,
-        THEN parameters and predictions should match for both, raising exceptions otherwise and for predictions attempted without RFM data.
+        WHEN parameters of the fitted model are loaded from an external JSON via self.load_model(),
+        THEN InferenceData unloaded parameters should match, raising exceptions otherwise and if predictions attempted without RFM data.
         """
 
         bgm_new = lt.BetaGeoModel()
-        bgm_new.load_params(PATH_BGNBD_MODEL)
+        bgm_new.load_model(PATH_BGNBD_MODEL)
+        assert isinstance(bgm_new.idata,az.InferenceData)
         assert bgm_new._unload_params() == fitted_bgm._unload_params()
         
-        # assert param exception (need another saved model and additions to self.load_params())
-        # assert predictions match (@pytest.parameterize()?)
+        # assert param exception (need another saved model and additions to self.load_model())
         # assert prediction exception
 
         os.remove(PATH_BGNBD_MODEL)

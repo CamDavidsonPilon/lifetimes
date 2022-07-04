@@ -47,8 +47,10 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
        Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
 
     """
-    
-    remove_hypers = ['BetaGeoModel::phi','BetaGeoModel::kappa']
+
+    def __init__(self) -> SELF:
+
+        self._param_list = ['alpha','r', 'a', 'b']
 
     def _model(self) -> pm.Model():
 
@@ -182,7 +184,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
             x = frequency
             alpha, r, a, b = self._unload_params()
-
+            
             _a = r + x
             _b = b + x
             _c = a + b + x - 1

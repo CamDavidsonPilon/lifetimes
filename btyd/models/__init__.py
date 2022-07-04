@@ -21,8 +21,9 @@ SELF = TypeVar("SELF")
 
 class BaseModel(ABC, Generic[SELF]):
 
-    # This attribute must be defined in subclasses.
-    remove_hypers: list
+    @abstractmethod
+    def __init__() -> None:
+        """ self._param_list must be instantiated here, as well as model hyperpriors."""
 
     @abstractmethod
     def _model() -> None:
@@ -66,19 +67,14 @@ class BaseModel(ABC, Generic[SELF]):
             Number of beginning 'burn-in' samples for posterior parameter distribution convergence. These are discarded after model is fit.
         draws: int
             Number of samples from posterior parameter distrutions after tune period. These are retained for model usage.
-        chain: int
-            Number of sampling chains used for inference. It is best to set this to the number of CPU cores.
         
         Returns
         -------
-        param_posteriors : dict
-            Posterior distributions of model parameters and other inference metadata.
-        
+        self
+            with ``_idata`` attribute for model evaluation and predictions.
         """
 
         self.frequency, self.recency, self.T, self.monetary_value, _ = self._dataframe_parser(rfm_df)
-
-        #self.model = self._model()
 
         with self._model():
             self.idata = pm.sample(
@@ -90,66 +86,66 @@ class BaseModel(ABC, Generic[SELF]):
                 return_inferencedata=True
             )
         
-        self.param_dict = self.idata.posterior.to_dict()
-
-        # Remove unneeded items from param_dict.
-        del self.param_dict['coords']
-        for var in self.remove_hypers:
-            del self.param_dict.get('data_vars')[var]
-        
         return self
         
-    def save_params(self, path: str) -> None:
+    def save_model(self, filename: str) -> None:
         """
-        Save InferenceData object of posterior distributions for model parameters in JSON format.
+        Dump InferenceData from fitted model into a JSON file.
 
         Parameters
         ----------
-        path: str
-            Filepath and/or name to save model.
+        filename: str
+            Path and/or filename where model will be saved.
 
         """
         
-        with open(path, "w") as outfile:
-            json.dump(self.param_dict, outfile)
+        self.idata.to_json(path)
 
-    def load_params(self, path: str) -> Dict[str, float, int, List[List[float]], Tuple(str), dict]:
+    def load_model(self, filename: str) -> SELF:
         """
-        Load posterior distributions for model parameters and estimation metadata from JSON.
+        Load saved model JSON.
 
         Parameters
         ----------
-        path: str
-            From what path load model.
+        filename: str
+            Path and/or filename of model JSON.
 
         Returns
         -------
-        self.idata : dict
-            Posterior distributions of model parameters and other inference metadata.
+        self
+            with loaded ``_idata`` attribute for model evaluation and predictions.
         """
 
-        with open(path, "rb") as model_json:
-            self.param_dict = json.load(model_json)
-        
+        # with open(path, "rb") as model_json:
+        #     self._idata = json.load(model_json)
+        self.idata = az.from_json(filename)
         # TODO: Raise BTYDException.
         # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.param_dict.get('data_vars').items()))
             # raise BTYDException
 
-        return self.param_dict
+        return self
     
-    def _unload_params(self, posterior: bool = False) -> List[np.ndarray]:
+    def _unload_params(self, posterior: bool = False) -> List[np.ndarray]: #UPDATE RETURNED TYPE HINTING
+        """Extract parameter posteriors from _idata InferenceData attribute of fitted model."""
 
-        param_list = deepcopy(self.param_dict.get('data_vars'))
+        # param_list = deepcopy(self.param_dict.get('data_vars'))
 
-        for key in param_list:
-            param_list[key]['data'] = np.array(param_list[key].get('data')).flatten()
+        if posterior:
+            return [self.idata.posterior.get(f'{self.__class__.__name__}::{var}').values for var in self._param_list]
+        else:
+            return [self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() for var in self._param_list]
+
+        # return tuple(param for param in params)
+
+        # for key in param_list:
+        #     param_list[key]['data'] = np.array(param_list[key].get('data')).flatten()
             
-        if not posterior:
-            for key in param_list:
-                param_list[key]['data'] = np.atleast_1d(param_list[key].get('data').mean())
-                # param_list[key]['data'] = param_list[key].get('data').mean()
+        # if not posterior:
+        #     for key in param_list:
+        #         param_list[key]['data'] = np.atleast_1d(param_list[key].get('data').mean())
+        #         # param_list[key]['data'] = param_list[key].get('data').mean()
 
-        return [param_list.get(var).get('data') for var in list(param_list.keys())]
+        # return [param_list.get(var).get('data') for var in list(param_list.keys())]
     
     @staticmethod
     def _dataframe_parser(rfm_df: pd.DataFrame) -> Tuple[np.ndarray]:
