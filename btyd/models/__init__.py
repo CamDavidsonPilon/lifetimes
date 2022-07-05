@@ -102,7 +102,7 @@ class BaseModel(ABC, Generic[SELF]):
         else:
             return tuple(
                 [
-                    self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy() 
+                    self.idata.posterior.get(f'{self.__class__.__name__}::{var}').mean().to_numpy()
                     for var in self._param_list
                     ]
                 )
@@ -120,13 +120,11 @@ class BaseModel(ABC, Generic[SELF]):
         Predictive API.
         """
 
-        self._alpha, self._r, self._a, self._b = self._unload_params(posterior = sample_posterior)
-
         if rfm_df is None:
             self._frequency, self._recency, self._T, self._monetary_value, _ = self._dataframe_parser(rfm_df)
 
         # TODO: Add exception handling for method argument.
-        array_out = self._quantities_of_interest.get(method)(self,t,n)
+        predictions = self._quantities_of_interest.get(method)(self,t,n,sample_posterior,posterior_draws)
 
         # TODO: Add arg to automatically merge to RFM dataframe?
         if join_df:
@@ -136,7 +134,7 @@ class BaseModel(ABC, Generic[SELF]):
             # Additional columns will need to be added for mean, confidence intervals, etc.
             pass
         
-        return array_out
+        return predictions
         
     def save_model(self, filename: str) -> None:
         """
@@ -203,26 +201,50 @@ class BaseModel(ABC, Generic[SELF]):
         return rng.choice(param_array, n_samples, replace=True)
 
 
-class AliveMixin(ABC, Generic[SELF]):
+class PredictMixin(ABC, Generic[SELF]):
     """
     Define predictive methods for all models except GammaGamma.
     In research literature these are commonly referred to as quantities of interest.
     """
 
     @abstractmethod
-    def _conditional_probability_alive(self, t=None, n=None) -> None:
+    def _conditional_probability_alive(
+        self, 
+        t: float = None, 
+        n: int = None, 
+        sample_posterior: bool = False,
+        posterior_draws: int = 100
+        ) -> None:
         pass
     
     @abstractmethod
-    def _conditional_expected_number_of_purchases_up_to_time(self, t=None, n=None) -> None:
+    def _conditional_expected_number_of_purchases_up_to_time(
+        self, 
+        t: float = None, 
+        n: int = None, 
+        sample_posterior: bool = False,
+        posterior_draws: int = 100
+        ) -> None:
         pass
     
     @abstractmethod
-    def _expected_number_of_purchases_up_to_time(self, t=None, n=None) -> None:
+    def _expected_number_of_purchases_up_to_time(
+        self, 
+        t: float = None, 
+        n: int = None, 
+        sample_posterior: bool = False,
+        posterior_draws: int = 100
+        ) -> None:
         pass
     
     @abstractmethod
-    def _probability_of_n_purchases_up_to_time(self, t=None, n=None) -> None:
+    def _probability_of_n_purchases_up_to_time(
+        self, 
+        t: float = None, 
+        n: int = None, 
+        sample_posterior: bool = False,
+        posterior_draws: int = 100
+        ) -> None:
         pass
     
     _quantities_of_interest = {
@@ -230,4 +252,4 @@ class AliveMixin(ABC, Generic[SELF]):
         'cond_n_prchs_to_time': _conditional_expected_number_of_purchases_up_to_time,
         'n_prchs_to_time': _expected_number_of_purchases_up_to_time,
         'prob_n_prchs_to_time': _probability_of_n_purchases_up_to_time,
-    }
+        }

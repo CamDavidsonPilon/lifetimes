@@ -43,23 +43,15 @@ class TestBetaGeoModel:
 
         bgm = btyd.BetaGeoModel().fit(cdnow_customers)
         return bgm
-    
-    @pytest.fixture(scope='class')
-    def fitted_bgm_params(self,fitted_bgm):
-        """ Unload params of trained BetaGeoModel for testing predictive quantities of interest. """
 
-        fitted_bgm_params._alpha, fitted_bgm_params._r, fitted_bgm_params._a, fitted_bgm_params._b = fitted_bgm_params._unload_params()
-
-        return fitted_bgm_params._alpha, fitted_bgm_params._r, fitted_bgm_params._a, fitted_bgm_params._b
-
-    def test_hyperpriors(self):
+    def test_hyperparams(self):
         """
         GIVEN an uninstantiated BetaGeoModel,
-        WHEN it is instantiated with custom values for hyperpriors,
-        THEN BetaGeoModel._hyperpriors should differ from defaults and match the custom values set by the user. 
+        WHEN it is instantiated with custom values for hyperparams,
+        THEN BetaGeoModel._hyperparams should differ from defaults and match the custom values set by the user. 
         """
     
-        custom_hyperpriors = {
+        custom_hyperparams = {
             'alpha_prior_alpha': 2.,
             'alpha_prior_beta': 4.,
             'r_prior_alpha': 3.,
@@ -71,10 +63,10 @@ class TestBetaGeoModel:
         }
 
         default_bgm = btyd.BetaGeoModel()
-        custom_bgm = btyd.BetaGeoModel(hyperpriors = custom_hyperpriors)
+        custom_bgm = btyd.BetaGeoModel(hyperparams = custom_hyperparams)
 
-        assert default_bgm._hyperpriors != custom_bgm._hyperpriors
-        assert custom_hyperpriors == custom_bgm._hyperpriors
+        assert default_bgm._hyperparams != custom_bgm._hyperparams
+        assert custom_hyperparams == custom_bgm._hyperparams
 
     def test_log_likelihood(self):
         """
@@ -170,7 +162,7 @@ class TestBetaGeoModel:
         assert sampled_posterior_params[0].shape == (100,)
 
 
-    def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm,fitted_bgm_params):
+    def test_conditional_expected_number_of_purchases_up_to_time(self, fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
         WHEN self._conditional_expected_number_of_purchases_up_to_time() is called,
@@ -186,7 +178,7 @@ class TestBetaGeoModel:
         actual = fitted_bgm._conditional_expected_number_of_purchases_up_to_time(t)
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
 
-    def test_expected_number_of_purchases_up_to_time(self, fitted_bgm,fitted_bgm_params):
+    def test_expected_number_of_purchases_up_to_time(self, fitted_bgm):
         """
         GIVEN a Bayesian BetaGeoModel fitted on the CDNOW dataset,
         WHEN self._expected_number_of_purchases_up_to_time() is called,
@@ -198,7 +190,7 @@ class TestBetaGeoModel:
         actual = fitted_bgm._expected_number_of_purchases_up_to_time(times, None)
         np.testing.assert_allclose(actual,expected,rtol=1e-02)
 
-    def test_conditional_probability_alive(self, fitted_bgm,fitted_bgm_params):
+    def test_conditional_probability_alive(self, fitted_bgm):
         """
         GIVEN a fitted BetaGeoModel object,
         WHEN self._conditional_probability_alive() is called,
@@ -208,10 +200,10 @@ class TestBetaGeoModel:
         for i in range(0, 100, 10):
             for j in range(0, 100, 10):
                 for k in range(j, 100, 10):
-                    assert 0 <= fitted_bgm._conditional_probability_alive(None, None, i, j, k) <= 1.0
-        assert fitted_bgm._conditional_probability_alive(None, None, 0, 1, 1) == 1.0
+                    assert 0 <= fitted_bgm._conditional_probability_alive(None, None, False, 100, i, j, k) <= 1.0
+        assert fitted_bgm._conditional_probability_alive(None, None, False, 100, 0, 1, 1) == 1.0
 
-    def test_probability_of_n_purchases_up_to_time(self,fitted_bgm,fitted_bgm_params):
+    def test_probability_of_n_purchases_up_to_time(self,fitted_bgm):
         """ 
         GIVEN a fitted BetaGeoModel object,
         WHEN self._probability_of_n_purchases_up_to_time() is called,
@@ -245,7 +237,7 @@ class TestBetaGeoModel:
                 0.0002222260,
             ]
         )
-        actual = np.array([fitted_bgm._probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)])
+        actual = np.array([fitted_bgm._probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)]).flatten()
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
     
     def test_save_model(self, fitted_bgm):
@@ -278,6 +270,38 @@ class TestBetaGeoModel:
 
         os.remove(PATH_BGNBD_MODEL)
     
+    @pytest.mark.parametrize("qoi, instance",[("cond_prob_alive",np.ndarray),
+                                            ("cond_n_prchs_to_time",np.float64), 
+                                            ("n_prchs_to_time",np.float64),
+                                            ("prob_n_prchs_to_time",np.ndarray)])
+    def test_predict_mean(self,fitted_bgm,cdnow_customers, qoi, instance):
+        """
+        GIVEN a fitted BetaGeoModel,
+        WHEN all four quantities of interest are called via BetaGeoModel.predict() for posterior mean predictions,
+        THEN expected output instances and dimensions should be returned.
+        """
+
+        array_out = fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5)
+
+        assert isinstance(array_out,instance)
+    
+    # TODO: Add a param to test posterior draws
+    @pytest.mark.parametrize("qoi, instance, draws",[("cond_prob_alive",np.ndarray, 100),
+                                        ("cond_n_prchs_to_time",np.ndarray, 200), 
+                                        ("n_prchs_to_time",np.ndarray, 300),
+                                        ("prob_n_prchs_to_time",np.ndarray, 400)])
+    def test_predict_full(self,fitted_bgm,cdnow_customers,qoi, instance, draws):
+        """
+        GIVEN a fitted BetaGeoModel,
+        WHEN all four quantities of interest are called via BetaGeoModel.predict() for full posterior predictions,
+        THEN expected output instances and dimensions should be returned.
+        """
+
+        array_out = fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5,sample_posterior=True, posterior_draws=draws)
+
+        assert isinstance(array_out,instance)
+        assert len(array_out) == draws
+
     def test_generate_rfm_data(self, fitted_bgm):
         """
         GIVEN a fitted BetaGeoModel,
@@ -296,23 +320,4 @@ class TestBetaGeoModel:
         expected_cols = ["frequency", "recency", "T", "lambda", "p", "alive"]
         actual_cols = list(synthetic_df.columns)
 
-        assert actual_cols == expected_cols
-    
-    # Keep this test at the very end as the the posterior parametrization can impact subsequent tests.
-    @pytest.mark.parametrize("qoi, instance, rows",[("cond_prob_alive",np.ndarray, 2357),
-                                            ("cond_n_prchs_to_time",np.ndarray, 2357), 
-                                            ("n_prchs_to_time",np.float64, 1),
-                                            ("prob_n_prchs_to_time",np.float64, 1)])
-    @pytest.mark.parametrize("posterior",[False, True])
-    def test_predict(self,fitted_bgm,cdnow_customers,qoi, instance, rows, posterior): # ADD TYPE HINTING
-        """
-        GIVEN a fitted BetaGeoModel,
-        WHEN all four quantities of interest are called via BetaGeoModel.predict(),
-        THEN expected output instances and dimensions should be returned.
-        """
-
-        array_out = fitted_bgm.predict(method=qoi,rfm_df=cdnow_customers,t=10,n=5,sample_posterior=posterior)
-
-        assert isinstance(array_out,instance)
-        assert len(array_out) == rows
-    
+        assert actual_cols == expected_cols    

@@ -15,12 +15,12 @@ from scipy.special import gammaln, beta, gamma
 from scipy.special import hyp2f1
 from scipy.special import expit
 
-from . import BaseModel, AliveMixin
+from . import BaseModel, PredictMixin
 from ..utils import _scale_time, _check_inputs
 from ..generate_data import beta_geometric_nbd_model
 
 
-class BetaGeoModel(BaseModel['BetaGeoModel']):
+class BetaGeoModel(PredictMixin['BetaGeoModel'], BaseModel['BetaGeoModel']):
     """
     Also known as the BG/NBD model.
     Based on [2]_, this model has the following assumptions:
@@ -33,7 +33,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
     
     Parameters
     ----------
-    hyperpriors: dict
+    hyperparams: dict
         Dictionary containing hyperparameters for model prior parameter distributions.
 
     Attributes
@@ -53,10 +53,10 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
     """
 
-    def __init__(self, hyperpriors: Dict[float] = None) -> SELF:
+    def __init__(self, hyperparams: Dict[float] = None) -> SELF:
 
-        if hyperpriors is None:
-            self._hyperpriors = {
+        if hyperparams is None:
+            self._hyperparams = {
                 'alpha_prior_alpha': 1.,
                 'alpha_prior_beta': 6.,
                 'r_prior_alpha': 1.,
@@ -67,7 +67,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
                 'kappa_prior_m': 1.5,
             }
         else:
-            self._hyperpriors = hyperpriors
+            self._hyperparams = hyperparams
     
     _param_list = ['alpha','r', 'a', 'b']
 
@@ -77,25 +77,25 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
             # Priors for lambda parameters.
             alpha_prior = pm.Weibull(
                 name="alpha", 
-                alpha=self._hyperpriors.get('alpha_prior_alpha'), 
-                beta=self._hyperpriors.get('alpha_prior_beta'),
+                alpha=self._hyperparams.get('alpha_prior_alpha'), 
+                beta=self._hyperparams.get('alpha_prior_beta'),
                 )
             r_prior = pm.Weibull(
                 name="r", 
-                alpha=self._hyperpriors.get('r_prior_alpha'), 
-                beta=self._hyperpriors.get('r_prior_beta'),
+                alpha=self._hyperparams.get('r_prior_alpha'), 
+                beta=self._hyperparams.get('r_prior_beta'),
                 )
 
-            # Heirarchical pooling of hyperpriors for beta parameters.
+            # Heirarchical pooling of hyperparams for beta parameters.
             phi_prior = pm.Uniform(
                 'phi', 
-                lower=self._hyperpriors.get('phi_prior_lower'), 
-                upper=self._hyperpriors.get('phi_prior_upper'),
+                lower=self._hyperparams.get('phi_prior_lower'), 
+                upper=self._hyperparams.get('phi_prior_upper'),
                 )
             kappa_prior = pm.Pareto(
                 'kappa',
-                alpha=self._hyperpriors.get('kappa_prior_alpha'),
-                m=self._hyperpriors.get('kappa_prior_m'),
+                alpha=self._hyperparams.get('kappa_prior_alpha'),
+                m=self._hyperparams.get('kappa_prior_m'),
                 )
 
             # Beta parameters.
@@ -183,10 +183,12 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         self, 
         t: npt.ArrayLike = None,
         n: int = None,
+        posterior: bool = False,
+        posterior_draws: int = 100,
         frequency:npt.ArrayLike = None,
         recency:npt.ArrayLike = None,
         T:npt.ArrayLike = None
-        ) -> np.ndarray:
+        ) -> Union[float,np.ndarray]:
         """
         Conditional expected number of purchases up to time.
 
@@ -209,7 +211,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
         Returns
         -------
-        array_like
+        float
 
         References
         ----------
@@ -228,6 +230,8 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         if T is None:
             T = self._T
         
+        self._alpha, self._r, self._a, self._b = self._unload_params(posterior,posterior_draws)
+
         alpha = self._alpha
         r = self._r
         a = self._a
@@ -255,6 +259,8 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         self,
         t: npt.ArrayLike = None,
         n: int = None,
+        posterior: bool = False,
+        posterior_draws: int = 100,
         frequency:npt.ArrayLike = None,
         recency:npt.ArrayLike = None,
         T:npt.ArrayLike = None
@@ -290,6 +296,8 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         if T is None:
             T = self._T
 
+        self._alpha, self._r, self._a, self._b = self._unload_params(posterior,posterior_draws)
+
         alpha = self._alpha
         r = self._r
         a = self._a
@@ -305,7 +313,9 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         self, 
         t: npt.ArrayLike = None,
         n: int = None,
-        ) -> np.ndarray:
+        posterior: bool = False,
+        posterior_draws: int = 100,
+        ) -> Union[float,np.ndarray]:
         """
         Calculate the expected number of repeat purchases up to time t.
 
@@ -321,7 +331,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
         Returns
         -------
-        array_like
+        float
 
         References
         ----------
@@ -329,6 +339,8 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         "Counting Your Customers the Easy Way: An Alternative to the
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
+
+        self._alpha, self._r, self._a, self._b = self._unload_params(posterior,posterior_draws)
 
         alpha = self._alpha
         r = self._r
@@ -342,9 +354,11 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
     def _probability_of_n_purchases_up_to_time(
         self, 
         t: float = None, 
-        n: int = None
-        ) -> np.ndarray:
-        r"""
+        n: int = None,
+        posterior: bool = False,
+        posterior_draws: int = 100,
+        ) -> Union[np.ndarray,float]:
+        """
         Compute the probability of n purchases.
 
          .. math::  P( N(t) = n | \text{model} )
@@ -373,32 +387,47 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
         Pareto/NBD Model," Marketing Science, 24 (2), 275-84.
         """
 
-        alpha = self._alpha
-        r = self._r
-        a = self._a
-        b = self._b
+        # _alpha, _r, _a, _b = self._unload_params(posterior,posterior_draws)
+        # Repeat param arrays for len n.
+        # alpha, r, a, b = [np.tile(_param,(1,n)) for _param in [alpha, r, a, b]]
 
-        first_term = (
-            beta(a, b + n)
-            / beta(a, b)
-            * gamma(r + n)
-            / gamma(r)
-            / gamma(n + 1)
-            * (alpha / (alpha + t)) ** r
-            * (t / (alpha + t)) ** n
-        )
+        param_arrays = self._unload_params(posterior,posterior_draws)
+        
+        if not posterior:
+            param_arrays = [np.array(_param).reshape(1,) for _param in param_arrays]
 
-        if n > 0:
-            j = np.arange(0, n)
-            finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j).sum()
-            second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
-        else:
-            second_term = 0
+        prob_n_purchases = []
 
-        return first_term + second_term
+        for alpha, r, a, b in zip(param_arrays[0], param_arrays[1], param_arrays[2], param_arrays[3]):
+
+            first_term = (
+                beta(a, b + n)
+                / beta(a, b)
+                * gamma(r + n)
+                / gamma(r)
+                / gamma(n + 1)
+                * (alpha / (alpha + t)) ** r
+                * (t / (alpha + t)) ** n
+            )
+
+            if n > 0:
+                # create array of len(n) and transpose.
+                # n_range = np.arange(0, n).T 
+                j = np.arange(0, n)
+                # repeat n_range array for len of posterior draws.
+                # j = np.tile(n_range,(posterior_draws,1))  
+                finite_sum = (gamma(r + j) / gamma(r) / gamma(j + 1) * (t / (alpha + t)) ** j).sum()
+                second_term = beta(a + 1, b + n - 1) / beta(a, b) * (1 - (alpha / (alpha + t)) ** r * finite_sum)
+            else:
+                second_term = 0
+        
+            prob_n_purchase = first_term + second_term
+
+            prob_n_purchases.append(prob_n_purchase)
+
+        return np.array(prob_n_purchases)
     
-    # BETA TODO: Do not inherit from AliveMixin at this time as there seems to be method resolution order issues to resolve.
-    #            After resolution this attribute can be removed.
+    # BETA TODO: this attribute can be removed after the attribute resolution order issue of PredictMixin is resolved.
     _quantities_of_interest = {
         'cond_prob_alive': _conditional_probability_alive,
         'cond_n_prchs_to_time': _conditional_expected_number_of_purchases_up_to_time,
@@ -422,10 +451,7 @@ class BetaGeoModel(BaseModel['BetaGeoModel']):
 
         """
         
-        alpha = self._alpha
-        r = self._r
-        a = self._a
-        b = self._b
+        alpha, r, a, b = self._unload_params()
 
         self.synthetic_df = beta_geometric_nbd_model(
             self._T, r, alpha, a, b, size=size
