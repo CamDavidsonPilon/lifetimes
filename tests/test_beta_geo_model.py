@@ -27,13 +27,6 @@ from btyd.datasets import (
 
 PATH_BGNBD_MODEL = "./bgnbd.json"
 
-# PUT THIS IN CONFTEST.PY
-@pytest.fixture(scope='module')
-def cdnow_customers() -> pd.DataFrame:
-    """ Create an RFM dataframe for multiple tests and fixtures. """
-    rfm_df = load_cdnow_summary_data_with_monetary_value()
-    return rfm_df
-
 
 class TestBetaGeoModel:
 
@@ -269,6 +262,17 @@ class TestBetaGeoModel:
         # assert prediction exception
 
         os.remove(PATH_BGNBD_MODEL)
+    
+    def test_quantities_of_interest(self):
+        """
+        GIVEN the _quantities_of_interest BaseModel attribute,
+        WHEN the keys of the '_quantities_of_interest' call dictionary attribute are called,
+        THEN they should match the list of expected keys.
+        """
+
+        expected = ['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time']
+        actual = list(btyd.BetaGeoModel._quantities_of_interest.keys()) 
+        assert actual == expected
     
     @pytest.mark.parametrize("qoi, instance",[("cond_prob_alive",np.ndarray),
                                             ("cond_n_prchs_to_time",np.float64), 

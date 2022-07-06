@@ -1,4 +1,5 @@
 """ All legacy lifetimes models from ./fitters/, and Bayesian models from ./models/. """
+import warnings
 
 from .fitters import BaseFitter
 from .fitters.beta_geo_fitter import BetaGeoFitter
@@ -22,4 +23,9 @@ __all__ = (
     "BetaGeoCovarsFitter",
     "BetaGeoModel"
     )
+
+def deprecated():
+   warnings.warn("All Fitter models are deprecated and will be removed in the final stage of Beta development.", DeprecationWarning)
+
+deprecated()
  
