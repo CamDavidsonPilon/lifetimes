@@ -20,6 +20,9 @@ SELF = TypeVar("SELF")
 
 class BaseModel(ABC, Generic[SELF]):
 
+    # This attribute must be defined in model subclasses.
+    _quantities_of_interest: dict
+
     @abstractmethod
     def __init__(self) -> SELF:
         """ self._param_list must be instantiated here, as well as model hyperpriors."""
@@ -246,10 +249,3 @@ class PredictMixin(ABC, Generic[SELF]):
         posterior_draws: int = 100
         ) -> None:
         pass
-    
-    _quantities_of_interest = {
-        'cond_prob_alive': _conditional_probability_alive,
-        'cond_n_prchs_to_time': _conditional_expected_number_of_purchases_up_to_time,
-        'n_prchs_to_time': _expected_number_of_purchases_up_to_time,
-        'prob_n_prchs_to_time': _probability_of_n_purchases_up_to_time,
-        }

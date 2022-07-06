@@ -24,12 +24,23 @@ from btyd.datasets import (
     load_transaction_data,
 )
 
+def test_deprecated():
+    """
+    GIVEN the deprecated() function for DeprecationWarnings,
+    WHEN it is called,
+    THEN one warning of category DeprecationWarning containing `deprecated` in the message is returned.
+    """
+    
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        btyd.deprecated()
+        # Verify some things
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated" in str(w[-1].message)
 
-@pytest.fixture(scope='module')
-def cdnow_customers() -> pd.DataFrame:
-    """ Create an RFM dataframe for multiple tests and fixtures. """
-    rfm_df = load_cdnow_summary_data_with_monetary_value()
-    return rfm_df
 
 @pytest.mark.parametrize("obj",[btyd.BaseModel, btyd.PredictMixin])
 def test_isabstract(obj):
@@ -105,17 +116,6 @@ class TestBaseModel:
 
 
 class TestPredictMixin:
-    
-    def test_call_dict(self):
-        """
-        GIVEN the PredictMixin model factory object,
-        WHEN the keys of the 'quantities_of_interest' call dictionary attribute are returned,
-        THEN they should match the list of expected keys.
-        """
-
-        expected = ['cond_prob_alive', 'cond_n_prchs_to_time', 'n_prchs_to_time', 'prob_n_prchs_to_time']
-        actual = list(btyd.PredictMixin._quantities_of_interest.keys()) 
-        assert actual == expected
     
     def test_abstract_methods(self):
         """

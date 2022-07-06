@@ -21,11 +21,6 @@ PATH_SAVE_MODEL = "./base_fitter.pkl"
 PATH_SAVE_BGNBD_MODEL = "./betageo_fitter.pkl"
 
 
-@pytest.fixture
-def cdnow_customers():
-    return load_cdnow_summary()
-
-
 class TestBaseFitter:
     def test_repr(self):
         base_fitter = lt.BaseFitter()
