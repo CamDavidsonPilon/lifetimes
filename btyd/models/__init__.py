@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 
 import pymc as pm
-import arviz as az
 import aesara.tensor as at
 
 from ..utils import _check_inputs
@@ -92,6 +91,13 @@ class BaseModel(ABC, Generic[SELF]):
     def _unload_params(self, posterior: bool = False, n_samples: int = 100) -> Union[Tuple[np.ndarray],Tuple[np.ndarray]]:
         """Extract parameter posteriors from _idata InferenceData attribute of fitted model."""
 
+        # BETA TODO: Raise BTYDException.
+         # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.idata.posterior.get('data_vars').items()))
+             # raise BTYDException
+        
+        # test param exception (need another saved model and additions to self._unload_params())
+        # test prediction exception if attempting to run predictions on instantiated model without RFM data.
+
         if posterior:
             return tuple(
                 [
@@ -138,42 +144,6 @@ class BaseModel(ABC, Generic[SELF]):
             pass
         
         return predictions
-        
-    def save_model(self, filename: str) -> None:
-        """
-        Dump InferenceData from fitted model into a JSON file.
-
-        Parameters
-        ----------
-        filename: str
-            Path and/or filename where model will be saved.
-
-        """
-        
-        self.idata.to_json(filename)
-
-    def load_model(self, filename: str) -> SELF:
-        """
-        Load saved model JSON.
-
-        Parameters
-        ----------
-        filename: str
-            Path and/or filename of model JSON.
-
-        Returns
-        -------
-        self
-            with loaded ``_idata`` attribute for model evaluation and predictions.
-        """
-
-        self.idata = az.from_json(filename)
-        
-        # BETA TODO: Raise BTYDException.
-        # if dict(filter(lambda item: self.__class__.__name__ not in item[0], self.idata.posterior.get('data_vars').items()))
-            # raise BTYDException
-
-        return self
     
     @staticmethod
     def _dataframe_parser(rfm_df: pd.DataFrame) -> Tuple[np.ndarray]:

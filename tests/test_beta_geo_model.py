@@ -1,9 +1,6 @@
 from __future__ import generator_stop
 from __future__ import annotations
 
-import os
-from abc import ABC
-import warnings
 import inspect
 
 import pytest
@@ -23,9 +20,6 @@ from btyd.datasets import (
     load_donations,
     load_transaction_data,
 )
-
-
-PATH_BGNBD_MODEL = "./bgnbd.json"
 
 
 class TestBetaGeoModel:
@@ -232,36 +226,6 @@ class TestBetaGeoModel:
         )
         actual = np.array([fitted_bgm._probability_of_n_purchases_up_to_time(30, n) for n in range(11, 21)]).flatten()
         np.testing.assert_allclose(expected, actual,rtol=1e-02)
-    
-    def test_save_model(self, fitted_bgm):
-        """
-        GIVEN a fitted BetaGeoModel object,
-        WHEN self.save_model() is called,
-        THEN the external file should exist.
-        """
-
-        # os.remove(PATH_BGNBD_MODEL)
-        assert os.path.isfile(PATH_BGNBD_MODEL) == False
-        
-        fitted_bgm.save_model(PATH_BGNBD_MODEL)
-        assert os.path.isfile(PATH_BGNBD_MODEL) == True
-
-    def test_load_predict(self, fitted_bgm):
-        """
-        GIVEN fitted and unfitted BetaGeoModel objects,
-        WHEN parameters of the fitted model are loaded from an external JSON via self.load_model(),
-        THEN InferenceData unloaded parameters should match, raising exceptions otherwise and if predictions attempted without RFM data.
-        """
-
-        bgm_new = btyd.BetaGeoModel()
-        bgm_new.load_model(PATH_BGNBD_MODEL)
-        assert isinstance(bgm_new.idata,az.InferenceData)
-        assert bgm_new._unload_params() == fitted_bgm._unload_params()
-        
-        # assert param exception (need another saved model and additions to self.load_model())
-        # assert prediction exception
-
-        os.remove(PATH_BGNBD_MODEL)
     
     def test_quantities_of_interest(self):
         """
