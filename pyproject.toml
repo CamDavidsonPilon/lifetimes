@@ -11,10 +11,29 @@ python = "^3.9"
 pymc = "^4.0.0"
 autograd = "1.4"
 dill = "0.3.5.1"
+lifetimes = "^0.11.3"
 
 [tool.poetry.dev-dependencies]
+black = "^22.6.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+pre-commit = "^2.19.0"
 pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=mmm",
+    "--cov=pymmmc",
+]
+testpaths = "tests/"
