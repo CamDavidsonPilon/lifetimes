@@ -54,6 +54,11 @@ class TestBaseFitter:
         assert repr(base_fitter) == repr(base_fitter_saved)
         os.remove(PATH_SAVE_MODEL)
 
+    def test_summary(self):
+        base_fitter = lt.BaseFitter()
+        with pytest.raises(ValueError):
+            base_fitter.summary
+
 
 class TestBetaGeoBetaBinomFitter:
     @pytest.fixture()
@@ -340,7 +345,7 @@ class TestParetoNBDFitter:
         npt.assert_array_almost_equal(expected, np.array(ptf._unload_params("r", "alpha", "s", "beta")), decimal=2)
 
     def test_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
-        """ From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        """From https://cran.r-project.org/web/packages/BTYD/BTYD.pdf"""
         ptf = lt.ParetoNBDFitter()
         ptf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"], tol=1e-6)
 
@@ -362,7 +367,7 @@ class TestParetoNBDFitter:
         npt.assert_allclose(expected, actual, atol=0.01)
 
     def test_conditional_expectation_returns_same_value_as_R_BTYD(self, cdnow_customers):
-        """ From https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf """
+        """From https://cran.r-project.org/web/packages/BTYD/vignettes/BTYD-walkthrough.pdf"""
         ptf = lt.ParetoNBDFitter()
         ptf.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
         x = 26.00
@@ -374,10 +379,10 @@ class TestParetoNBDFitter:
         assert abs(expected - actual) < 0.01
 
     def test_conditional_expectation_underflow(self):
-        """ Test a pair of inputs for the ParetoNBD ptf.conditional_expected_number_of_purchases_up_to_time().
-            For a small change in the input, the result shouldn't change dramatically -- however, if the
-            function doesn't guard against numeric underflow, this change in input will result in an
-            underflow error.
+        """Test a pair of inputs for the ParetoNBD ptf.conditional_expected_number_of_purchases_up_to_time().
+        For a small change in the input, the result shouldn't change dramatically -- however, if the
+        function doesn't guard against numeric underflow, this change in input will result in an
+        underflow error.
         """
         ptf = lt.ParetoNBDFitter()
         alpha = 10.58
@@ -507,6 +512,17 @@ class TestParetoNBDFitter:
             decimal=2,
         )
 
+    def test_summary(self, cdnow_customers):
+        ptf = lt.ParetoNBDFitter()
+        ptf.fit(
+            cdnow_customers["frequency"],
+            cdnow_customers["recency"],
+            cdnow_customers["T"],
+            iterative_fitting=3,
+        )
+        df = ptf.summary
+        assert "coef" in df.columns
+
 
 class TestBetaGeoFitter:
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
@@ -589,7 +605,7 @@ class TestBetaGeoFitter:
                 assert Z[t_x][x] == bfg.conditional_probability_alive(x, t_x, max_t)
 
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
-        """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        """See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf"""
         bgf = lt.BetaGeoFitter()
         bgf.params_ = pd.Series({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
         # probability that a customer will make 10 repeat transactions in the
@@ -763,6 +779,19 @@ class TestBetaGeoFitter:
             decimal=3,
         )
 
+    def test_summary(self, cdnow_customers):
+        bgf = lt.BetaGeoFitter()
+        bgf.fit(
+            cdnow_customers["frequency"],
+            cdnow_customers["recency"],
+            cdnow_customers["T"],
+        )
+        df = bgf.summary
+        assert "coef" in df.columns
+        assert "se(coef)" in df.columns
+        assert "lower 95% bound" in df.columns
+        assert "upper 95% bound" in df.columns
+
 
 class TestModifiedBetaGammaFitter:
     def test_sum_of_scalar_inputs_to_negative_log_likelihood_is_equal_to_array(self):
@@ -780,7 +809,7 @@ class TestModifiedBetaGammaFitter:
         ) / 2 == mbgf._negative_log_likelihood(params, x, t_x, t, weights, 0)
 
     def test_params_out_is_close_to_BTYDplus(self, cdnow_customers):
-        """ See https://github.com/mplatzer/BTYDplus """
+        """See https://github.com/mplatzer/BTYDplus"""
         mbfg = lt.ModifiedBetaGeoFitter()
         mbfg.fit(cdnow_customers["frequency"], cdnow_customers["recency"], cdnow_customers["T"])
         expected = np.array([0.525, 6.183, 0.891, 1.614])
@@ -847,7 +876,7 @@ class TestModifiedBetaGammaFitter:
                 assert Z[t_x][x] == mbfg.conditional_probability_alive(x, t_x, max_t)
 
     def test_probability_of_n_purchases_up_to_time_same_as_R_BTYD(self):
-        """ See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf """
+        """See https://cran.r-project.org/web/packages/BTYD/BTYD.pdf"""
         mbgf = lt.ModifiedBetaGeoFitter()
         mbgf.params_ = pd.Series({"r": 0.243, "alpha": 4.414, "a": 0.793, "b": 2.426})
         # probability that a customer will make 10 repeat transactions in the
