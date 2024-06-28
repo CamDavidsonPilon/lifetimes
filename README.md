@@ -1,5 +1,13 @@
 ![](http://i.imgur.com/7s3jqZM.png)
 
+
+## Read me first: Latest on the lifetimes project
+
+👋 This codebase has moved to "archived-mode". We won't be adding new features, improvements, or even answering issues in this codebase. 
+
+**A project has emerged as a successor to lifetimes, [PyMC-Lab/PyMC-Marketing](https://github.com/pymc-labs/pymc-marketing)**, please check it out!
+
+
 #### Measuring users is hard. Lifetimes makes it easy.
 [![Inactively Maintained](https://img.shields.io/badge/Maintenance%20Level-Inactively%20Maintained-yellowgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 [![PyPI version](https://badge.fury.io/py/Lifetimes.svg)](https://badge.fury.io/py/Lifetimes)
@@ -7,12 +15,6 @@
 [![Build Status](https://travis-ci.org/CamDavidsonPilon/lifetimes.svg?branch=master)](https://travis-ci.org/CamDavidsonPilon/lifetimes)
 [![Coverage Status](https://coveralls.io/repos/CamDavidsonPilon/lifetimes/badge.svg?branch=master)](https://coveralls.io/r/CamDavidsonPilon/lifetimes?branch=master)
 
-
-## Read me first: Latest on the lifetimes project
-
-👋 This codebase has moved to "maintenance-mode". I won't be adding new features, improvements, or even answering issues in this codebase (but perhaps the occasional bug fix). Why? I don't use lifetimes anymore, nor do I keep up with the literature around RFM. 
-
-**A project has emerged as a successor to lifetimes, [PyMC-Lab/PyMC-Marketing](https://github.com/pymc-labs/pymc-marketing)**, please check it out!
 
 
 ## Introduction
